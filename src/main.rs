@@ -1,4 +1,3 @@
-use bitvec::prelude::*;
 
 fn main() {
     let mut cpu = initialize_cpu();
@@ -22,7 +21,7 @@ fn initialize_cpu() -> Cpu {
 
 fn initialize_register(value: u8) -> Register {
     Register {
-        bits: BitVec::from_element(value)
+        value: value
     }
 }
 
@@ -33,7 +32,7 @@ struct Cpu {
 
 #[derive(Debug)]
 struct Register {
-   bits: BitVec<Msb0, u8> 
+   value: u8 
 }
 
 impl Cpu {
