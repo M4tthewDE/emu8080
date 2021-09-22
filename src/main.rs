@@ -1,3 +1,4 @@
+mod assembler;
 
 fn main() {
     let mut cpu = initialize_cpu();
@@ -6,11 +7,14 @@ fn main() {
     cpu.set_register(0, initialize_register(12));
     
     println!("{:?}", cpu.get_register(0));
+
+    let assembler = assembler::Assembler::new("test.asm".to_owned());
+    println!("{:?}", assembler);
 }
 
 fn initialize_cpu() -> Cpu {
     let mut registers = Vec::new();
-    for _ in 0..8 {
+    for _ in 0..7 {
         registers.push(initialize_register(0));
     }
 
