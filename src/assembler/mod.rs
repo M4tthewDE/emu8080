@@ -116,7 +116,6 @@ impl Instruction {
             InstructionCommand::HLT => {
                 b"01110110".to_vec()
             },
-            _ => {panic!("Instruction does not exist!")},
         }
     }
 }
@@ -163,7 +162,6 @@ impl InstructionArgument {
             InstructionArgument::H => b"100",
             InstructionArgument::L => b"101",
             InstructionArgument::M => b"110",
-            _ => {panic!("InstructionArgument does not exist!")},
         }
     }
 }
