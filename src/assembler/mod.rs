@@ -25,7 +25,11 @@ impl Assembler {
 
     pub fn assemble(&self) {
         let instructions = self.parse_instructions();
-        println!("{:?}", instructions);
+
+        for instruction in instructions {
+            let encoding = instruction.get_encoding();
+            println!("{:?}", encoding);
+        }
     }
 
     fn parse_instructions(&self) -> Vec<Instruction> {
@@ -73,12 +77,56 @@ struct Instruction {
     arguments: Vec<InstructionArgument>,
 }
 
+impl Instruction {
+    pub fn get_encoding(&self) -> Vec<u8> {
+        match self.command {
+            InstructionCommand::MOV => {
+                [
+                b"01", 
+                self.arguments[0].get_encoding(), 
+                self.arguments[1].get_encoding(),
+                ].concat()
+            },
+            InstructionCommand::ADD => {
+                [
+                b"10000", 
+                self.arguments[0].get_encoding(), 
+                ].concat()
+            },
+            InstructionCommand::SUB => {
+                [
+                b"10010", 
+                self.arguments[0].get_encoding(), 
+                ].concat()
+            },
+            InstructionCommand::INR => {
+                [
+                b"00", 
+                self.arguments[0].get_encoding(), 
+                b"100",
+                ].concat()
+            },
+            InstructionCommand::DCR => {
+                [
+                b"00", 
+                self.arguments[0].get_encoding(), 
+                b"101",
+                ].concat()
+            },
+            InstructionCommand::HLT => {
+                b"01110110".to_vec()
+            },
+            _ => {panic!("Instruction does not exist!")},
+        }
+    }
+}
+
 #[derive(Debug, EnumString)]
 enum InstructionCommand {
     MOV,
     ADD,
     SUB,
-    INCR,
+    INR,
     DCR,
     HLT,
 }
@@ -94,6 +142,28 @@ impl InstructionCommand {
 
 #[derive(Debug, EnumString)]
 enum InstructionArgument {
+    A,
+    B,
+    C,
     D,
-    S,
+    E,
+    H,
+    L,
+    M,
+}
+
+impl InstructionArgument {
+    pub fn get_encoding(&self) -> &[u8]{
+        match self {
+            InstructionArgument::A => b"111",
+            InstructionArgument::B => b"000",
+            InstructionArgument::C => b"001",
+            InstructionArgument::D => b"010",
+            InstructionArgument::E => b"011",
+            InstructionArgument::H => b"100",
+            InstructionArgument::L => b"101",
+            InstructionArgument::M => b"110",
+            _ => {panic!("InstructionArgument does not exist!")},
+        }
+    }
 }
