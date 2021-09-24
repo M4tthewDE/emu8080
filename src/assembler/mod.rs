@@ -1,5 +1,5 @@
 use std::fs::File;
-use std::io::{BufRead, BufReader};
+use std::io::{BufRead, BufReader, Write};
 use strum_macros::EnumString;
 use std::str::FromStr;
 
@@ -26,9 +26,10 @@ impl Assembler {
     pub fn assemble(&self) {
         let instructions = self.parse_instructions();
 
+        // write in hex to file
+        let mut file = File::create(&self.output_bin_name).unwrap();
         for instruction in instructions {
-            let encoding = instruction.get_encoding();
-            println!("{:?}", encoding);
+            file.write_all(&instruction.get_encoding()).unwrap();
         }
     }
 
