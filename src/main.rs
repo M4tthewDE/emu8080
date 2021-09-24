@@ -2,14 +2,10 @@ mod assembler;
 
 fn main() {
     let mut cpu = initialize_cpu();
-    println!("{:?}", cpu.get_register(0));
-
     cpu.set_register(0, initialize_register(12));
     
-    println!("{:?}", cpu.get_register(0));
-
-    let assembler = assembler::Assembler::new("test.asm".to_owned());
-    println!("{:?}", assembler);
+    let assembler = assembler::Assembler::new("test.asm".to_owned(), "output".to_owned());
+    assembler.assemble();
 }
 
 fn initialize_cpu() -> Cpu {
