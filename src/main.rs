@@ -6,6 +6,7 @@ fn main() {
     
     let assembler = assembler::Assembler::new("test.asm".to_owned(), "output".to_owned());
     assembler.assemble();
+    assembler.disassemble("output".to_owned());
 }
 
 fn initialize_cpu() -> Cpu {
