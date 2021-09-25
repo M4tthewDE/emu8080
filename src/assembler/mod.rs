@@ -1,5 +1,5 @@
 use std::fs::File;
-use std::io::{BufRead, BufReader, Write};
+use std::io::{BufRead, BufReader, Write, Read};
 use strum_macros::EnumString;
 use std::str::FromStr;
 
@@ -26,11 +26,37 @@ impl Assembler {
     pub fn assemble(&self) {
         let instructions = self.parse_instructions();
 
-        // write in hex to file
+        // write to file
+        // TODO actually write hex data instead of binary as ASCII
         let mut file = File::create(&self.output_bin_name).unwrap();
         for instruction in instructions {
             file.write_all(&instruction.get_encoding()).unwrap();
         }
+    }
+
+    pub fn disassemble(&self, input_bin: String) {
+        let mut file = File::open(input_bin).unwrap();
+        let mut binary_data = Vec::new();
+
+        file.read_to_end(&mut binary_data).unwrap();
+
+        // ugly hack to turn ascii binary into binary
+        for i in 0..binary_data.len() {
+            binary_data[i] = binary_data[i]-48;
+        }
+
+        if binary_data.len() % 8 != 0 {
+            panic!("Data is not proper length!");
+        }
+
+        let mut raw_instructions = Vec::new();
+        for chunk in binary_data.chunks(8) {
+            raw_instructions.push(chunk);
+        }
+
+        let instructions = &self.parse_binary_instructions(&raw_instructions);
+
+        println!("{:?}", instructions);
     }
 
     fn parse_instructions(&self) -> Vec<Instruction> {
@@ -57,6 +83,91 @@ impl Assembler {
             }
         }
         instructions
+    }
+
+    fn parse_binary_instructions(&self, raw_instructions: &Vec<&[u8]>) -> Vec<Instruction> {
+        let mut instructions = Vec::new();
+
+        for raw_instruction in raw_instructions {
+            let instruction = self.decode_raw_intructions(raw_instruction);
+            instructions.push(instruction);
+        }
+
+        instructions
+    }
+
+    fn decode_raw_intructions(&self, byte: &[u8]) -> Instruction {
+        // pretty ugly, maybe there is a better solution with match or something
+        // instructions without arguments
+        // HLT
+        if &byte == &[0, 1, 1, 1, 0, 1, 1, 0] {
+            Instruction {
+                command: InstructionCommand::HLT,
+                arguments: Vec::new(),
+            }
+        // instructions with 1 argument in the end
+        // ADD
+        } else if &byte[0..5] == &[1, 0, 0, 0, 0] 
+            && !matches!(InstructionArgument::decode(&byte[5..]), InstructionArgument::INVALID) {
+                
+            let mut args = Vec::new();
+            args.push(InstructionArgument::decode(&byte[5..]));
+
+            Instruction {
+                command: InstructionCommand::ADD,
+                arguments: args,
+            }
+        // SUB
+        } else if &byte[0..5] == &[1, 0, 0, 1, 0] 
+            && !matches!(InstructionArgument::decode(&byte[5..]), InstructionArgument::INVALID) {
+                
+            let mut args = Vec::new();
+            args.push(InstructionArgument::decode(&byte[5..]));
+
+            Instruction {
+                command: InstructionCommand::SUB,
+                arguments: args,
+            }
+        // instructions with 1 argument in the middle
+        // INR
+        } else if &byte[0..2] == &[0, 0] && &byte[5..] == &[1, 0, 0] 
+            && !matches!(InstructionArgument::decode(&byte[2..5]), InstructionArgument::INVALID) {
+                
+            let mut args = Vec::new();
+            args.push(InstructionArgument::decode(&byte[2..5]));
+
+            Instruction {
+                command: InstructionCommand::INR,
+                arguments: args,
+            }
+        // DCR
+        } else if &byte[0..2] == &[0, 0] && &byte[5..] == &[1, 0, 1] 
+            && !matches!(InstructionArgument::decode(&byte[2..5]), InstructionArgument::INVALID) {
+                
+            let mut args = Vec::new();
+            args.push(InstructionArgument::decode(&byte[2..5]));
+
+            Instruction {
+                command: InstructionCommand::DCR,
+                arguments: args,
+            }
+        // instructions with 2 arguments
+        // MOV
+        } else if &byte[0..2] == &[0, 1]
+            && !matches!(InstructionArgument::decode(&byte[2..5]), InstructionArgument::INVALID)
+            && !matches!(InstructionArgument::decode(&byte[5..]), InstructionArgument::INVALID) {
+
+            let mut args = Vec::new();
+            args.push(InstructionArgument::decode(&byte[2..5]));
+            args.push(InstructionArgument::decode(&byte[5..]));
+            
+            Instruction {
+                command: InstructionCommand::MOV,
+                arguments: args,
+            }
+        } else {
+            panic!("Invalid instruction!");
+        }
     }
 }
 
@@ -150,6 +261,7 @@ enum InstructionArgument {
     H,
     L,
     M,
+    INVALID,
 }
 
 impl InstructionArgument {
@@ -163,6 +275,21 @@ impl InstructionArgument {
             InstructionArgument::H => b"100",
             InstructionArgument::L => b"101",
             InstructionArgument::M => b"110",
+            _ => panic!("Invalid argument provided")
+        }
+    }
+
+    pub fn decode(raw_bytes: &[u8]) -> InstructionArgument {
+        match raw_bytes {
+            &[1,1,1] => InstructionArgument::A,
+            &[0,0,0] => InstructionArgument::B,
+            &[0,0,1] => InstructionArgument::C,
+            &[0,1,0] => InstructionArgument::D,
+            &[0,1,1] => InstructionArgument::E,
+            &[1,0,0] => InstructionArgument::H,
+            &[1,0,1] => InstructionArgument::L,
+            &[1,1,0] => InstructionArgument::M,
+            _ => InstructionArgument::INVALID,
         }
     }
 }
