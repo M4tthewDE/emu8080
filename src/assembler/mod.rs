@@ -40,11 +40,6 @@ impl Assembler {
 
         file.read_to_end(&mut binary_data).unwrap();
 
-        // ugly hack to turn ascii binary into binary
-        for i in 0..binary_data.len() {
-            binary_data[i] = binary_data[i]-48;
-        }
-
         if binary_data.len() % 8 != 0 {
             panic!("Data is not proper length!");
         }
@@ -194,39 +189,39 @@ impl Instruction {
         match self.command {
             InstructionCommand::MOV => {
                 [
-                b"01", 
+                &[0,1], 
                 self.arguments[0].get_encoding(), 
                 self.arguments[1].get_encoding(),
                 ].concat()
             },
             InstructionCommand::ADD => {
                 [
-                b"10000", 
+                &[1,0,0,0,0],
                 self.arguments[0].get_encoding(), 
                 ].concat()
             },
             InstructionCommand::SUB => {
                 [
-                b"10010", 
+                &[1,0,0,1,0],
                 self.arguments[0].get_encoding(), 
                 ].concat()
             },
             InstructionCommand::INR => {
                 [
-                b"00", 
+                &[0,0],
                 self.arguments[0].get_encoding(), 
-                b"100",
+                &[1,0,0],
                 ].concat()
             },
             InstructionCommand::DCR => {
                 [
-                b"00", 
+                &[0,0],
                 self.arguments[0].get_encoding(), 
-                b"101",
+                &[1,0,1],
                 ].concat()
             },
             InstructionCommand::HLT => {
-                b"01110110".to_vec()
+                [0,1,1,1,0,1,1,0].to_vec()
             },
         }
     }
@@ -267,14 +262,14 @@ enum InstructionArgument {
 impl InstructionArgument {
     pub fn get_encoding(&self) -> &[u8]{
         match self {
-            InstructionArgument::A => b"111",
-            InstructionArgument::B => b"000",
-            InstructionArgument::C => b"001",
-            InstructionArgument::D => b"010",
-            InstructionArgument::E => b"011",
-            InstructionArgument::H => b"100",
-            InstructionArgument::L => b"101",
-            InstructionArgument::M => b"110",
+            InstructionArgument::A => &[1,1,1],
+            InstructionArgument::B => &[0,0,0],
+            InstructionArgument::C => &[0,0,1],
+            InstructionArgument::D => &[0,1,0],
+            InstructionArgument::E => &[0,1,1],
+            InstructionArgument::H => &[1,0,0],
+            InstructionArgument::L => &[1,0,1],
+            InstructionArgument::M => &[1,1,0],
             _ => panic!("Invalid argument provided")
         }
     }
