@@ -1,12 +1,15 @@
 mod assembler;
 
+use assembler::{Instruction, InstructionCommand, InstructionArgument};
+
 fn main() {
     let mut cpu = initialize_cpu();
-    cpu.set_register(0, initialize_register(12));
     
     let assembler = assembler::Assembler::new("test.asm".to_owned(), "output".to_owned());
+
     assembler.assemble();
-    assembler.disassemble("output".to_owned());
+    let instructions = assembler.disassemble("output".to_owned());
+    cpu.run(&instructions);
 }
 
 fn initialize_cpu() -> Cpu {
@@ -43,5 +46,39 @@ impl Cpu {
 
     fn set_register(&mut self, index: usize, register: Register) {
         self.register[index] = register;
+    }
+
+    fn run(&mut self, instructions: &Vec<Instruction>) {
+        // initial status
+        self.get_status();
+
+        for instruction in instructions {
+            println!("-------------");
+            println!("{:?}", instruction);
+
+            self.execute(instruction);
+            self.get_status();
+        }
+    }
+
+    fn execute(&mut self, instruction: &Instruction) {
+        match instruction.command {
+            InstructionCommand::MOV => self.execute_mov(&instruction.arguments),
+            _ => panic!("Invalid command!")
+        }        
+    }
+
+    fn execute_mov(&mut self, args: &Vec<InstructionArgument>) {
+        let source_register = self.get_register(args[0].to_index().into());        
+        let new_register = Register {value: source_register.value};
+
+        let destination_index = args[1].to_index().into();
+        self.set_register(destination_index, new_register);
+    }
+
+    fn get_status(&self) {
+        for i in 0..7 {
+            println!("{:?}: {:#08b}", i, self.get_register(i).value);
+        }
     }
 }
