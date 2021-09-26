@@ -76,7 +76,6 @@ impl Cpu {
             InstructionCommand::INR => self.execute_inr(&instruction.arguments),
             InstructionCommand::DCR => self.execute_dcr(&instruction.arguments),
             InstructionCommand::HLT => self.execute_hlt(),
-            _ => panic!("Invalid command!")
         }        
     }
 
