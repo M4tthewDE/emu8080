@@ -58,7 +58,7 @@ impl Assembler {
         let reader = BufReader::new(&self.input_asm);
 
         let mut instructions = Vec::new();
-        for (_, line) in reader.lines().enumerate() {
+        for line in reader.lines() {
             let line = line.unwrap();
 
             let words: Vec<&str> = line.split(" ").collect();
