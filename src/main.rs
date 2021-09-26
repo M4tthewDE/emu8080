@@ -68,6 +68,7 @@ impl Cpu {
         match instruction.command {
             InstructionCommand::MOV => self.execute_mov(&instruction.arguments),
             InstructionCommand::ADD => self.execute_add(&instruction.arguments),
+            InstructionCommand::SUB => self.execute_sub(&instruction.arguments),
             _ => panic!("Invalid command!")
         }        
     }
@@ -78,6 +79,14 @@ impl Cpu {
 
         let added_register = Register {value: current_a+source_register.value};
         self.set_register(0, added_register);
+    }
+
+    fn execute_sub(&mut self, args: &Vec<InstructionArgument>) {
+        let source_register = self.get_register(args[0].to_index().into());        
+        let current_a = self.get_register(0).value;
+
+        let subtracted_register = Register {value: current_a-source_register.value};
+        self.set_register(0, subtracted_register);
     }
 
     fn execute_mov(&mut self, args: &Vec<InstructionArgument>) {
