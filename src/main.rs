@@ -51,6 +51,10 @@ impl Cpu {
         self.register[index] = register;
     }
 
+    fn change_register(&mut self, index: usize, value: u8) {
+        self.register[index].value = value;
+    }
+
     fn run(&mut self, instructions: &Vec<Instruction>) {
         println!("Initial status:");
         self.get_status();
@@ -76,44 +80,37 @@ impl Cpu {
         }        
     }
 
+    fn execute_mov(&mut self, args: &Vec<InstructionArgument>) {
+        let source_value = self.get_register(args[0].to_index().into()).value;        
+
+        let destination_index = args[1].to_index().into();
+        self.change_register(destination_index, source_value);
+    }
+
     fn execute_add(&mut self, args: &Vec<InstructionArgument>) {
-        let source_register = self.get_register(args[0].to_index().into());        
+        let source_value = self.get_register(args[0].to_index().into()).value;        
         let current_a = self.get_register(0).value;
 
-        let added_register = Register {value: current_a+source_register.value};
-        self.set_register(0, added_register);
+        self.change_register(0, current_a+source_value);
     }
 
     fn execute_sub(&mut self, args: &Vec<InstructionArgument>) {
-        let source_register = self.get_register(args[0].to_index().into());        
+        let source_value = self.get_register(args[0].to_index().into()).value;        
         let current_a = self.get_register(0).value;
 
-        let subtracted_register = Register {value: current_a-source_register.value};
-        self.set_register(0, subtracted_register);
-    }
-
-    fn execute_mov(&mut self, args: &Vec<InstructionArgument>) {
-        let source_register = self.get_register(args[0].to_index().into());        
-        let new_register = Register {value: source_register.value};
-
-        let destination_index = args[1].to_index().into();
-        self.set_register(destination_index, new_register);
+        self.change_register(0, current_a-source_value);
     }
 
     fn execute_inr(&mut self, args: &Vec<InstructionArgument>) {
-        let register = self.get_register(args[0].to_index().into());        
+        let value = self.get_register(args[0].to_index().into()).value;        
 
-        let incremented_register = Register {value: register.value+1};
-
-        self.set_register(args[0].to_index().into(), incremented_register);
+        self.change_register(args[0].to_index().into(), value+1);
     }
 
     fn execute_dcr(&mut self, args: &Vec<InstructionArgument>) {
-        let register = self.get_register(args[0].to_index().into());        
+        let value = self.get_register(args[0].to_index().into()).value;        
 
-        let incremented_register = Register {value: register.value-1};
-
-        self.set_register(args[0].to_index().into(), incremented_register);
+        self.change_register(args[0].to_index().into(), value-1);
     }
 
     fn execute_hlt(&mut self) {
