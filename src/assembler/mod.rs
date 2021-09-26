@@ -105,46 +105,34 @@ impl Assembler {
         } else if &byte[0..5] == &[1, 0, 0, 0, 0] 
             && !matches!(InstructionArgument::decode(&byte[5..]), InstructionArgument::INVALID) {
                 
-            let mut args = Vec::new();
-            args.push(InstructionArgument::decode(&byte[5..]));
-
             Instruction {
                 command: InstructionCommand::ADD,
-                arguments: args,
+                arguments: vec![InstructionArgument::decode(&byte[5..])],
             }
         // SUB
         } else if &byte[0..5] == &[1, 0, 0, 1, 0] 
             && !matches!(InstructionArgument::decode(&byte[5..]), InstructionArgument::INVALID) {
                 
-            let mut args = Vec::new();
-            args.push(InstructionArgument::decode(&byte[5..]));
-
             Instruction {
                 command: InstructionCommand::SUB,
-                arguments: args,
+                arguments: vec![InstructionArgument::decode(&byte[5..])],
             }
         // instructions with 1 argument in the middle
         // INR
         } else if &byte[0..2] == &[0, 0] && &byte[5..] == &[1, 0, 0] 
             && !matches!(InstructionArgument::decode(&byte[2..5]), InstructionArgument::INVALID) {
                 
-            let mut args = Vec::new();
-            args.push(InstructionArgument::decode(&byte[2..5]));
-
             Instruction {
                 command: InstructionCommand::INR,
-                arguments: args,
+                arguments: vec![InstructionArgument::decode(&byte[2..5])],
             }
         // DCR
         } else if &byte[0..2] == &[0, 0] && &byte[5..] == &[1, 0, 1] 
             && !matches!(InstructionArgument::decode(&byte[2..5]), InstructionArgument::INVALID) {
-                
-            let mut args = Vec::new();
-            args.push(InstructionArgument::decode(&byte[2..5]));
 
             Instruction {
                 command: InstructionCommand::DCR,
-                arguments: args,
+                arguments: vec![InstructionArgument::decode(&byte[2..5])],
             }
         // instructions with 2 arguments
         // MOV
