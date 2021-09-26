@@ -30,7 +30,7 @@ impl Assembler {
         }
     }
 
-    pub fn disassemble(&self, input_bin: String) {
+    pub fn disassemble(&self, input_bin: String) -> Vec<Instruction> {
         let mut file = File::open(input_bin).unwrap();
         let mut binary_data = Vec::new();
 
@@ -45,9 +45,7 @@ impl Assembler {
             raw_instructions.push(chunk);
         }
 
-        let instructions = &self.parse_binary_instructions(&raw_instructions);
-
-        println!("{:?}", instructions);
+        self.parse_binary_instructions(&raw_instructions)
     }
 
     fn parse_instructions(&self) -> Vec<Instruction> {
@@ -162,9 +160,9 @@ fn get_instruction_args(word: &str) -> Vec<InstructionArgument> {
 }
 
 #[derive(Debug)]
-struct Instruction {
-    command: InstructionCommand,
-    arguments: Vec<InstructionArgument>,
+pub struct Instruction {
+    pub command: InstructionCommand,
+    pub arguments: Vec<InstructionArgument>,
 }
 
 impl Instruction {
@@ -211,7 +209,7 @@ impl Instruction {
 }
 
 #[derive(Debug, EnumString)]
-enum InstructionCommand {
+pub enum InstructionCommand {
     MOV,
     ADD,
     SUB,
@@ -230,7 +228,7 @@ impl InstructionCommand {
 }
 
 #[derive(Debug, EnumString)]
-enum InstructionArgument {
+pub enum InstructionArgument {
     A,
     B,
     C,
@@ -268,6 +266,20 @@ impl InstructionArgument {
             &[1,0,1] => InstructionArgument::L,
             &[1,1,0] => InstructionArgument::M,
             _ => InstructionArgument::INVALID,
+        }
+    }
+
+    pub fn to_index(&self) -> u8 {
+        match self {
+            InstructionArgument::A => 0,
+            InstructionArgument::B => 1,
+            InstructionArgument::C => 2,
+            InstructionArgument::D => 3,
+            InstructionArgument::E => 4,
+            InstructionArgument::H => 5,
+            InstructionArgument::L => 6,
+            InstructionArgument::M => 7,
+            _ => panic!("Invalid argument provided!")
         }
     }
 }
