@@ -71,7 +71,7 @@ impl Cpu {
             InstructionCommand::SUB => self.execute_sub(&instruction.arguments),
             InstructionCommand::INR => self.execute_inr(&instruction.arguments),
             InstructionCommand::DCR => self.execute_dcr(&instruction.arguments),
-            InstructionCommand::HLT => self.execute_hlt(&instruction.arguments),
+            InstructionCommand::HLT => self.execute_hlt(),
             _ => panic!("Invalid command!")
         }        
     }
@@ -116,7 +116,7 @@ impl Cpu {
         self.set_register(args[0].to_index().into(), incremented_register);
     }
 
-    fn execute_hlt(&mut self, args: &Vec<InstructionArgument>) {
+    fn execute_hlt(&mut self) {
         println!("Execution finished");
         println!("Final status: ");
         self.get_status();
