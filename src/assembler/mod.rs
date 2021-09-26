@@ -30,7 +30,7 @@ impl Assembler {
         // TODO actually write hex data instead of binary as ASCII
         let mut file = File::create(&self.output_bin_name).unwrap();
         for instruction in instructions {
-            file.write_all(&instruction.get_encoding()).unwrap();
+            file.write_all(&instruction.encode()).unwrap();
         }
     }
 
@@ -173,38 +173,38 @@ struct Instruction {
 }
 
 impl Instruction {
-    pub fn get_encoding(&self) -> Vec<u8> {
+    pub fn encode(&self) -> Vec<u8> {
         match self.command {
             InstructionCommand::MOV => {
                 [
                 &[0,1], 
-                self.arguments[0].get_encoding(), 
-                self.arguments[1].get_encoding(),
+                self.arguments[0].encode(), 
+                self.arguments[1].encode(),
                 ].concat()
             },
             InstructionCommand::ADD => {
                 [
                 &[1,0,0,0,0],
-                self.arguments[0].get_encoding(), 
+                self.arguments[0].encode(), 
                 ].concat()
             },
             InstructionCommand::SUB => {
                 [
                 &[1,0,0,1,0],
-                self.arguments[0].get_encoding(), 
+                self.arguments[0].encode(), 
                 ].concat()
             },
             InstructionCommand::INR => {
                 [
                 &[0,0],
-                self.arguments[0].get_encoding(), 
+                self.arguments[0].encode(), 
                 &[1,0,0],
                 ].concat()
             },
             InstructionCommand::DCR => {
                 [
                 &[0,0],
-                self.arguments[0].get_encoding(), 
+                self.arguments[0].encode(), 
                 &[1,0,1],
                 ].concat()
             },
@@ -248,7 +248,7 @@ enum InstructionArgument {
 }
 
 impl InstructionArgument {
-    pub fn get_encoding(&self) -> &[u8]{
+    pub fn encode(&self) -> &[u8]{
         match self {
             InstructionArgument::A => &[1,1,1],
             InstructionArgument::B => &[0,0,0],
