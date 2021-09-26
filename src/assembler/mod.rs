@@ -11,11 +11,7 @@ pub struct Assembler{
 
 impl Assembler {
     pub fn new(input_asm_name: String, output_bin_name: String) -> Assembler {
-        let input = File::open(input_asm_name);
-        let input = match input {
-            Ok(input) => input,
-            Err(error) => panic!("Problem opening file: {:?}", error),
-        };
+        let input = File::open(input_asm_name).unwrap();
 
         Assembler {
             input_asm: input,
@@ -65,10 +61,9 @@ impl Assembler {
             let command = InstructionCommand::from_str(words[0]).unwrap();
 
             if command.has_arguments() {
-                let args = get_instruction_args(words[1]);
                 instructions.push(Instruction{
                     command: command,
-                    arguments: args,
+                    arguments: get_instruction_args(words[1]),
                 })
             } else {
                 instructions.push(Instruction{
