@@ -69,6 +69,8 @@ impl Cpu {
             InstructionCommand::MOV => self.execute_mov(&instruction.arguments),
             InstructionCommand::ADD => self.execute_add(&instruction.arguments),
             InstructionCommand::SUB => self.execute_sub(&instruction.arguments),
+            InstructionCommand::INR => self.execute_inr(&instruction.arguments),
+            InstructionCommand::DCR => self.execute_dcr(&instruction.arguments),
             _ => panic!("Invalid command!")
         }        
     }
@@ -95,6 +97,22 @@ impl Cpu {
 
         let destination_index = args[1].to_index().into();
         self.set_register(destination_index, new_register);
+    }
+
+    fn execute_inr(&mut self, args: &Vec<InstructionArgument>) {
+        let register = self.get_register(args[0].to_index().into());        
+
+        let incremented_register = Register {value: register.value+1};
+
+        self.set_register(args[0].to_index().into(), incremented_register);
+    }
+
+    fn execute_dcr(&mut self, args: &Vec<InstructionArgument>) {
+        let register = self.get_register(args[0].to_index().into());        
+
+        let incremented_register = Register {value: register.value-1};
+
+        self.set_register(args[0].to_index().into(), incremented_register);
     }
 
     fn get_status(&self) {
