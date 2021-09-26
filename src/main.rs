@@ -71,6 +71,7 @@ impl Cpu {
             InstructionCommand::SUB => self.execute_sub(&instruction.arguments),
             InstructionCommand::INR => self.execute_inr(&instruction.arguments),
             InstructionCommand::DCR => self.execute_dcr(&instruction.arguments),
+            InstructionCommand::HLT => self.execute_hlt(&instruction.arguments),
             _ => panic!("Invalid command!")
         }        
     }
@@ -113,6 +114,13 @@ impl Cpu {
         let incremented_register = Register {value: register.value-1};
 
         self.set_register(args[0].to_index().into(), incremented_register);
+    }
+
+    fn execute_hlt(&mut self, args: &Vec<InstructionArgument>) {
+        println!("Execution finished");
+        println!("Final status: ");
+        self.get_status();
+        std::process::exit(0);
     }
 
     fn get_status(&self) {
