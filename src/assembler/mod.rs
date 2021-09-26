@@ -204,7 +204,7 @@ impl Instruction {
                 ].concat()
             },
             InstructionCommand::HLT => {
-                [0,1,1,1,0,1,1,0].to_vec()
+                vec!(0,1,1,1,0,1,1,0)
             },
         }
     }
