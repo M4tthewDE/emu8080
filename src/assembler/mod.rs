@@ -23,7 +23,7 @@ impl Assembler {
         let instructions = self.parse_instructions();
 
         // write to file
-        // TODO actually write hex data instead of binary as ASCII
+        // writes binary instead of hex
         let mut file = File::create(&self.output_bin_name).unwrap();
         for instruction in instructions {
             file.write_all(&instruction.encode()).unwrap();
@@ -57,16 +57,27 @@ impl Assembler {
 
             let words: Vec<&str> = line.split(" ").collect();
             let command = InstructionCommand::from_str(words[0]).unwrap();
+            let raw_args: Vec<&str> = words[1].split(",").collect();
 
-            if command.has_arguments() {
+            if matches!(command, InstructionCommand::MVI) {
+                let arg = InstructionArgument::from_str(raw_args[0]).unwrap();
                 instructions.push(Instruction{
                     command: command,
-                    arguments: get_instruction_args(words[1]),
+                    arguments: vec![arg],
+                    intermediary: parse_binary_intermediate(raw_args[1]),
+                })
+
+            } else if command.has_arguments() {
+                instructions.push(Instruction{
+                    command: command,
+                    arguments: parse_instruction_args(raw_args),
+                    intermediary: Vec::new(),
                 })
             } else {
                 instructions.push(Instruction{
                     command: command,
                     arguments: Vec::new(),
+                    intermediary: Vec::new(),
                 })
             }
         }
@@ -92,6 +103,7 @@ impl Assembler {
             Instruction {
                 command: InstructionCommand::HLT,
                 arguments: Vec::new(),
+                intermediary: Vec::new(),
             }
         // instructions with 1 argument in the end
         // ADD
@@ -101,6 +113,7 @@ impl Assembler {
             Instruction {
                 command: InstructionCommand::ADD,
                 arguments: vec![InstructionArgument::decode(&byte[5..])],
+                intermediary: Vec::new(),
             }
         // SUB
         } else if &byte[0..5] == &[1, 0, 0, 1, 0] 
@@ -109,6 +122,7 @@ impl Assembler {
             Instruction {
                 command: InstructionCommand::SUB,
                 arguments: vec![InstructionArgument::decode(&byte[5..])],
+                intermediary: Vec::new(),
             }
         // instructions with 1 argument in the middle
         // INR
@@ -118,6 +132,7 @@ impl Assembler {
             Instruction {
                 command: InstructionCommand::INR,
                 arguments: vec![InstructionArgument::decode(&byte[2..5])],
+                intermediary: Vec::new(),
             }
         // DCR
         } else if &byte[0..2] == &[0, 0] && &byte[5..] == &[1, 0, 1] 
@@ -126,6 +141,7 @@ impl Assembler {
             Instruction {
                 command: InstructionCommand::DCR,
                 arguments: vec![InstructionArgument::decode(&byte[2..5])],
+                intermediary: Vec::new(),
             }
         // instructions with 2 arguments
         // MOV
@@ -140,6 +156,7 @@ impl Assembler {
             Instruction {
                 command: InstructionCommand::MOV,
                 arguments: args,
+                intermediary: Vec::new(),
             }
         } else {
             panic!("Invalid instruction!");
@@ -147,9 +164,7 @@ impl Assembler {
     }
 }
 
-fn get_instruction_args(word: &str) -> Vec<InstructionArgument> {
-    let raw_args: Vec<&str> = word.split(",").collect();
-
+fn parse_instruction_args(raw_args: Vec<&str>) -> Vec<InstructionArgument> {
     let mut args = Vec::new();
     for raw_arg in raw_args {
         let arg = InstructionArgument::from_str(raw_arg).unwrap();
@@ -159,15 +174,37 @@ fn get_instruction_args(word: &str) -> Vec<InstructionArgument> {
     args
 }
 
+fn parse_binary_intermediate(binary_string: &str) -> Vec<u8> {
+    let mut binary_intermediate = Vec::new();
+
+    for c in binary_string.chars() {
+        if c == '0' {
+            binary_intermediate.push(0);
+        } else {
+            binary_intermediate.push(1);
+        }
+    }
+    binary_intermediate
+}
+
 #[derive(Debug)]
 pub struct Instruction {
     pub command: InstructionCommand,
     pub arguments: Vec<InstructionArgument>,
+    pub intermediary: Vec<u8>,
 }
 
 impl Instruction {
     pub fn encode(&self) -> Vec<u8> {
         match self.command {
+            InstructionCommand::MVI => {
+                [
+                &[0,1],
+                self.arguments[0].encode(),
+                &[1,1,0],    
+                &self.intermediary[..],
+                ].concat()
+            },
             InstructionCommand::MOV => {
                 [
                 &[0,1], 
@@ -210,6 +247,7 @@ impl Instruction {
 
 #[derive(Debug, EnumString)]
 pub enum InstructionCommand {
+    MVI,
     MOV,
     ADD,
     SUB,
