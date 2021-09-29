@@ -1,7 +1,7 @@
 use std::fs::File;
-use std::io::{BufRead, BufReader, Write, Read};
+use std::io::{Write, Read};
 use strum_macros::EnumString;
-use std::str::FromStr;
+use crate::assembler::parser::Encoding;
 
 mod parser;
 
@@ -22,15 +22,16 @@ impl Assembler {
     }
 
     pub fn assemble(&self) {
-        //let instructions = parser::parse();
-
-        let instructions = self.parse_instructions();
+        let instructions = parser::parse();
 
         // write to file
         // TODO actually write hex data instead of binary as ASCII
         let mut file = File::create(&self.output_bin_name).unwrap();
         for instruction in instructions {
-            file.write_all(&instruction.encode()).unwrap();
+            let encoding = &instruction.encode();
+            for byte in encoding {
+                file.write_all(byte).unwrap();
+            }
         }
     }
 
@@ -50,31 +51,6 @@ impl Assembler {
         }
 
         self.parse_binary_instructions(&raw_instructions)
-    }
-
-    fn parse_instructions(&self) -> Vec<Instruction> {
-        let reader = BufReader::new(&self.input_asm);
-
-        let mut instructions = Vec::new();
-        for line in reader.lines() {
-            let line = line.unwrap();
-
-            let words: Vec<&str> = line.split(" ").collect();
-            let command = InstructionCommand::from_str(words[0]).unwrap();
-
-            if command.has_arguments() {
-                instructions.push(Instruction{
-                    command: command,
-                    arguments: get_instruction_args(words[1]),
-                })
-            } else {
-                instructions.push(Instruction{
-                    command: command,
-                    arguments: Vec::new(),
-                })
-            }
-        }
-        instructions
     }
 
     fn parse_binary_instructions(&self, raw_instructions: &Vec<&[u8]>) -> Vec<Instruction> {
@@ -151,66 +127,12 @@ impl Assembler {
     }
 }
 
-fn get_instruction_args(word: &str) -> Vec<InstructionArgument> {
-    let raw_args: Vec<&str> = word.split(",").collect();
-
-    let mut args = Vec::new();
-    for raw_arg in raw_args {
-        let arg = InstructionArgument::from_str(raw_arg).unwrap();
-        args.push(arg);
-    }
-
-    args
-}
-
 #[derive(Debug)]
 pub struct Instruction {
     pub command: InstructionCommand,
     pub arguments: Vec<InstructionArgument>,
 }
 
-impl Instruction {
-    pub fn encode(&self) -> Vec<u8> {
-        match self.command {
-            InstructionCommand::MOV => {
-                [
-                &[0,1], 
-                self.arguments[0].encode(), 
-                self.arguments[1].encode(),
-                ].concat()
-            },
-            InstructionCommand::ADD => {
-                [
-                &[1,0,0,0,0],
-                self.arguments[0].encode(), 
-                ].concat()
-            },
-            InstructionCommand::SUB => {
-                [
-                &[1,0,0,1,0],
-                self.arguments[0].encode(), 
-                ].concat()
-            },
-            InstructionCommand::INR => {
-                [
-                &[0,0],
-                self.arguments[0].encode(), 
-                &[1,0,0],
-                ].concat()
-            },
-            InstructionCommand::DCR => {
-                [
-                &[0,0],
-                self.arguments[0].encode(), 
-                &[1,0,1],
-                ].concat()
-            },
-            InstructionCommand::HLT => {
-                vec!(0,1,1,1,0,1,1,0)
-            },
-        }
-    }
-}
 
 #[derive(Debug, EnumString)]
 pub enum InstructionCommand {
@@ -220,15 +142,6 @@ pub enum InstructionCommand {
     INR,
     DCR,
     HLT,
-}
-
-impl InstructionCommand {
-    pub fn has_arguments(&self) -> bool {
-        match self {
-            InstructionCommand::HLT => false,
-            _ => true,
-        }
-    }
 }
 
 #[derive(Debug, EnumString)]
@@ -245,20 +158,6 @@ pub enum InstructionArgument {
 }
 
 impl InstructionArgument {
-    pub fn encode(&self) -> &[u8]{
-        match self {
-            InstructionArgument::A => &[1,1,1],
-            InstructionArgument::B => &[0,0,0],
-            InstructionArgument::C => &[0,0,1],
-            InstructionArgument::D => &[0,1,0],
-            InstructionArgument::E => &[0,1,1],
-            InstructionArgument::H => &[1,0,0],
-            InstructionArgument::L => &[1,0,1],
-            InstructionArgument::M => &[1,1,0],
-            _ => panic!("Invalid argument provided")
-        }
-    }
-
     pub fn decode(raw_bytes: &[u8]) -> InstructionArgument {
         match raw_bytes {
             &[1,1,1] => InstructionArgument::A,
