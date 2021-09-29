@@ -1,12 +1,14 @@
 register = { "A" | "B" | "C" | "D" | "E" | "H" | "L" | "M" }
 single_reg_command = { "ADD" | "SUB" | "INR" | "DCR" }
 double_reg_command = { "MOV" }
+intermediate_command = { "MVI" }
 no_reg_command = { "HLT" }
+intermediate  = { ("0"|"1"){8}}
 
+intermediate_instruction = { intermediate_command ~ register ~ "," ~ intermediate}
 single_reg_instruction = { single_reg_command ~ register }
 double_reg_instruction = { double_reg_command ~ register ~ "," ~ register }
 no_reg_instruction = { no_reg_command }
-assembly = { ((double_reg_instruction | single_reg_instruction | no_reg_instruction) ~ "\n")+ }
+assembly = { ((double_reg_instruction | single_reg_instruction | no_reg_instruction | intermediate_instruction) ~ "\n")+ }
 
 WHITESPACE = _{ " " }
-REGISTER = { "A" | "B" | "C" | "D" | "E" | "H" | "L" | "M" }

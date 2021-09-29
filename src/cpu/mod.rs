@@ -1,4 +1,5 @@
 use crate::assembler::{Instruction, InstructionCommand, InstructionRegister};
+use std::convert::TryFrom;
 
 pub fn initialize_cpu() -> Cpu {
     let mut registers = Vec::new();
@@ -32,10 +33,6 @@ impl Cpu {
         &self.register[index]
     }
 
-    pub fn set_register(&mut self, index: usize, register: Register) {
-        self.register[index] = register;
-    }
-
     fn change_register(&mut self, index: usize, value: u8) {
         self.register[index].value = value;
     }
@@ -55,6 +52,7 @@ impl Cpu {
 
     fn execute(&mut self, instruction: &Instruction) {
         match instruction.command {
+            InstructionCommand::MVI => self.execute_mvi(&instruction.registers, &instruction.intermediate),
             InstructionCommand::MOV => self.execute_mov(&instruction.registers),
             InstructionCommand::ADD => self.execute_add(&instruction.registers),
             InstructionCommand::SUB => self.execute_sub(&instruction.registers),
@@ -62,6 +60,16 @@ impl Cpu {
             InstructionCommand::DCR => self.execute_dcr(&instruction.registers),
             InstructionCommand::HLT => self.execute_hlt(),
         }        
+    }
+
+    fn execute_mvi(&mut self, args: &Vec<InstructionRegister>, intermediate: &Vec<u8>) {
+        let destination_index = args[0].to_index().into();
+
+        let mut value = 0;
+        for (index, digit) in intermediate.iter().rev().enumerate() {
+            value = value + (digit*u8::pow(2, u32::try_from(index).unwrap()));
+        }
+       self.change_register(destination_index, value); 
     }
 
     fn execute_mov(&mut self, args: &Vec<InstructionRegister>) {
@@ -106,7 +114,7 @@ impl Cpu {
 
     fn get_status(&self) {
         for i in 0..7 {
-            println!("{:?}: {:#08b}", i, self.get_register(i).value);
+            println!("{:?}: {:#010b}", i, self.get_register(i).value);
         }
     }
 }
