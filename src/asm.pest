@@ -3,7 +3,6 @@ single_reg_command = { "ADD" | "SUB" | "INR" | "DCR" }
 double_reg_command = { "MOV" }
 intermediate_command = { "MVI" }
 no_reg_command = { "HLT" }
-
 intermediate  = { ("0"|"1"){8}}
 
 intermediate_instruction = { intermediate_command ~ register ~ "," ~ intermediate}
