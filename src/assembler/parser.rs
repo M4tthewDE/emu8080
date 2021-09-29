@@ -155,10 +155,10 @@ pub enum InstructionType {
 
 #[derive(Debug)]
 pub struct Instruction {
-    variant: InstructionType,
-    command: InstructionCommand,
-    registers: Vec<InstructionRegister>,
-    intermediate: u8,
+    pub variant: InstructionType,
+    pub command: InstructionCommand,
+    pub registers: Vec<InstructionRegister>,
+    pub intermediate: u8,
 }
 
 impl Encoding for Instruction {

@@ -1,8 +1,7 @@
 use std::fs::File;
 use std::io::{Write, Read};
-use strum_macros::EnumString;
 use crate::assembler::parser::Encoding;
-pub use crate::assembler::parser::InstructionRegister;
+pub use crate::assembler::parser::{InstructionRegister, Instruction, InstructionCommand, InstructionType};
 
 mod parser;
 
@@ -67,12 +66,14 @@ impl Assembler {
 
     fn decode_raw_intructions(&self, byte: &[u8]) -> Instruction {
         // pretty ugly, maybe there is a better solution with match or something
-        // instructions without arguments
+        // instructions without registers
         // HLT
         if &byte == &[0, 1, 1, 1, 0, 1, 1, 0] {
             Instruction {
+                variant: InstructionType::NoRegInstruction,
                 command: InstructionCommand::HLT,
-                arguments: Vec::new(),
+                registers: Vec::new(),
+                intermediate: 0,
             }
         // instructions with 1 argument in the end
         // ADD
@@ -80,16 +81,20 @@ impl Assembler {
             && !matches!(InstructionRegister::decode(&byte[5..]), InstructionRegister::INVALID) {
                 
             Instruction {
+                variant: InstructionType::SingleRegInstruction,
                 command: InstructionCommand::ADD,
-                arguments: vec![InstructionRegister::decode(&byte[5..])],
+                registers: vec![InstructionRegister::decode(&byte[5..])],
+                intermediate: 0,
             }
         // SUB
         } else if &byte[0..5] == &[1, 0, 0, 1, 0] 
             && !matches!(InstructionRegister::decode(&byte[5..]), InstructionRegister::INVALID) {
                 
             Instruction {
+                variant: InstructionType::SingleRegInstruction,
                 command: InstructionCommand::SUB,
-                arguments: vec![InstructionRegister::decode(&byte[5..])],
+                registers: vec![InstructionRegister::decode(&byte[5..])],
+                intermediate: 0,
             }
         // instructions with 1 argument in the middle
         // INR
@@ -97,18 +102,22 @@ impl Assembler {
             && !matches!(InstructionRegister::decode(&byte[2..5]), InstructionRegister::INVALID) {
                 
             Instruction {
+                variant: InstructionType::SingleRegInstruction,
                 command: InstructionCommand::INR,
-                arguments: vec![InstructionRegister::decode(&byte[2..5])],
+                registers: vec![InstructionRegister::decode(&byte[2..5])],
+                intermediate: 0,
             }
         // DCR
         } else if &byte[0..2] == &[0, 0] && &byte[5..] == &[1, 0, 1] 
             && !matches!(InstructionRegister::decode(&byte[2..5]), InstructionRegister::INVALID) {
 
             Instruction {
+                variant: InstructionType::SingleRegInstruction,
                 command: InstructionCommand::DCR,
-                arguments: vec![InstructionRegister::decode(&byte[2..5])],
+                registers: vec![InstructionRegister::decode(&byte[2..5])],
+                intermediate: 0,
             }
-        // instructions with 2 arguments
+        // instructions with 2 registers
         // MOV
         } else if &byte[0..2] == &[0, 1]
             && !matches!(InstructionRegister::decode(&byte[2..5]), InstructionRegister::INVALID)
@@ -119,28 +128,13 @@ impl Assembler {
             args.push(InstructionRegister::decode(&byte[5..]));
             
             Instruction {
+                variant: InstructionType::DoubleRegInstruction,
                 command: InstructionCommand::MOV,
-                arguments: args,
+                registers: args,
+                intermediate: 0,
             }
         } else {
             panic!("Invalid instruction!");
         }
     }
-}
-
-#[derive(Debug)]
-pub struct Instruction {
-    pub command: InstructionCommand,
-    pub arguments: Vec<InstructionRegister>,
-}
-
-
-#[derive(Debug, EnumString)]
-pub enum InstructionCommand {
-    MOV,
-    ADD,
-    SUB,
-    INR,
-    DCR,
-    HLT,
 }

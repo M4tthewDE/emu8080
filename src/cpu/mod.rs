@@ -55,11 +55,11 @@ impl Cpu {
 
     fn execute(&mut self, instruction: &Instruction) {
         match instruction.command {
-            InstructionCommand::MOV => self.execute_mov(&instruction.arguments),
-            InstructionCommand::ADD => self.execute_add(&instruction.arguments),
-            InstructionCommand::SUB => self.execute_sub(&instruction.arguments),
-            InstructionCommand::INR => self.execute_inr(&instruction.arguments),
-            InstructionCommand::DCR => self.execute_dcr(&instruction.arguments),
+            InstructionCommand::MOV => self.execute_mov(&instruction.registers),
+            InstructionCommand::ADD => self.execute_add(&instruction.registers),
+            InstructionCommand::SUB => self.execute_sub(&instruction.registers),
+            InstructionCommand::INR => self.execute_inr(&instruction.registers),
+            InstructionCommand::DCR => self.execute_dcr(&instruction.registers),
             InstructionCommand::HLT => self.execute_hlt(),
         }        
     }
