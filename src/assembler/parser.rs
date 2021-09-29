@@ -30,7 +30,7 @@ pub fn parse() -> Vec<Instruction> {
                         variant: InstructionType::DoubleRegInstruction,
                         command: command,
                         registers: args,
-                        intermediate: 0,
+                        intermediate: Vec::new(),
                     }
                 )
             },
@@ -49,7 +49,7 @@ pub fn parse() -> Vec<Instruction> {
                         variant: InstructionType::SingleRegInstruction,
                         command: command,
                         registers: vec![arg],
-                        intermediate: 0,
+                        intermediate: Vec::new(),
                     }
                 )
             },
@@ -65,11 +65,39 @@ pub fn parse() -> Vec<Instruction> {
                         variant: InstructionType::NoRegInstruction,
                         command: command,
                         registers: Vec::new(),
-                        intermediate: 0,
+                        intermediate: Vec::new(),
                     }
                 )
             },
-            _=> panic!{"stop!"},
+            Rule::intermediate_instruction => {
+                let mut command = InstructionCommand::HLT;
+                let mut arg  = InstructionRegister::A;
+                let mut intermediate = Vec::new();
+                for (i, pair) in raw_instruction.into_inner().enumerate() {
+                    if i == 0 {
+                        command = InstructionCommand::from_str(pair.as_str()).unwrap();
+                    } else if i == 1 {
+                        arg = InstructionRegister::from_str(pair.as_str()).unwrap();
+                    } else if i == 2{
+                        for char in pair.as_str().chars() {
+                            if char == '0' {
+                                intermediate.push(0);
+                            } else {
+                                intermediate.push(1);
+                            }
+                        }
+                    }
+                }
+                instructions.push(
+                    Instruction {
+                        variant: InstructionType::IntermediateInstruction,
+                        command: command,
+                        registers: vec![arg],
+                        intermediate: intermediate,
+                    }
+                )
+            },
+            _=> panic!{"invalid rule!"},
         }
     }
     instructions
@@ -77,6 +105,7 @@ pub fn parse() -> Vec<Instruction> {
 
 #[derive(Debug, EnumString)]
 pub enum InstructionCommand {
+    MVI,
     MOV,
     ADD,
     SUB,
@@ -151,6 +180,7 @@ pub enum InstructionType {
     NoRegInstruction,
     SingleRegInstruction,
     DoubleRegInstruction,
+    IntermediateInstruction,
 }
 
 #[derive(Debug)]
@@ -158,12 +188,19 @@ pub struct Instruction {
     pub variant: InstructionType,
     pub command: InstructionCommand,
     pub registers: Vec<InstructionRegister>,
-    pub intermediate: u8,
+    pub intermediate: Vec<u8>,
 }
 
 impl Encoding for Instruction {
     fn encode(&self) -> Vec<Vec<u8>> {
         match self.command {
+            InstructionCommand::MVI => {
+                vec![[
+                &[0,0],
+                self.registers[0].encode(),
+                &[1,1,0]
+                ].concat(), self.intermediate.clone()]
+            }
             InstructionCommand::ADD => {
                 vec![[
                 &[1,0,0,0,0],

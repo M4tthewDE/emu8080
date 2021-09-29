@@ -56,85 +56,99 @@ impl Assembler {
     fn parse_binary_instructions(&self, raw_instructions: &Vec<&[u8]>) -> Vec<Instruction> {
         let mut instructions = Vec::new();
 
-        for raw_instruction in raw_instructions {
-            let instruction = self.decode_raw_intructions(raw_instruction);
+        let mut index = 0;
+        while index < raw_instructions.len() {
+            // pretty ugly, maybe there is a better solution with match or something
+
+            let instruction: Instruction;
+            // instructions that take up more than one byte (intermediates)
+            if raw_instructions[index][0..2] == [0, 0]
+                && !matches!(InstructionRegister::decode(&raw_instructions[index][2..5]), InstructionRegister::INVALID) &&
+                raw_instructions[index][5..] == [1, 1, 0] {
+
+                instruction = Instruction {
+                    variant: InstructionType::IntermediateInstruction,
+                    command: InstructionCommand::MVI,
+                    registers: vec![InstructionRegister::decode(&raw_instructions[index][2..5])],
+                    intermediate: raw_instructions[index+1].to_vec(),
+                };
+            // instructions without registers
+            // HLT
+            } else if raw_instructions[index] == &[0, 1, 1, 1, 0, 1, 1, 0] {
+                instruction = Instruction {
+                    variant: InstructionType::NoRegInstruction,
+                    command: InstructionCommand::HLT,
+                    registers: Vec::new(),
+                    intermediate: Vec::new(),
+                };
+            // instructions with 1 argument in the end
+            // ADD
+            } else if raw_instructions[index][0..5] == [1, 0, 0, 0, 0] 
+                && !matches!(InstructionRegister::decode(&raw_instructions[index][5..]), InstructionRegister::INVALID) {
+                    
+                instruction = Instruction {
+                    variant: InstructionType::SingleRegInstruction,
+                    command: InstructionCommand::ADD,
+                    registers: vec![InstructionRegister::decode(&raw_instructions[index][5..])],
+                    intermediate: Vec::new(),
+                }
+            // SUB
+            } else if raw_instructions[index][0..5] == [1, 0, 0, 1, 0] 
+                && !matches!(InstructionRegister::decode(&raw_instructions[index][5..]), InstructionRegister::INVALID) {
+                    
+                instruction = Instruction {
+                    variant: InstructionType::SingleRegInstruction,
+                    command: InstructionCommand::SUB,
+                    registers: vec![InstructionRegister::decode(&raw_instructions[index][5..])],
+                    intermediate: Vec::new(),
+                }
+            // instructions with 1 argument in the middle
+            // INR
+            } else if raw_instructions[index][0..2] == [0, 0] && raw_instructions[index][5..] == [1, 0, 0] 
+                && !matches!(InstructionRegister::decode(&raw_instructions[index][2..5]), InstructionRegister::INVALID) {
+                    
+                instruction = Instruction {
+                    variant: InstructionType::SingleRegInstruction,
+                    command: InstructionCommand::INR,
+                    registers: vec![InstructionRegister::decode(&raw_instructions[index][2..5])],
+                    intermediate: Vec::new(),
+                }
+            // DCR
+            } else if raw_instructions[index][0..2] == [0, 0] && raw_instructions[index][5..] == [1, 0, 1] 
+                && !matches!(InstructionRegister::decode(&raw_instructions[index][2..5]), InstructionRegister::INVALID) {
+
+                instruction = Instruction {
+                    variant: InstructionType::SingleRegInstruction,
+                    command: InstructionCommand::DCR,
+                    registers: vec![InstructionRegister::decode(&raw_instructions[index][2..5])],
+                    intermediate: Vec::new(),
+                }
+            // instructions with 2 registers
+            // MOV
+            } else if raw_instructions[index][0..2] == [0, 1]
+                && !matches!(InstructionRegister::decode(&raw_instructions[index][2..5]), InstructionRegister::INVALID)
+                && !matches!(InstructionRegister::decode(&raw_instructions[index][5..]), InstructionRegister::INVALID) {
+
+                let mut args = Vec::new();
+                args.push(InstructionRegister::decode(&raw_instructions[index][2..5]));
+                args.push(InstructionRegister::decode(&raw_instructions[index][5..]));
+                
+                instruction = Instruction {
+                    variant: InstructionType::DoubleRegInstruction,
+                    command: InstructionCommand::MOV,
+                    registers: args,
+                    intermediate: Vec::new(),
+                }
+            } else {
+                panic!("Invalid instruction!");
+            }
+            if matches!(instruction.variant, InstructionType::IntermediateInstruction) {
+                index +=2;
+            } else {
+                index +=1;
+            }
             instructions.push(instruction);
         }
-
         instructions
-    }
-
-    fn decode_raw_intructions(&self, byte: &[u8]) -> Instruction {
-        // pretty ugly, maybe there is a better solution with match or something
-        // instructions without registers
-        // HLT
-        if &byte == &[0, 1, 1, 1, 0, 1, 1, 0] {
-            Instruction {
-                variant: InstructionType::NoRegInstruction,
-                command: InstructionCommand::HLT,
-                registers: Vec::new(),
-                intermediate: 0,
-            }
-        // instructions with 1 argument in the end
-        // ADD
-        } else if &byte[0..5] == &[1, 0, 0, 0, 0] 
-            && !matches!(InstructionRegister::decode(&byte[5..]), InstructionRegister::INVALID) {
-                
-            Instruction {
-                variant: InstructionType::SingleRegInstruction,
-                command: InstructionCommand::ADD,
-                registers: vec![InstructionRegister::decode(&byte[5..])],
-                intermediate: 0,
-            }
-        // SUB
-        } else if &byte[0..5] == &[1, 0, 0, 1, 0] 
-            && !matches!(InstructionRegister::decode(&byte[5..]), InstructionRegister::INVALID) {
-                
-            Instruction {
-                variant: InstructionType::SingleRegInstruction,
-                command: InstructionCommand::SUB,
-                registers: vec![InstructionRegister::decode(&byte[5..])],
-                intermediate: 0,
-            }
-        // instructions with 1 argument in the middle
-        // INR
-        } else if &byte[0..2] == &[0, 0] && &byte[5..] == &[1, 0, 0] 
-            && !matches!(InstructionRegister::decode(&byte[2..5]), InstructionRegister::INVALID) {
-                
-            Instruction {
-                variant: InstructionType::SingleRegInstruction,
-                command: InstructionCommand::INR,
-                registers: vec![InstructionRegister::decode(&byte[2..5])],
-                intermediate: 0,
-            }
-        // DCR
-        } else if &byte[0..2] == &[0, 0] && &byte[5..] == &[1, 0, 1] 
-            && !matches!(InstructionRegister::decode(&byte[2..5]), InstructionRegister::INVALID) {
-
-            Instruction {
-                variant: InstructionType::SingleRegInstruction,
-                command: InstructionCommand::DCR,
-                registers: vec![InstructionRegister::decode(&byte[2..5])],
-                intermediate: 0,
-            }
-        // instructions with 2 registers
-        // MOV
-        } else if &byte[0..2] == &[0, 1]
-            && !matches!(InstructionRegister::decode(&byte[2..5]), InstructionRegister::INVALID)
-            && !matches!(InstructionRegister::decode(&byte[5..]), InstructionRegister::INVALID) {
-
-            let mut args = Vec::new();
-            args.push(InstructionRegister::decode(&byte[2..5]));
-            args.push(InstructionRegister::decode(&byte[5..]));
-            
-            Instruction {
-                variant: InstructionType::DoubleRegInstruction,
-                command: InstructionCommand::MOV,
-                registers: args,
-                intermediate: 0,
-            }
-        } else {
-            panic!("Invalid instruction!");
-        }
     }
 }

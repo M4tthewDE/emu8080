@@ -61,6 +61,7 @@ impl Cpu {
             InstructionCommand::INR => self.execute_inr(&instruction.registers),
             InstructionCommand::DCR => self.execute_dcr(&instruction.registers),
             InstructionCommand::HLT => self.execute_hlt(),
+            InstructionCommand::MVI => println!("{:?}", instruction),
         }        
     }
 
