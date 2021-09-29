@@ -3,6 +3,8 @@ use std::io::{BufRead, BufReader, Write, Read};
 use strum_macros::EnumString;
 use std::str::FromStr;
 
+mod parser;
+
 #[derive(Debug)]
 pub struct Assembler{
     input_asm: File,
@@ -20,6 +22,8 @@ impl Assembler {
     }
 
     pub fn assemble(&self) {
+        //let instructions = parser::parse();
+
         let instructions = self.parse_instructions();
 
         // write to file

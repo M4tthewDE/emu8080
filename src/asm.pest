@@ -1,0 +1,9 @@
+register = { "A" | "B" | "C" | "D" | "E" | "H" | "L" | "M" }
+
+single_reg_instruction = { ("ADD" | "SUB" | "INR" | "DCR") ~ register }
+double_reg_instruction = { "MOV" ~ register ~ "," ~ register }
+no_reg_instruction = { "HLT" }
+assembly = { ((double_reg_instruction | single_reg_instruction | no_reg_instruction) ~ "\n")+ }
+
+WHITESPACE = _{ " " }
+REGISTER = { "A" | "B" | "C" | "D" | "E" | "H" | "L" | "M" }
