@@ -2,6 +2,7 @@ use std::fs::File;
 use std::io::{Write, Read};
 use strum_macros::EnumString;
 use crate::assembler::parser::Encoding;
+pub use crate::assembler::parser::InstructionRegister;
 
 mod parser;
 
@@ -76,46 +77,46 @@ impl Assembler {
         // instructions with 1 argument in the end
         // ADD
         } else if &byte[0..5] == &[1, 0, 0, 0, 0] 
-            && !matches!(InstructionArgument::decode(&byte[5..]), InstructionArgument::INVALID) {
+            && !matches!(InstructionRegister::decode(&byte[5..]), InstructionRegister::INVALID) {
                 
             Instruction {
                 command: InstructionCommand::ADD,
-                arguments: vec![InstructionArgument::decode(&byte[5..])],
+                arguments: vec![InstructionRegister::decode(&byte[5..])],
             }
         // SUB
         } else if &byte[0..5] == &[1, 0, 0, 1, 0] 
-            && !matches!(InstructionArgument::decode(&byte[5..]), InstructionArgument::INVALID) {
+            && !matches!(InstructionRegister::decode(&byte[5..]), InstructionRegister::INVALID) {
                 
             Instruction {
                 command: InstructionCommand::SUB,
-                arguments: vec![InstructionArgument::decode(&byte[5..])],
+                arguments: vec![InstructionRegister::decode(&byte[5..])],
             }
         // instructions with 1 argument in the middle
         // INR
         } else if &byte[0..2] == &[0, 0] && &byte[5..] == &[1, 0, 0] 
-            && !matches!(InstructionArgument::decode(&byte[2..5]), InstructionArgument::INVALID) {
+            && !matches!(InstructionRegister::decode(&byte[2..5]), InstructionRegister::INVALID) {
                 
             Instruction {
                 command: InstructionCommand::INR,
-                arguments: vec![InstructionArgument::decode(&byte[2..5])],
+                arguments: vec![InstructionRegister::decode(&byte[2..5])],
             }
         // DCR
         } else if &byte[0..2] == &[0, 0] && &byte[5..] == &[1, 0, 1] 
-            && !matches!(InstructionArgument::decode(&byte[2..5]), InstructionArgument::INVALID) {
+            && !matches!(InstructionRegister::decode(&byte[2..5]), InstructionRegister::INVALID) {
 
             Instruction {
                 command: InstructionCommand::DCR,
-                arguments: vec![InstructionArgument::decode(&byte[2..5])],
+                arguments: vec![InstructionRegister::decode(&byte[2..5])],
             }
         // instructions with 2 arguments
         // MOV
         } else if &byte[0..2] == &[0, 1]
-            && !matches!(InstructionArgument::decode(&byte[2..5]), InstructionArgument::INVALID)
-            && !matches!(InstructionArgument::decode(&byte[5..]), InstructionArgument::INVALID) {
+            && !matches!(InstructionRegister::decode(&byte[2..5]), InstructionRegister::INVALID)
+            && !matches!(InstructionRegister::decode(&byte[5..]), InstructionRegister::INVALID) {
 
             let mut args = Vec::new();
-            args.push(InstructionArgument::decode(&byte[2..5]));
-            args.push(InstructionArgument::decode(&byte[5..]));
+            args.push(InstructionRegister::decode(&byte[2..5]));
+            args.push(InstructionRegister::decode(&byte[5..]));
             
             Instruction {
                 command: InstructionCommand::MOV,
@@ -130,7 +131,7 @@ impl Assembler {
 #[derive(Debug)]
 pub struct Instruction {
     pub command: InstructionCommand,
-    pub arguments: Vec<InstructionArgument>,
+    pub arguments: Vec<InstructionRegister>,
 }
 
 
@@ -142,47 +143,4 @@ pub enum InstructionCommand {
     INR,
     DCR,
     HLT,
-}
-
-#[derive(Debug, EnumString)]
-pub enum InstructionArgument {
-    A,
-    B,
-    C,
-    D,
-    E,
-    H,
-    L,
-    M,
-    INVALID,
-}
-
-impl InstructionArgument {
-    pub fn decode(raw_bytes: &[u8]) -> InstructionArgument {
-        match raw_bytes {
-            &[1,1,1] => InstructionArgument::A,
-            &[0,0,0] => InstructionArgument::B,
-            &[0,0,1] => InstructionArgument::C,
-            &[0,1,0] => InstructionArgument::D,
-            &[0,1,1] => InstructionArgument::E,
-            &[1,0,0] => InstructionArgument::H,
-            &[1,0,1] => InstructionArgument::L,
-            &[1,1,0] => InstructionArgument::M,
-            _ => InstructionArgument::INVALID,
-        }
-    }
-
-    pub fn to_index(&self) -> u8 {
-        match self {
-            InstructionArgument::A => 0,
-            InstructionArgument::B => 1,
-            InstructionArgument::C => 2,
-            InstructionArgument::D => 3,
-            InstructionArgument::E => 4,
-            InstructionArgument::H => 5,
-            InstructionArgument::L => 6,
-            InstructionArgument::M => 7,
-            _ => panic!("Invalid argument provided!")
-        }
-    }
 }

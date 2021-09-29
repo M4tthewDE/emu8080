@@ -1,4 +1,4 @@
-use crate::assembler::{Instruction, InstructionCommand, InstructionArgument};
+use crate::assembler::{Instruction, InstructionCommand, InstructionRegister};
 
 pub fn initialize_cpu() -> Cpu {
     let mut registers = Vec::new();
@@ -64,34 +64,34 @@ impl Cpu {
         }        
     }
 
-    fn execute_mov(&mut self, args: &Vec<InstructionArgument>) {
+    fn execute_mov(&mut self, args: &Vec<InstructionRegister>) {
         let source_value = self.get_register(args[0].to_index().into()).value;        
 
         let destination_index = args[1].to_index().into();
         self.change_register(destination_index, source_value);
     }
 
-    fn execute_add(&mut self, args: &Vec<InstructionArgument>) {
+    fn execute_add(&mut self, args: &Vec<InstructionRegister>) {
         let source_value = self.get_register(args[0].to_index().into()).value;        
         let current_a = self.get_register(0).value;
 
         self.change_register(0, current_a+source_value);
     }
 
-    fn execute_sub(&mut self, args: &Vec<InstructionArgument>) {
+    fn execute_sub(&mut self, args: &Vec<InstructionRegister>) {
         let source_value = self.get_register(args[0].to_index().into()).value;        
         let current_a = self.get_register(0).value;
 
         self.change_register(0, current_a-source_value);
     }
 
-    fn execute_inr(&mut self, args: &Vec<InstructionArgument>) {
+    fn execute_inr(&mut self, args: &Vec<InstructionRegister>) {
         let value = self.get_register(args[0].to_index().into()).value;        
 
         self.change_register(args[0].to_index().into(), value+1);
     }
 
-    fn execute_dcr(&mut self, args: &Vec<InstructionArgument>) {
+    fn execute_dcr(&mut self, args: &Vec<InstructionRegister>) {
         let value = self.get_register(args[0].to_index().into()).value;        
 
         self.change_register(args[0].to_index().into(), value-1);

@@ -95,6 +95,7 @@ pub enum InstructionRegister {
     H,
     L,
     M,
+    INVALID,
 }
 
 impl InstructionRegister {
@@ -108,6 +109,35 @@ impl InstructionRegister {
             InstructionRegister::H => &[1,0,0],
             InstructionRegister::L => &[1,0,1],
             InstructionRegister::M => &[1,1,0],
+            InstructionRegister::INVALID => {panic!("invalid register")},
+        }
+    }
+
+    pub fn decode(raw_bytes: &[u8]) -> InstructionRegister {
+        match raw_bytes {
+            &[1,1,1] => InstructionRegister::A,
+            &[0,0,0] => InstructionRegister::B,
+            &[0,0,1] => InstructionRegister::C,
+            &[0,1,0] => InstructionRegister::D,
+            &[0,1,1] => InstructionRegister::E,
+            &[1,0,0] => InstructionRegister::H,
+            &[1,0,1] => InstructionRegister::L,
+            &[1,1,0] => InstructionRegister::M,
+            _ => panic!("Invalid invalid register"),
+        }
+    }
+    
+    pub fn to_index(&self) -> u8 {
+        match self {
+            InstructionRegister::A => 0,
+            InstructionRegister::B => 1,
+            InstructionRegister::C => 2,
+            InstructionRegister::D => 3,
+            InstructionRegister::E => 4,
+            InstructionRegister::H => 5,
+            InstructionRegister::L => 6,
+            InstructionRegister::M => 7,
+            _ => panic!("Invalid argument provided!")
         }
     }
 }
