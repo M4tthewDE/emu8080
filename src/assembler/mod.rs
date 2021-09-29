@@ -25,7 +25,7 @@ impl Assembler {
         let instructions = parser::parse();
 
         // write to file
-        // TODO actually write hex data instead of binary as ASCII
+        // TODO maybe write hex data instead of binary
         let mut file = File::create(&self.output_bin_name).unwrap();
         for instruction in instructions {
             let encoding = &instruction.encode();
@@ -62,6 +62,7 @@ impl Assembler {
 
             let instruction: Instruction;
             // instructions that take up more than one byte (intermediates)
+            // MVI
             if raw_instructions[index][0..2] == [0, 0]
                 && !matches!(InstructionRegister::decode(&raw_instructions[index][2..5]), InstructionRegister::INVALID) &&
                 raw_instructions[index][5..] == [1, 1, 0] {
@@ -142,6 +143,8 @@ impl Assembler {
             } else {
                 panic!("Invalid instruction!");
             }
+
+            // skip next byte since its the intermediate of the instruction that was just parsed
             if matches!(instruction.variant, InstructionType::IntermediateInstruction) {
                 index +=2;
             } else {
