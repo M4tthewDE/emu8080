@@ -16,15 +16,16 @@ pub fn parse() -> Vec<Instruction> {
     for raw_instruction in file.into_inner() {
         match raw_instruction.as_rule() {
             Rule::double_reg_instruction => {
-                let mut command = InstructionCommand::HLT;
+                let mut pairs = raw_instruction.into_inner();
+
+                let command = InstructionCommand::from_str(pairs.peek().unwrap().as_str()).unwrap();
+                pairs.next();
+
                 let mut args = Vec::new();
-                for (i, pair) in raw_instruction.into_inner().enumerate() {
-                    if i == 0 {
-                        command = InstructionCommand::from_str(pair.as_str()).unwrap();
-                    } else {
-                        args.push(InstructionRegister::from_str(pair.as_str()).unwrap());
-                    }
-                }
+                args.push(InstructionRegister::from_str(pairs.peek().unwrap().as_str()).unwrap());
+                pairs.next();
+                args.push(InstructionRegister::from_str(pairs.peek().unwrap().as_str()).unwrap());
+
                 instructions.push(
                     Instruction {
                         variant: InstructionType::DoubleRegInstruction,
@@ -35,15 +36,12 @@ pub fn parse() -> Vec<Instruction> {
                 )
             },
             Rule::single_reg_instruction => {
-                let mut command = InstructionCommand::HLT;
-                let mut arg = InstructionRegister::A;
-                for (i, pair) in raw_instruction.into_inner().enumerate() {
-                    if i == 0 {
-                        command = InstructionCommand::from_str(pair.as_str()).unwrap();
-                    } else {
-                        arg = InstructionRegister::from_str(pair.as_str()).unwrap();
-                    }
-                }
+                let mut pairs = raw_instruction.into_inner();
+
+                let command = InstructionCommand::from_str(pairs.peek().unwrap().as_str()).unwrap();
+                pairs.next();
+                let arg = InstructionRegister::from_str(pairs.peek().unwrap().as_str()).unwrap();
+
                 instructions.push(
                     Instruction {
                         variant: InstructionType::SingleRegInstruction,
@@ -54,12 +52,9 @@ pub fn parse() -> Vec<Instruction> {
                 )
             },
             Rule::no_reg_instruction => {
-                let mut command = InstructionCommand::HLT;
-                for (i, pair) in raw_instruction.into_inner().enumerate() {
-                    if i == 0 {
-                        command = InstructionCommand::from_str(pair.as_str()).unwrap();
-                    }
-                }
+                let pairs = raw_instruction.into_inner();
+
+                let command = InstructionCommand::from_str(pairs.peek().unwrap().as_str()).unwrap();
                 instructions.push(
                     Instruction {
                         variant: InstructionType::NoRegInstruction,
@@ -70,22 +65,20 @@ pub fn parse() -> Vec<Instruction> {
                 )
             },
             Rule::intermediate_instruction => {
-                let mut command = InstructionCommand::HLT;
-                let mut arg  = InstructionRegister::A;
                 let mut intermediate = Vec::new();
-                for (i, pair) in raw_instruction.into_inner().enumerate() {
-                    if i == 0 {
-                        command = InstructionCommand::from_str(pair.as_str()).unwrap();
-                    } else if i == 1 {
-                        arg = InstructionRegister::from_str(pair.as_str()).unwrap();
-                    } else if i == 2{
-                        for char in pair.as_str().chars() {
-                            if char == '0' {
-                                intermediate.push(0);
-                            } else {
-                                intermediate.push(1);
-                            }
-                        }
+                let mut pairs = raw_instruction.into_inner();
+
+                let command = InstructionCommand::from_str(pairs.peek().unwrap().as_str()).unwrap();
+                pairs.next();
+
+                let arg = InstructionRegister::from_str(pairs.peek().unwrap().as_str()).unwrap();
+                pairs.next();
+
+                for char in pairs.as_str().chars() {
+                    if char == '0' {
+                        intermediate.push(0);
+                    } else {
+                        intermediate.push(1);
                     }
                 }
                 instructions.push(
