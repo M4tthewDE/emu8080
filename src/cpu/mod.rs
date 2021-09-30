@@ -233,4 +233,13 @@ mod tests {
         assert_eq!(cpu.get_register(0), &0);
         assert_eq!(cpu.get_flag(Flag::Z), 1);
     }
+
+    #[test]
+    fn test_flag_get_index() {
+        assert_eq!(Flag::S.get_index(), 0);
+        assert_eq!(Flag::Z.get_index(), 1);
+        assert_eq!(Flag::A.get_index(), 3);
+        assert_eq!(Flag::P.get_index(), 5);
+        assert_eq!(Flag::C.get_index(), 7);
+    }
 }
