@@ -208,6 +208,7 @@ mod tests {
 
         cpu.execute_sub(&InstructionRegister::A);
         assert_eq!(cpu.get_register(0), &0);
+        assert_eq!(cpu.flags[1], 1);
     }
 
     #[test]
