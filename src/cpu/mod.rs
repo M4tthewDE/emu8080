@@ -8,13 +8,17 @@ pub fn initialize_cpu() -> Cpu {
     }
 
     Cpu {
-        register: registers
+        register: registers,
+        flags: vec![0,0,0,0,0,0,0,0],
     }
 }
 
 #[derive(Debug)]
 pub struct Cpu {
-    register: Vec<u8>
+    register: Vec<u8>,
+
+    // S Z x A x P x C
+    flags: Vec<u8>,
 }
 
 impl Cpu {
@@ -28,14 +32,14 @@ impl Cpu {
 
     pub fn run(&mut self, instructions: &Vec<Instruction>) {
         println!("Initial status:");
-        self.get_status();
+        self.print_status();
 
         for instruction in instructions {
             println!("-------------");
             println!("{:?}", instruction);
 
             self.execute(instruction);
-            self.get_status();
+            self.print_status();
         }
     }
 
@@ -74,6 +78,12 @@ impl Cpu {
         let new_a = current_a+source_value;
 
         self.change_register(0, new_a);
+
+        if self.get_register(0) == &0 {
+            self.set_zero_flag(1);
+        } else {
+            self.set_zero_flag(0);
+        }
     }
 
     fn execute_sub(&mut self, args: &Vec<InstructionRegister>) {
@@ -82,30 +92,64 @@ impl Cpu {
         let new_a = current_a-source_value;
 
         self.change_register(0, new_a);
+
+        if self.get_register(0) == &0 {
+            self.set_zero_flag(1);
+        } else {
+            self.set_zero_flag(0);
+        }
     }
 
     fn execute_inr(&mut self, args: &Vec<InstructionRegister>) {
         let new_value = self.get_register(args[0].to_index().into())+1;        
 
         self.change_register(args[0].to_index().into(), new_value);
+
+        if self.get_register(0) == &0 {
+            self.set_zero_flag(1);
+        } else {
+            self.set_zero_flag(0);
+        }
     }
 
     fn execute_dcr(&mut self, args: &Vec<InstructionRegister>) {
         let new_value = self.get_register(args[0].to_index().into())-1;        
 
         self.change_register(args[0].to_index().into(), new_value);
+
+        if self.get_register(0) == &0 {
+            self.set_zero_flag(1);
+        } else {
+            self.set_zero_flag(0);
+        }
+    }
+
+    fn set_zero_flag(&mut self, value: u8) {
+       self.flags[1] = value; 
     }
 
     fn execute_hlt(&mut self) {
         println!("Execution finished");
         println!("Final status: ");
-        self.get_status();
+        self.print_status();
         std::process::exit(0);
     }
 
-    fn get_status(&self) {
+    fn print_status(&self) {
         for i in 0..7 {
             println!("{:?}: {:#010b}", i, self.get_register(i));
+        }
+        self.print_flags();
+    }
+
+    fn print_flags(&self) {
+        println!("Flags:");
+
+        let flags = vec!['S', 'Z', 'x', 'A', 'x', 'P', 'x', 'C'];
+        for (i, flag) in self.flags.iter().enumerate() {
+            if i != 2 && i != 4 && i != 6 {
+                println!("{}: {:?}", flags[i], flag);
+            }
         }
     }
 }
