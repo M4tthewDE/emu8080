@@ -4,7 +4,7 @@ use std::convert::TryFrom;
 pub fn initialize_cpu() -> Cpu {
     let mut registers = Vec::new();
     for _ in 0..7 {
-        registers.push(initialize_register(0));
+        registers.push(0);
     }
 
     Cpu {
@@ -12,29 +12,18 @@ pub fn initialize_cpu() -> Cpu {
     }
 }
 
-pub fn initialize_register(value: u8) -> Register {
-    Register {
-        value: value
-    }
-}
-
 #[derive(Debug)]
 pub struct Cpu {
-    register: Vec<Register>
-}
-
-#[derive(Debug)]
-pub struct Register {
-   value: u8 
+    register: Vec<u8>
 }
 
 impl Cpu {
-    fn get_register(&self, index: usize) -> &Register {
+    fn get_register(&self, index: usize) -> &u8{
         &self.register[index]
     }
 
     fn change_register(&mut self, index: usize, value: u8) {
-        self.register[index].value = value;
+        self.register[index] = value;
     }
 
     pub fn run(&mut self, instructions: &Vec<Instruction>) {
@@ -73,36 +62,38 @@ impl Cpu {
     }
 
     fn execute_mov(&mut self, args: &Vec<InstructionRegister>) {
-        let source_value = self.get_register(args[0].to_index().into()).value;        
+        let source_value = *self.get_register(args[0].to_index().into());        
 
         let destination_index = args[1].to_index().into();
         self.change_register(destination_index, source_value);
     }
 
     fn execute_add(&mut self, args: &Vec<InstructionRegister>) {
-        let source_value = self.get_register(args[0].to_index().into()).value;        
-        let current_a = self.get_register(0).value;
+        let source_value = self.get_register(args[0].to_index().into());        
+        let current_a = self.get_register(0);
+        let new_a = current_a+source_value;
 
-        self.change_register(0, current_a+source_value);
+        self.change_register(0, new_a);
     }
 
     fn execute_sub(&mut self, args: &Vec<InstructionRegister>) {
-        let source_value = self.get_register(args[0].to_index().into()).value;        
-        let current_a = self.get_register(0).value;
+        let source_value = self.get_register(args[0].to_index().into());        
+        let current_a = self.get_register(0);
+        let new_a = current_a-source_value;
 
-        self.change_register(0, current_a-source_value);
+        self.change_register(0, new_a);
     }
 
     fn execute_inr(&mut self, args: &Vec<InstructionRegister>) {
-        let value = self.get_register(args[0].to_index().into()).value;        
+        let new_value = self.get_register(args[0].to_index().into())+1;        
 
-        self.change_register(args[0].to_index().into(), value+1);
+        self.change_register(args[0].to_index().into(), new_value);
     }
 
     fn execute_dcr(&mut self, args: &Vec<InstructionRegister>) {
-        let value = self.get_register(args[0].to_index().into()).value;        
+        let new_value = self.get_register(args[0].to_index().into())-1;        
 
-        self.change_register(args[0].to_index().into(), value-1);
+        self.change_register(args[0].to_index().into(), new_value);
     }
 
     fn execute_hlt(&mut self) {
@@ -114,7 +105,7 @@ impl Cpu {
 
     fn get_status(&self) {
         for i in 0..7 {
-            println!("{:?}: {:#010b}", i, self.get_register(i).value);
+            println!("{:?}: {:#010b}", i, self.get_register(i));
         }
     }
 }
