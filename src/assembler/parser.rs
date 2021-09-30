@@ -89,6 +89,7 @@ pub fn parse(file_name: String) -> Vec<Instruction> {
                     }
                 )
             },
+            Rule::EOI => (),
             _=> panic!{"invalid rule!"},
         }
     }

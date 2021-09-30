@@ -9,6 +9,6 @@ intermediate_instruction = { intermediate_command ~ register ~ "," ~ intermediat
 single_reg_instruction = { single_reg_command ~ register }
 double_reg_instruction = { double_reg_command ~ register ~ "," ~ register }
 no_reg_instruction = { no_reg_command }
-assembly = { ((double_reg_instruction | single_reg_instruction | no_reg_instruction | intermediate_instruction) ~ "\n")+ }
+assembly = { ((double_reg_instruction | single_reg_instruction | no_reg_instruction | intermediate_instruction) ~ (EOI | NEWLINE))+ }
 
 WHITESPACE = _{ " " }
