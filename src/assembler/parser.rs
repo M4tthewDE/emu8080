@@ -231,3 +231,62 @@ impl Encoding for Instruction {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::InstructionRegister;
+
+    #[test]
+    fn test_register_encoding() {
+        assert_eq!(InstructionRegister::A.encode(), [1,1,1]);
+        assert_eq!(InstructionRegister::B.encode(), [0,0,0]);
+        assert_eq!(InstructionRegister::C.encode(), [0,0,1]);
+        assert_eq!(InstructionRegister::D.encode(), [0,1,0]);
+        assert_eq!(InstructionRegister::E.encode(), [0,1,1]);
+        assert_eq!(InstructionRegister::H.encode(), [1,0,0]);
+        assert_eq!(InstructionRegister::L.encode(), [1,0,1]);
+        assert_eq!(InstructionRegister::M.encode(), [1,1,0]);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_register_encoding_panic() {
+        InstructionRegister::INVALID.encode();
+    }
+
+    #[test]
+    fn test_register_decoding() {
+        assert!(matches!(InstructionRegister::decode(&[1,1,1]), InstructionRegister::A));
+        assert!(matches!(InstructionRegister::decode(&[0,0,0]), InstructionRegister::B));
+        assert!(matches!(InstructionRegister::decode(&[0,0,1]), InstructionRegister::C));
+        assert!(matches!(InstructionRegister::decode(&[0,1,0]), InstructionRegister::D));
+        assert!(matches!(InstructionRegister::decode(&[0,1,1]), InstructionRegister::E));
+        assert!(matches!(InstructionRegister::decode(&[1,0,0]), InstructionRegister::H));
+        assert!(matches!(InstructionRegister::decode(&[1,0,1]), InstructionRegister::L));
+        assert!(matches!(InstructionRegister::decode(&[1,1,0]), InstructionRegister::M));
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_register_decoding_panic() {
+        InstructionRegister::decode(&[1,1,1,1]);
+    }
+
+    #[test]
+    fn test_to_index() {
+        assert_eq!(InstructionRegister::A.to_index(), 0);
+        assert_eq!(InstructionRegister::B.to_index(), 1);
+        assert_eq!(InstructionRegister::C.to_index(), 2);
+        assert_eq!(InstructionRegister::D.to_index(), 3);
+        assert_eq!(InstructionRegister::E.to_index(), 4);
+        assert_eq!(InstructionRegister::H.to_index(), 5);
+        assert_eq!(InstructionRegister::L.to_index(), 6);
+        assert_eq!(InstructionRegister::M.to_index(), 7);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_register_to_index_panic() {
+        InstructionRegister::INVALID.to_index();
+    }
+}
