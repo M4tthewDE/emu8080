@@ -17,7 +17,7 @@ impl Assembler {
 
         Assembler {
             input_asm: input,
-            output_bin_name: output_bin_name,
+            output_bin_name,
         }
     }
 
@@ -53,7 +53,7 @@ impl Assembler {
         self.parse_binary_instructions(&raw_instructions)
     }
 
-    fn parse_binary_instructions(&self, raw_instructions: &Vec<&[u8]>) -> Vec<Instruction> {
+    fn parse_binary_instructions(&self, raw_instructions: &[&[u8]]) -> Vec<Instruction> {
         let mut instructions = Vec::new();
 
         let mut index = 0;
@@ -75,7 +75,7 @@ impl Assembler {
                 };
             // instructions without registers
             // HLT
-            } else if raw_instructions[index] == &[0, 1, 1, 1, 0, 1, 1, 0] {
+            } else if raw_instructions[index] == [0, 1, 1, 1, 0, 1, 1, 0] {
                 instruction = Instruction {
                     variant: InstructionType::NoRegInstruction,
                     command: InstructionCommand::HLT,
@@ -130,9 +130,10 @@ impl Assembler {
                 && !matches!(InstructionRegister::decode(&raw_instructions[index][2..5]), InstructionRegister::INVALID)
                 && !matches!(InstructionRegister::decode(&raw_instructions[index][5..]), InstructionRegister::INVALID) {
 
-                let mut args = Vec::new();
-                args.push(InstructionRegister::decode(&raw_instructions[index][2..5]));
-                args.push(InstructionRegister::decode(&raw_instructions[index][5..]));
+                let args = vec![
+                                InstructionRegister::decode(&raw_instructions[index][2..5]),
+                                InstructionRegister::decode(&raw_instructions[index][5..]),
+                            ];
                 
                 instruction = Instruction {
                     variant: InstructionType::DoubleRegInstruction,

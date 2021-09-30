@@ -21,15 +21,14 @@ pub fn parse() -> Vec<Instruction> {
                 let command = InstructionCommand::from_str(pairs.peek().unwrap().as_str()).unwrap();
                 pairs.next();
 
-                let mut args = Vec::new();
-                args.push(InstructionRegister::from_str(pairs.peek().unwrap().as_str()).unwrap());
+                let mut args = vec![InstructionRegister::from_str(pairs.peek().unwrap().as_str()).unwrap()];
                 pairs.next();
                 args.push(InstructionRegister::from_str(pairs.peek().unwrap().as_str()).unwrap());
 
                 instructions.push(
                     Instruction {
                         variant: InstructionType::DoubleRegInstruction,
-                        command: command,
+                        command,
                         registers: args,
                         intermediate: Vec::new(),
                     }
@@ -45,7 +44,7 @@ pub fn parse() -> Vec<Instruction> {
                 instructions.push(
                     Instruction {
                         variant: InstructionType::SingleRegInstruction,
-                        command: command,
+                        command,
                         registers: vec![arg],
                         intermediate: Vec::new(),
                     }
@@ -58,7 +57,7 @@ pub fn parse() -> Vec<Instruction> {
                 instructions.push(
                     Instruction {
                         variant: InstructionType::NoRegInstruction,
-                        command: command,
+                        command,
                         registers: Vec::new(),
                         intermediate: Vec::new(),
                     }
@@ -84,9 +83,9 @@ pub fn parse() -> Vec<Instruction> {
                 instructions.push(
                     Instruction {
                         variant: InstructionType::IntermediateInstruction,
-                        command: command,
+                        command,
                         registers: vec![arg],
-                        intermediate: intermediate,
+                        intermediate,
                     }
                 )
             },
@@ -136,15 +135,15 @@ impl InstructionRegister {
     }
 
     pub fn decode(raw_bytes: &[u8]) -> InstructionRegister {
-        match raw_bytes {
-            &[1,1,1] => InstructionRegister::A,
-            &[0,0,0] => InstructionRegister::B,
-            &[0,0,1] => InstructionRegister::C,
-            &[0,1,0] => InstructionRegister::D,
-            &[0,1,1] => InstructionRegister::E,
-            &[1,0,0] => InstructionRegister::H,
-            &[1,0,1] => InstructionRegister::L,
-            &[1,1,0] => InstructionRegister::M,
+        match *raw_bytes {
+            [1,1,1] => InstructionRegister::A,
+            [0,0,0] => InstructionRegister::B,
+            [0,0,1] => InstructionRegister::C,
+            [0,1,0] => InstructionRegister::D,
+            [0,1,1] => InstructionRegister::E,
+            [1,0,0] => InstructionRegister::H,
+            [1,0,1] => InstructionRegister::L,
+            [1,1,0] => InstructionRegister::M,
             _ => panic!("Invalid invalid register"),
         }
     }
