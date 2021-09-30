@@ -182,4 +182,13 @@ mod tests {
         cpu.execute_mvi(&InstructionRegister::A, &[0,0,0,0,1,1,1,0]);
         assert_eq!(cpu.get_register(0), &14);
     }
+
+    #[test]
+    fn test_execute_mov() {
+        let mut cpu = initialize_cpu();
+        cpu.change_register(0, 10);
+
+        cpu.execute_mov(&[InstructionRegister::A, InstructionRegister::B]);
+        assert_eq!(cpu.get_register(1), &10);
+    }
 }
