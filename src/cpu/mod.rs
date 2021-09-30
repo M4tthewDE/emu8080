@@ -1,5 +1,7 @@
 use crate::assembler::{Instruction, InstructionCommand, InstructionRegister};
 use std::convert::TryFrom;
+use strum::IntoEnumIterator;
+use strum_macros::EnumIter;
 
 pub fn initialize_cpu() -> Cpu {
     Cpu {
@@ -123,6 +125,10 @@ impl Cpu {
        self.flags[flag.get_index()] = value; 
     }
 
+    fn get_flag(&self, flag: Flag) -> u8 {
+        self.flags[flag.get_index()]
+    }
+
     fn execute_hlt(&mut self) {
         println!("Execution finished");
         println!("Final status: ");
@@ -139,17 +145,14 @@ impl Cpu {
 
     fn print_flags(&self) {
         println!("Flags:");
-
-        let flags = vec!['S', 'Z', 'x', 'A', 'x', 'P', 'x', 'C'];
-        for (i, flag) in self.flags.iter().enumerate() {
-            if i != 2 && i != 4 && i != 6 {
-                println!("{}: {:?}", flags[i], flag);
-            }
+        for flag in Flag::iter() {
+            println!("{:?}: {}", flag.clone(), self.get_flag(flag));
         }
     }
 }
 
 #[allow(dead_code)]
+#[derive(Debug, EnumIter, Clone)]
 enum Flag {
     S,
     Z,
@@ -173,7 +176,7 @@ impl Flag {
 #[cfg(test)]
 mod tests {
     use super::initialize_cpu;
-    use crate::cpu::{InstructionRegister};
+    use crate::cpu::{InstructionRegister, Flag};
 
     #[test]
     fn test_execute_mvi() {
@@ -208,7 +211,7 @@ mod tests {
 
         cpu.execute_sub(&InstructionRegister::A);
         assert_eq!(cpu.get_register(0), &0);
-        assert_eq!(cpu.flags[1], 1);
+        assert_eq!(cpu.get_flag(Flag::Z), 1);
     }
 
     #[test]
@@ -226,6 +229,6 @@ mod tests {
 
         cpu.execute_dcr(&InstructionRegister::A);
         assert_eq!(cpu.get_register(0), &0);
-        assert_eq!(cpu.flags[1], 1);
+        assert_eq!(cpu.get_flag(Flag::Z), 1);
     }
 }
