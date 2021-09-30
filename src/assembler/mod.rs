@@ -7,26 +7,24 @@ mod parser;
 
 #[derive(Debug)]
 pub struct Assembler{
-    input_asm: File,
-    output_bin_name: String,
+    input_asm: String,
+    output_bin: String,
 }
 
 impl Assembler {
-    pub fn new(input_asm_name: String, output_bin_name: String) -> Assembler {
-        let input = File::open(input_asm_name).unwrap();
-
+    pub fn new(input_asm: String, output_bin: String) -> Assembler {
         Assembler {
-            input_asm: input,
-            output_bin_name,
+            input_asm,
+            output_bin,
         }
     }
 
     pub fn assemble(&self) {
-        let instructions = parser::parse();
+        let instructions = parser::parse(self.input_asm.to_owned());
 
         // write to file
         // TODO maybe write hex data instead of binary
-        let mut file = File::create(&self.output_bin_name).unwrap();
+        let mut file = File::create(&self.output_bin).unwrap();
         for instruction in instructions {
             let encoding = &instruction.encode();
             for byte in encoding {
@@ -154,5 +152,81 @@ impl Assembler {
             instructions.push(instruction);
         }
         instructions
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::Assembler;
+    use std::fs::File;
+    use std::io::Read;
+    use super::parser::{InstructionType, InstructionCommand, InstructionRegister};
+
+    #[test]
+    fn test_new() {
+        let assembler = Assembler::new("test.asm".to_owned(), "output".to_owned());
+        assert_eq!("test.asm", assembler.input_asm);
+        assert_eq!("output", assembler.output_bin);
+    }
+
+    #[test]
+    fn test_assemble() {
+        let assembler = Assembler::new("test.asm".to_owned(), "output".to_owned());
+        assembler.assemble();
+
+        let mut file = File::open("output").unwrap();
+        let mut binary_data = Vec::new();
+
+        file.read_to_end(&mut binary_data).unwrap();
+
+        assert_eq!(binary_data.len() % 8, 0);
+
+        let mut bytes = binary_data.chunks(8);
+        assert_eq!(bytes.next().unwrap(), [0,0,1,1,1,1,1,0]);
+        assert_eq!(bytes.next().unwrap(), [0,0,0,1,1,1,0,0]);
+        assert_eq!(bytes.next().unwrap(), [0,1,1,1,1,0,0,0]);
+        assert_eq!(bytes.next().unwrap(), [1,0,0,0,0,1,1,1]);
+        assert_eq!(bytes.next().unwrap(), [1,0,0,1,0,1,1,1]);
+        assert_eq!(bytes.next().unwrap(), [0,0,1,1,1,1,0,0]);
+        assert_eq!(bytes.next().unwrap(), [0,0,1,1,1,1,0,1]);
+        assert_eq!(bytes.next().unwrap(), [0,1,1,1,0,1,1,0]);
+    }
+
+    #[test]
+    fn test_disassemble() {
+        let assembler = Assembler::new("test.asm".to_owned(), "output".to_owned());
+        assembler.assemble();
+
+        let instructions = assembler.disassemble("output".to_owned());
+        assert_eq!(instructions.len(), 7);
+
+        assert!(matches!(instructions[0].variant, InstructionType::IntermediateInstruction));
+        assert!(matches!(instructions[0].command, InstructionCommand::MVI));
+        assert!(matches!(instructions[0].registers[0], InstructionRegister::A));
+        assert_eq!(instructions[0].intermediate, [0,0,0,1,1,1,0,0]);
+
+        assert!(matches!(instructions[1].variant, InstructionType::DoubleRegInstruction));
+        assert!(matches!(instructions[1].command, InstructionCommand::MOV));
+        assert!(matches!(instructions[1].registers[0], InstructionRegister::A));
+        assert!(matches!(instructions[1].registers[1], InstructionRegister::B));
+
+        assert!(matches!(instructions[2].variant, InstructionType::SingleRegInstruction));
+        assert!(matches!(instructions[2].command, InstructionCommand::ADD));
+        assert!(matches!(instructions[2].registers[0], InstructionRegister::A));
+
+        assert!(matches!(instructions[3].variant, InstructionType::SingleRegInstruction));
+        assert!(matches!(instructions[3].command, InstructionCommand::SUB));
+        assert!(matches!(instructions[3].registers[0], InstructionRegister::A));
+
+        assert!(matches!(instructions[4].variant, InstructionType::SingleRegInstruction));
+        assert!(matches!(instructions[4].command, InstructionCommand::INR));
+        assert!(matches!(instructions[4].registers[0], InstructionRegister::A));
+
+        assert!(matches!(instructions[5].variant, InstructionType::SingleRegInstruction));
+        assert!(matches!(instructions[5].command, InstructionCommand::DCR));
+        assert!(matches!(instructions[5].registers[0], InstructionRegister::A));
+
+        assert!(matches!(instructions[6].variant, InstructionType::NoRegInstruction));
+        assert!(matches!(instructions[6].command, InstructionCommand::HLT));
     }
 }
