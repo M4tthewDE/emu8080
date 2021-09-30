@@ -45,7 +45,7 @@ impl Cpu {
             InstructionCommand::ADD => self.execute_add(&instruction.registers[0]),
             InstructionCommand::SUB => self.execute_sub(&instruction.registers[0]),
             InstructionCommand::INR => self.execute_inr(&instruction.registers[0]),
-            InstructionCommand::DCR => self.execute_dcr(&instruction.registers),
+            InstructionCommand::DCR => self.execute_dcr(&instruction.registers[0]),
             InstructionCommand::HLT => self.execute_hlt(),
         }        
     }
@@ -107,10 +107,10 @@ impl Cpu {
         }
     }
 
-    fn execute_dcr(&mut self, args: &[InstructionRegister]) {
-        let new_value = self.get_register(args[0].to_index().into())-1;        
+    fn execute_dcr(&mut self, arg: &InstructionRegister) {
+        let new_value = self.get_register(arg.to_index().into())-1;        
 
-        self.change_register(args[0].to_index().into(), new_value);
+        self.change_register(arg.to_index().into(), new_value);
 
         if self.get_register(0) == &0 {
             self.set_flag(Flag::Z, 1);
@@ -217,5 +217,15 @@ mod tests {
 
         cpu.execute_inr(&InstructionRegister::A);
         assert_eq!(cpu.get_register(0), &1);
+    }
+
+    #[test]
+    fn test_execute_dcr() {
+        let mut cpu = initialize_cpu();
+        cpu.change_register(0, 1);
+
+        cpu.execute_dcr(&InstructionRegister::A);
+        assert_eq!(cpu.get_register(0), &0);
+        assert_eq!(cpu.flags[1], 1);
     }
 }
