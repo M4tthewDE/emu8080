@@ -40,18 +40,18 @@ impl Cpu {
 
     fn execute(&mut self, instruction: &Instruction) {
         match instruction.command {
-            InstructionCommand::MVI => self.execute_mvi(&instruction.registers, &instruction.intermediate),
+            InstructionCommand::MVI => self.execute_mvi(&instruction.registers[0], &instruction.intermediate),
             InstructionCommand::MOV => self.execute_mov(&instruction.registers),
-            InstructionCommand::ADD => self.execute_add(&instruction.registers),
-            InstructionCommand::SUB => self.execute_sub(&instruction.registers),
-            InstructionCommand::INR => self.execute_inr(&instruction.registers),
-            InstructionCommand::DCR => self.execute_dcr(&instruction.registers),
+            InstructionCommand::ADD => self.execute_add(&instruction.registers[0]),
+            InstructionCommand::SUB => self.execute_sub(&instruction.registers[0]),
+            InstructionCommand::INR => self.execute_inr(&instruction.registers[0]),
+            InstructionCommand::DCR => self.execute_dcr(&instruction.registers[0]),
             InstructionCommand::HLT => self.execute_hlt(),
         }        
     }
 
-    fn execute_mvi(&mut self, args: &[InstructionRegister], intermediate: &[u8]) {
-        let destination_index = args[0].to_index().into();
+    fn execute_mvi(&mut self, arg: &InstructionRegister, intermediate: &[u8]) {
+        let destination_index = arg.to_index().into();
 
         let mut value = 0;
         for (index, digit) in intermediate.iter().rev().enumerate() {
@@ -67,8 +67,8 @@ impl Cpu {
         self.change_register(destination_index, source_value);
     }
 
-    fn execute_add(&mut self, args: &[InstructionRegister]) {
-        let source_value = self.get_register(args[0].to_index().into());        
+    fn execute_add(&mut self, arg: &InstructionRegister) {
+        let source_value = self.get_register(arg.to_index().into());        
         let current_a = self.get_register(0);
         let new_a = current_a+source_value;
 
@@ -81,8 +81,8 @@ impl Cpu {
         }
     }
 
-    fn execute_sub(&mut self, args: &[InstructionRegister]) {
-        let source_value = self.get_register(args[0].to_index().into());        
+    fn execute_sub(&mut self, args: &InstructionRegister) {
+        let source_value = self.get_register(args.to_index().into());        
         let current_a = self.get_register(0);
         let new_a = current_a-source_value;
 
@@ -95,10 +95,10 @@ impl Cpu {
         }
     }
 
-    fn execute_inr(&mut self, args: &[InstructionRegister]) {
-        let new_value = self.get_register(args[0].to_index().into())+1;        
+    fn execute_inr(&mut self, arg: &InstructionRegister) {
+        let new_value = self.get_register(arg.to_index().into())+1;        
 
-        self.change_register(args[0].to_index().into(), new_value);
+        self.change_register(arg.to_index().into(), new_value);
 
         if self.get_register(0) == &0 {
             self.set_flag(Flag::Z, 1);
@@ -107,10 +107,10 @@ impl Cpu {
         }
     }
 
-    fn execute_dcr(&mut self, args: &[InstructionRegister]) {
-        let new_value = self.get_register(args[0].to_index().into())-1;        
+    fn execute_dcr(&mut self, arg: &InstructionRegister) {
+        let new_value = self.get_register(arg.to_index().into())-1;        
 
-        self.change_register(args[0].to_index().into(), new_value);
+        self.change_register(arg.to_index().into(), new_value);
 
         if self.get_register(0) == &0 {
             self.set_flag(Flag::Z, 1);
@@ -167,5 +167,65 @@ impl Flag {
             Flag::P => 5,
             Flag::C => 7,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::initialize_cpu;
+    use crate::cpu::{InstructionRegister};
+
+    #[test]
+    fn test_execute_mvi() {
+        let mut cpu = initialize_cpu();
+
+        cpu.execute_mvi(&InstructionRegister::A, &[0,0,0,0,1,1,1,0]);
+        assert_eq!(cpu.get_register(0), &14);
+    }
+
+    #[test]
+    fn test_execute_mov() {
+        let mut cpu = initialize_cpu();
+        cpu.change_register(0, 10);
+
+        cpu.execute_mov(&[InstructionRegister::A, InstructionRegister::B]);
+        assert_eq!(cpu.get_register(1), &10);
+    }
+
+    #[test]
+    fn test_execute_add() {
+        let mut cpu = initialize_cpu();
+        cpu.change_register(0, 5);
+
+        cpu.execute_add(&InstructionRegister::A);
+        assert_eq!(cpu.get_register(0), &10);
+    }
+
+    #[test]
+    fn test_execute_sub() {
+        let mut cpu = initialize_cpu();
+        cpu.change_register(0, 5);
+
+        cpu.execute_sub(&InstructionRegister::A);
+        assert_eq!(cpu.get_register(0), &0);
+        assert_eq!(cpu.flags[1], 1);
+    }
+
+    #[test]
+    fn test_execute_inr() {
+        let mut cpu = initialize_cpu();
+
+        cpu.execute_inr(&InstructionRegister::A);
+        assert_eq!(cpu.get_register(0), &1);
+    }
+
+    #[test]
+    fn test_execute_dcr() {
+        let mut cpu = initialize_cpu();
+        cpu.change_register(0, 1);
+
+        cpu.execute_dcr(&InstructionRegister::A);
+        assert_eq!(cpu.get_register(0), &0);
+        assert_eq!(cpu.flags[1], 1);
     }
 }

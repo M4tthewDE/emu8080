@@ -7,8 +7,8 @@ use std::str::FromStr;
 #[grammar = "asm.pest"]
 pub struct AssemblyParser;
 
-pub fn parse() -> Vec<Instruction> {
-    let unparsed_file = fs::read_to_string("test.asm").unwrap();
+pub fn parse(file_name: String) -> Vec<Instruction> {
+    let unparsed_file = fs::read_to_string(file_name).unwrap();
 
     let file = AssemblyParser::parse(Rule::assembly, &unparsed_file).expect("unsuccessful parse").next().unwrap();
 
