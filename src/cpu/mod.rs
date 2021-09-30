@@ -42,7 +42,7 @@ impl Cpu {
         match instruction.command {
             InstructionCommand::MVI => self.execute_mvi(&instruction.registers[0], &instruction.intermediate),
             InstructionCommand::MOV => self.execute_mov(&instruction.registers),
-            InstructionCommand::ADD => self.execute_add(&instruction.registers),
+            InstructionCommand::ADD => self.execute_add(&instruction.registers[0]),
             InstructionCommand::SUB => self.execute_sub(&instruction.registers),
             InstructionCommand::INR => self.execute_inr(&instruction.registers),
             InstructionCommand::DCR => self.execute_dcr(&instruction.registers),
@@ -67,8 +67,8 @@ impl Cpu {
         self.change_register(destination_index, source_value);
     }
 
-    fn execute_add(&mut self, args: &[InstructionRegister]) {
-        let source_value = self.get_register(args[0].to_index().into());        
+    fn execute_add(&mut self, arg: &InstructionRegister) {
+        let source_value = self.get_register(arg.to_index().into());        
         let current_a = self.get_register(0);
         let new_a = current_a+source_value;
 
@@ -190,5 +190,14 @@ mod tests {
 
         cpu.execute_mov(&[InstructionRegister::A, InstructionRegister::B]);
         assert_eq!(cpu.get_register(1), &10);
+    }
+
+    #[test]
+    fn test_execute_add() {
+        let mut cpu = initialize_cpu();
+        cpu.change_register(0, 5);
+
+        cpu.execute_add(&InstructionRegister::A);
+        assert_eq!(cpu.get_register(0), &10);
     }
 }
