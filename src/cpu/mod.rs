@@ -199,9 +199,11 @@ mod tests {
     fn test_execute_add() {
         let mut cpu = initialize_cpu();
         cpu.change_register(0, 5);
+        cpu.set_flag(Flag::Z, 1);
 
         cpu.execute_add(&InstructionRegister::A);
         assert_eq!(cpu.get_register(0), &10);
+        assert_eq!(cpu.get_flag(Flag::Z), 0);
     }
 
     #[test]
