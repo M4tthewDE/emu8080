@@ -40,7 +40,7 @@ impl Cpu {
 
     fn execute(&mut self, instruction: &Instruction) {
         match instruction.command {
-            InstructionCommand::MVI => self.execute_mvi(&instruction.registers, &instruction.intermediate),
+            InstructionCommand::MVI => self.execute_mvi(&instruction.registers[0], &instruction.intermediate),
             InstructionCommand::MOV => self.execute_mov(&instruction.registers),
             InstructionCommand::ADD => self.execute_add(&instruction.registers),
             InstructionCommand::SUB => self.execute_sub(&instruction.registers),
@@ -50,8 +50,8 @@ impl Cpu {
         }        
     }
 
-    fn execute_mvi(&mut self, args: &[InstructionRegister], intermediate: &[u8]) {
-        let destination_index = args[0].to_index().into();
+    fn execute_mvi(&mut self, arg: &InstructionRegister, intermediate: &[u8]) {
+        let destination_index = arg.to_index().into();
 
         let mut value = 0;
         for (index, digit) in intermediate.iter().rev().enumerate() {
@@ -167,5 +167,19 @@ impl Flag {
             Flag::P => 5,
             Flag::C => 7,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::initialize_cpu;
+    use crate::cpu::{InstructionRegister};
+
+    #[test]
+    fn test_execute_mvi() {
+        let mut cpu = initialize_cpu();
+
+        cpu.execute_mvi(&InstructionRegister::A, &[0,0,0,0,1,1,1,0]);
+        assert_eq!(cpu.get_register(0), &14);
     }
 }
