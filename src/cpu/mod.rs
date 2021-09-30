@@ -80,9 +80,9 @@ impl Cpu {
         self.change_register(0, new_a);
 
         if self.get_register(0) == &0 {
-            self.set_zero_flag(1);
+            self.set_flag(Flag::Z, 1);
         } else {
-            self.set_zero_flag(0);
+            self.set_flag(Flag::Z, 0);
         }
     }
 
@@ -94,9 +94,9 @@ impl Cpu {
         self.change_register(0, new_a);
 
         if self.get_register(0) == &0 {
-            self.set_zero_flag(1);
+            self.set_flag(Flag::Z, 1);
         } else {
-            self.set_zero_flag(0);
+            self.set_flag(Flag::Z, 0);
         }
     }
 
@@ -106,9 +106,9 @@ impl Cpu {
         self.change_register(args[0].to_index().into(), new_value);
 
         if self.get_register(0) == &0 {
-            self.set_zero_flag(1);
+            self.set_flag(Flag::Z, 1);
         } else {
-            self.set_zero_flag(0);
+            self.set_flag(Flag::Z, 0);
         }
     }
 
@@ -118,14 +118,14 @@ impl Cpu {
         self.change_register(args[0].to_index().into(), new_value);
 
         if self.get_register(0) == &0 {
-            self.set_zero_flag(1);
+            self.set_flag(Flag::Z, 1);
         } else {
-            self.set_zero_flag(0);
+            self.set_flag(Flag::Z, 0);
         }
     }
 
-    fn set_zero_flag(&mut self, value: u8) {
-       self.flags[1] = value; 
+    fn set_flag(&mut self, flag: Flag, value: u8) {
+       self.flags[flag.get_index()] = value; 
     }
 
     fn execute_hlt(&mut self) {
@@ -150,6 +150,27 @@ impl Cpu {
             if i != 2 && i != 4 && i != 6 {
                 println!("{}: {:?}", flags[i], flag);
             }
+        }
+    }
+}
+
+#[allow(dead_code)]
+enum Flag {
+    S,
+    Z,
+    A,
+    P,
+    C,
+}
+
+impl Flag {
+    pub fn get_index(&self) -> usize {
+        match self {
+            Flag::S => 0,
+            Flag::Z => 1,
+            Flag::A => 3,
+            Flag::P => 5,
+            Flag::C => 7,
         }
     }
 }
