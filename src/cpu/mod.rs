@@ -204,7 +204,7 @@ impl Cpu {
 
     fn print_status(&self) {
         for i in 0..7 {
-            println!("{}: {:#010b}", i, self.get_register(i));
+            println!("{}: {:#010b} ({})", i, self.get_register(i), self.get_register(i));
         }
         self.print_flags();
     }
