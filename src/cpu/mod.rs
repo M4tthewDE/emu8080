@@ -89,6 +89,12 @@ impl Cpu {
         } else {
             self.set_flag(Flag::Z, 0);
         }
+
+        if self.get_register(0) < &0 {
+            self.set_flag(Flag::S, 1);
+        } else {
+            self.set_flag(Flag::S, 0);
+        }
     }
 
     fn execute_sub(&mut self, args: &InstructionRegister) {
@@ -103,6 +109,12 @@ impl Cpu {
         } else {
             self.set_flag(Flag::Z, 0);
         }
+
+        if self.get_register(0) < &0 {
+            self.set_flag(Flag::S, 1);
+        } else {
+            self.set_flag(Flag::S, 0);
+        }
     }
 
     fn execute_inr(&mut self, arg: &InstructionRegister) {
@@ -115,6 +127,12 @@ impl Cpu {
         } else {
             self.set_flag(Flag::Z, 0);
         }
+
+        if self.get_register(0) < &0 {
+            self.set_flag(Flag::S, 1);
+        } else {
+            self.set_flag(Flag::S, 0);
+        }
     }
 
     fn execute_dcr(&mut self, arg: &InstructionRegister) {
@@ -126,6 +144,12 @@ impl Cpu {
             self.set_flag(Flag::Z, 1);
         } else {
             self.set_flag(Flag::Z, 0);
+        }
+
+        if self.get_register(0) < &0 {
+            self.set_flag(Flag::S, 1);
+        } else {
+            self.set_flag(Flag::S, 0);
         }
     }
 
@@ -250,7 +274,7 @@ mod tests {
         cpu.change_register(0, -5);
         cpu.execute_add(&InstructionRegister::A);
         assert_eq!(cpu.get_register(0), &-10);
-        assert_eq!(cpu.get_flag(Flag::Z), 0);
+        assert_eq!(cpu.get_flag(Flag::S), 1);
     }
 
     #[test]
@@ -277,6 +301,7 @@ mod tests {
         cpu.change_register(0, -2);
         cpu.execute_inr(&InstructionRegister::A);
         assert_eq!(cpu.get_register(0), &-1);
+        assert_eq!(cpu.get_flag(Flag::S), 1);
     }
 
     #[test]
@@ -292,6 +317,7 @@ mod tests {
 
         cpu.execute_dcr(&InstructionRegister::A);
         assert_eq!(cpu.get_register(0), &-2);
+        assert_eq!(cpu.get_flag(Flag::S), 1);
     }
 
     #[test]
