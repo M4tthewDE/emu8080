@@ -12,18 +12,18 @@ pub fn initialize_cpu() -> Cpu {
 
 #[derive(Debug)]
 pub struct Cpu {
-    register: Vec<u8>,
+    register: Vec<i8>,
 
     // S Z x A x P x C
     flags: Vec<u8>,
 }
 
 impl Cpu {
-    fn get_register(&self, index: usize) -> &u8{
+    fn get_register(&self, index: usize) -> &i8{
         &self.register[index]
     }
 
-    fn change_register(&mut self, index: usize, value: u8) {
+    fn change_register(&mut self, index: usize, value: i8) {
         self.register[index] = value;
     }
 
@@ -55,11 +55,19 @@ impl Cpu {
     fn execute_mvi(&mut self, arg: &InstructionRegister, intermediate: &[u8]) {
         let destination_index = arg.to_index().into();
 
+        let mut x = vec![0; 8];
+        x[0..].clone_from_slice(intermediate);
+
         let mut value = 0;
-        for (index, digit) in intermediate.iter().rev().enumerate() {
-            value += digit*u8::pow(2, u32::try_from(index).unwrap());
+        if intermediate[0] == 1 {
+            value = self.twocomplement_to_int(&mut x); 
+        } else {
+            for (index, digit) in intermediate.iter().rev().enumerate() {
+                value += (digit*u8::pow(2, u32::try_from(index).unwrap())) as i8;
+            }
         }
-       self.change_register(destination_index, value); 
+
+        self.change_register(destination_index, value); 
     }
 
     fn execute_mov(&mut self, args: &[InstructionRegister]) {
@@ -136,9 +144,43 @@ impl Cpu {
         std::process::exit(0);
     }
 
+    // only needed if the first bit is 1
+    fn twocomplement_to_int(&self, intermediate: &mut [u8]) -> i8 {
+        // subtract 1 from intermediate
+        let mut index = intermediate.len()-1;
+        while index > 0  {
+            if intermediate[index] == 1 {
+                intermediate[index] = 0;
+                break;
+            } else {
+                intermediate[index] = 1;
+            }
+            index -= 1;
+        } 
+
+        // build complement
+        index = 0;
+        while index < intermediate.len() {
+            if intermediate[index] == 0 {
+                intermediate[index] = 1;
+            } else {
+                intermediate[index] = 0;
+            }
+            index += 1;
+        }
+
+        // calculate binary to decimal
+        let mut value = 0;
+        for (index, digit) in intermediate.iter().rev().enumerate() {
+            value += digit*u8::pow(2, u32::try_from(index).unwrap());
+        }
+
+        -(value as i8)
+    }
+
     fn print_status(&self) {
         for i in 0..7 {
-            println!("{:?}: {:#010b}", i, self.get_register(i));
+            println!("{}: {:#010b}", i, self.get_register(i));
         }
         self.print_flags();
     }
@@ -204,6 +246,11 @@ mod tests {
         cpu.execute_add(&InstructionRegister::A);
         assert_eq!(cpu.get_register(0), &10);
         assert_eq!(cpu.get_flag(Flag::Z), 0);
+
+        cpu.change_register(0, -5);
+        cpu.execute_add(&InstructionRegister::A);
+        assert_eq!(cpu.get_register(0), &-10);
+        assert_eq!(cpu.get_flag(Flag::Z), 0);
     }
 
     #[test]
@@ -214,6 +261,10 @@ mod tests {
         cpu.execute_sub(&InstructionRegister::A);
         assert_eq!(cpu.get_register(0), &0);
         assert_eq!(cpu.get_flag(Flag::Z), 1);
+
+        cpu.change_register(0, -5);
+        cpu.execute_sub(&InstructionRegister::A);
+        assert_eq!(cpu.get_register(0), &0);
     }
 
     #[test]
@@ -222,6 +273,10 @@ mod tests {
 
         cpu.execute_inr(&InstructionRegister::A);
         assert_eq!(cpu.get_register(0), &1);
+
+        cpu.change_register(0, -2);
+        cpu.execute_inr(&InstructionRegister::A);
+        assert_eq!(cpu.get_register(0), &-1);
     }
 
     #[test]
@@ -232,6 +287,11 @@ mod tests {
         cpu.execute_dcr(&InstructionRegister::A);
         assert_eq!(cpu.get_register(0), &0);
         assert_eq!(cpu.get_flag(Flag::Z), 1);
+
+        cpu.change_register(0, -1);
+
+        cpu.execute_dcr(&InstructionRegister::A);
+        assert_eq!(cpu.get_register(0), &-2);
     }
 
     #[test]
@@ -241,5 +301,14 @@ mod tests {
         assert_eq!(Flag::A.get_index(), 3);
         assert_eq!(Flag::P.get_index(), 5);
         assert_eq!(Flag::C.get_index(), 7);
+    }
+
+    #[test]
+    fn test_twocomplement_to_int() {
+        let cpu = initialize_cpu();
+
+        let mut intermediate = [1,1,1,1,0,0,0,1];
+        let result = cpu.twocomplement_to_int(&mut intermediate);
+        assert_eq!(result, -15);
     }
 }
