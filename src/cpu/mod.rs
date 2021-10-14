@@ -43,6 +43,7 @@ impl Cpu {
     fn execute(&mut self, instruction: &Instruction) {
         match instruction.command {
             InstructionCommand::MVI => self.execute_mvi(&instruction.registers[0], &instruction.intermediate),
+            InstructionCommand::ADI => self.execute_adi(&instruction.intermediate),
             InstructionCommand::MOV => self.execute_mov(&instruction.registers),
             InstructionCommand::ADD => self.execute_add(&instruction.registers[0]),
             InstructionCommand::SUB => self.execute_sub(&instruction.registers[0]),
@@ -59,16 +60,32 @@ impl Cpu {
         let mut x = vec![0; 8];
         x[0..].clone_from_slice(intermediate);
 
-        let mut value = 0;
-        if intermediate[0] == 1 {
-            value = self.twocomplement_to_int(&mut x); 
-        } else {
-            for (index, digit) in intermediate.iter().rev().enumerate() {
-                value += (digit*u8::pow(2, u32::try_from(index).unwrap())) as i8;
-            }
-        }
+        let value = self.binary_to_int(&mut x); 
 
         self.change_register(destination_index, value); 
+    }
+
+    fn execute_adi(&mut self, intermediate: &[u8]) {
+        let mut x = vec![0; 8];
+        x[0..].clone_from_slice(intermediate);
+
+        let source_value = self.binary_to_int(&mut x);        
+        let current_a = self.get_register(0);
+        let new_a = current_a+source_value;
+
+        self.change_register(0, new_a);
+
+        if self.get_register(0) == &0 {
+            self.set_flag(Flag::Z, 1);
+        } else {
+            self.set_flag(Flag::Z, 0);
+        }
+
+        if self.get_register(0) < &0 {
+            self.set_flag(Flag::S, 1);
+        } else {
+            self.set_flag(Flag::S, 0);
+        }
     }
 
     fn execute_mov(&mut self, args: &[InstructionRegister]) {
@@ -166,7 +183,7 @@ impl Cpu {
 
         let mut value = 0;
         if binary_a[0] == 1 {
-            value = self.twocomplement_to_int(&mut binary_a);
+            value = self.binary_to_int(&mut binary_a);
         } else {
             for (index, digit) in binary_a.iter().rev().enumerate() {
                 value += (digit*u8::pow(2, u32::try_from(index).unwrap())) as i8;
@@ -190,38 +207,44 @@ impl Cpu {
         std::process::exit(0);
     }
 
-    // only needed if the first bit is 1
-    fn twocomplement_to_int(&self, intermediate: &mut [u8]) -> i8 {
-        // subtract 1 from intermediate
-        let mut index = intermediate.len()-1;
-        while index > 0  {
-            if intermediate[index] == 1 {
-                intermediate[index] = 0;
-                break;
-            } else {
-                intermediate[index] = 1;
+    fn binary_to_int(&self, intermediate: &mut [u8]) -> i8 {
+        if intermediate[0] == 1 {
+            // subtract 1 from intermediate
+            let mut index = intermediate.len()-1;
+            while index > 0  {
+                if intermediate[index] == 1 {
+                    intermediate[index] = 0;
+                    break;
+                } else {
+                    intermediate[index] = 1;
+                }
+                index -= 1;
+            } 
+
+            // build complement
+            index = 0;
+            while index < intermediate.len() {
+                if intermediate[index] == 0 {
+                    intermediate[index] = 1;
+                } else {
+                    intermediate[index] = 0;
+                }
+                index += 1;
             }
-            index -= 1;
-        } 
 
-        // build complement
-        index = 0;
-        while index < intermediate.len() {
-            if intermediate[index] == 0 {
-                intermediate[index] = 1;
-            } else {
-                intermediate[index] = 0;
+            // calculate binary to decimal
+            let mut value = 0;
+            for (index, digit) in intermediate.iter().rev().enumerate() {
+                value += digit*u8::pow(2, u32::try_from(index).unwrap());
             }
-            index += 1;
+            -(value as i8)
+        } else {
+            let mut value = 0;
+            for (index, digit) in intermediate.iter().rev().enumerate() {
+                value += digit*u8::pow(2, u32::try_from(index).unwrap());
+            }
+            value as i8
         }
-
-        // calculate binary to decimal
-        let mut value = 0;
-        for (index, digit) in intermediate.iter().rev().enumerate() {
-            value += digit*u8::pow(2, u32::try_from(index).unwrap());
-        }
-
-        -(value as i8)
     }
 
     fn int_to_binary(&self, value: i8) -> Vec<u8> {
@@ -310,6 +333,22 @@ mod tests {
     }
 
     #[test]
+    fn test_execute_adi() {
+        let mut cpu = initialize_cpu();
+        cpu.change_register(0, 5);
+        cpu.set_flag(Flag::Z, 1);
+
+        cpu.execute_adi(&[0,0,0,0,0,1,0,1]);
+        assert_eq!(cpu.get_register(0), &10);
+        assert_eq!(cpu.get_flag(Flag::Z), 0);
+
+        cpu.change_register(0, -5);
+        cpu.execute_adi(&[1,1,1,1,1,0,1,1]);
+        assert_eq!(cpu.get_register(0), &-10);
+        assert_eq!(cpu.get_flag(Flag::S), 1);
+    }
+
+    #[test]
     fn test_execute_sub() {
         let mut cpu = initialize_cpu();
         cpu.change_register(0, 5);
@@ -380,12 +419,16 @@ mod tests {
     }
 
     #[test]
-    fn test_twocomplement_to_int() {
+    fn test_binary_to_int() {
         let cpu = initialize_cpu();
 
         let mut intermediate = [1,1,1,1,0,0,0,1];
-        let result = cpu.twocomplement_to_int(&mut intermediate);
+        let result = cpu.binary_to_int(&mut intermediate);
         assert_eq!(result, -15);
+
+        let mut intermediate = [0,1,1,1,0,0,0,1];
+        let result = cpu.binary_to_int(&mut intermediate);
+        assert_eq!(result, 113);
     }
 
     #[test]

@@ -15,7 +15,7 @@ Emulation of an intel 8080 8-bit processor.
 - [ ] STAX
 - [ ] XCHG
 - [x] ADD
-- [ ] ADI
+- [x] ADI
 - [ ] ADC 
 - [ ] ACI
 - [x] SUB
