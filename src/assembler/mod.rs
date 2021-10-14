@@ -66,9 +66,17 @@ impl Assembler {
                 raw_instructions[index][5..] == [1, 1, 0] {
 
                 instruction = Instruction {
-                    variant: InstructionType::IntermediateInstruction,
+                    variant: InstructionType::IntermediateRegInstruction,
                     command: InstructionCommand::MVI,
                     registers: vec![InstructionRegister::decode(&raw_instructions[index][2..5])],
+                    intermediate: raw_instructions[index+1].to_vec(),
+                };
+            // ADI
+            } else if raw_instructions[index] == [1,1,0,0,0,1,1,0] {
+                instruction = Instruction {
+                    variant: InstructionType::IntermediateInstruction,
+                    command: InstructionCommand::ADI,
+                    registers: vec![],
                     intermediate: raw_instructions[index+1].to_vec(),
                 };
             // instructions without registers
@@ -154,7 +162,9 @@ impl Assembler {
             }
 
             // skip next byte since its the intermediate of the instruction that was just parsed
-            if matches!(instruction.variant, InstructionType::IntermediateInstruction) {
+            if matches!(instruction.variant, InstructionType::IntermediateInstruction) ||
+                matches!(instruction.variant, InstructionType::IntermediateRegInstruction)
+            {
                 index +=2;
             } else {
                 index +=1;
@@ -200,6 +210,8 @@ mod tests {
         assert_eq!(bytes.next().unwrap(), [1,0,0,1,0,1,1,1]);
         assert_eq!(bytes.next().unwrap(), [0,0,1,1,1,1,0,0]);
         assert_eq!(bytes.next().unwrap(), [0,0,1,1,1,1,0,1]);
+        assert_eq!(bytes.next().unwrap(), [1,1,0,0,0,1,1,0]);
+        assert_eq!(bytes.next().unwrap(), [1,0,0,1,1,0,0,1]);
         assert_eq!(bytes.next().unwrap(), [0,1,1,1,0,1,1,0]);
     }
 
@@ -209,9 +221,9 @@ mod tests {
         assembler.assemble();
 
         let instructions = assembler.disassemble("output".to_owned());
-        assert_eq!(instructions.len(), 8);
+        assert_eq!(instructions.len(), 9);
 
-        assert!(matches!(instructions[0].variant, InstructionType::IntermediateInstruction));
+        assert!(matches!(instructions[0].variant, InstructionType::IntermediateRegInstruction));
         assert!(matches!(instructions[0].command, InstructionCommand::MVI));
         assert!(matches!(instructions[0].registers[0], InstructionRegister::A));
         assert_eq!(instructions[0].intermediate, [0,0,0,1,1,1,0,0]);
@@ -241,7 +253,11 @@ mod tests {
         assert!(matches!(instructions[6].command, InstructionCommand::DCR));
         assert!(matches!(instructions[6].registers[0], InstructionRegister::A));
 
-        assert!(matches!(instructions[7].variant, InstructionType::NoRegInstruction));
-        assert!(matches!(instructions[7].command, InstructionCommand::HLT));
+        assert!(matches!(instructions[7].variant, InstructionType::IntermediateInstruction));
+        assert!(matches!(instructions[7].command, InstructionCommand::ADI));
+        assert_eq!(instructions[7].intermediate, [1,0,0,1,1,0,0,1]);
+
+        assert!(matches!(instructions[8].variant, InstructionType::NoRegInstruction));
+        assert!(matches!(instructions[8].command, InstructionCommand::HLT));
     }
 }

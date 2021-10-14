@@ -63,7 +63,7 @@ pub fn parse(file_name: String) -> Vec<Instruction> {
                     }
                 )
             },
-            Rule::intermediate_instruction => {
+            Rule::intermediate_reg_instruction => {
                 let mut intermediate = Vec::new();
                 let mut pairs = raw_instruction.into_inner();
 
@@ -82,9 +82,32 @@ pub fn parse(file_name: String) -> Vec<Instruction> {
                 }
                 instructions.push(
                     Instruction {
-                        variant: InstructionType::IntermediateInstruction,
+                        variant: InstructionType::IntermediateRegInstruction,
                         command,
                         registers: vec![arg],
+                        intermediate,
+                    }
+                )
+            },
+            Rule::intermediate_instruction => {
+                let mut intermediate = Vec::new();
+                let mut pairs = raw_instruction.into_inner();
+
+                let command = InstructionCommand::from_str(pairs.peek().unwrap().as_str()).unwrap();
+                pairs.next();
+
+                for char in pairs.as_str().chars() {
+                    if char == '0' {
+                        intermediate.push(0);
+                    } else {
+                        intermediate.push(1);
+                    }
+                }
+                instructions.push(
+                    Instruction {
+                        variant: InstructionType::IntermediateInstruction,
+                        command,
+                        registers: vec![],
                         intermediate,
                     }
                 )
@@ -101,6 +124,7 @@ pub enum InstructionCommand {
     MVI,
     MOV,
     ADD,
+    ADI,
     SUB,
     INR,
     DCR,
@@ -174,6 +198,7 @@ pub enum InstructionType {
     NoRegInstruction,
     SingleRegInstruction,
     DoubleRegInstruction,
+    IntermediateRegInstruction,
     IntermediateInstruction,
 }
 
@@ -194,6 +219,11 @@ impl Encoding for Instruction {
                 self.registers[0].encode(),
                 &[1,1,0]
                 ].concat(), self.intermediate.clone()]
+            }
+            InstructionCommand::ADI => {
+                vec![
+                    vec![1,1,0,0,0,1,1,0], 
+                self.intermediate.clone()]
             }
             InstructionCommand::ADD => {
                 vec![[
