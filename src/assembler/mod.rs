@@ -101,6 +101,16 @@ impl Assembler {
                     registers: vec![InstructionRegister::decode(&raw_instructions[index][5..])],
                     intermediate: Vec::new(),
                 }
+            // ANA 
+            } else if raw_instructions[index][0..5] == [1, 0, 1, 0, 0] 
+                && !matches!(InstructionRegister::decode(&raw_instructions[index][5..]), InstructionRegister::INVALID) {
+                    
+                instruction = Instruction {
+                    variant: InstructionType::SingleRegInstruction,
+                    command: InstructionCommand::ANA,
+                    registers: vec![InstructionRegister::decode(&raw_instructions[index][5..])],
+                    intermediate: Vec::new(),
+                }
             // instructions with 1 argument in the middle
             // INR
             } else if raw_instructions[index][0..2] == [0, 0] && raw_instructions[index][5..] == [1, 0, 0] 
@@ -185,6 +195,7 @@ mod tests {
         assert_eq!(bytes.next().unwrap(), [0,0,1,1,1,1,1,0]);
         assert_eq!(bytes.next().unwrap(), [0,0,0,1,1,1,0,0]);
         assert_eq!(bytes.next().unwrap(), [0,1,1,1,1,0,0,0]);
+        assert_eq!(bytes.next().unwrap(), [1,0,1,0,0,0,0,0]);
         assert_eq!(bytes.next().unwrap(), [1,0,0,0,0,1,1,1]);
         assert_eq!(bytes.next().unwrap(), [1,0,0,1,0,1,1,1]);
         assert_eq!(bytes.next().unwrap(), [0,0,1,1,1,1,0,0]);
@@ -198,7 +209,7 @@ mod tests {
         assembler.assemble();
 
         let instructions = assembler.disassemble("output".to_owned());
-        assert_eq!(instructions.len(), 7);
+        assert_eq!(instructions.len(), 8);
 
         assert!(matches!(instructions[0].variant, InstructionType::IntermediateInstruction));
         assert!(matches!(instructions[0].command, InstructionCommand::MVI));
@@ -211,22 +222,26 @@ mod tests {
         assert!(matches!(instructions[1].registers[1], InstructionRegister::B));
 
         assert!(matches!(instructions[2].variant, InstructionType::SingleRegInstruction));
-        assert!(matches!(instructions[2].command, InstructionCommand::ADD));
-        assert!(matches!(instructions[2].registers[0], InstructionRegister::A));
+        assert!(matches!(instructions[2].command, InstructionCommand::ANA));
+        assert!(matches!(instructions[2].registers[0], InstructionRegister::B));
 
         assert!(matches!(instructions[3].variant, InstructionType::SingleRegInstruction));
-        assert!(matches!(instructions[3].command, InstructionCommand::SUB));
+        assert!(matches!(instructions[3].command, InstructionCommand::ADD));
         assert!(matches!(instructions[3].registers[0], InstructionRegister::A));
 
         assert!(matches!(instructions[4].variant, InstructionType::SingleRegInstruction));
-        assert!(matches!(instructions[4].command, InstructionCommand::INR));
+        assert!(matches!(instructions[4].command, InstructionCommand::SUB));
         assert!(matches!(instructions[4].registers[0], InstructionRegister::A));
 
         assert!(matches!(instructions[5].variant, InstructionType::SingleRegInstruction));
-        assert!(matches!(instructions[5].command, InstructionCommand::DCR));
+        assert!(matches!(instructions[5].command, InstructionCommand::INR));
         assert!(matches!(instructions[5].registers[0], InstructionRegister::A));
 
-        assert!(matches!(instructions[6].variant, InstructionType::NoRegInstruction));
-        assert!(matches!(instructions[6].command, InstructionCommand::HLT));
+        assert!(matches!(instructions[6].variant, InstructionType::SingleRegInstruction));
+        assert!(matches!(instructions[6].command, InstructionCommand::DCR));
+        assert!(matches!(instructions[6].registers[0], InstructionRegister::A));
+
+        assert!(matches!(instructions[7].variant, InstructionType::NoRegInstruction));
+        assert!(matches!(instructions[7].command, InstructionCommand::HLT));
     }
 }
