@@ -104,6 +104,7 @@ pub enum InstructionCommand {
     SUB,
     INR,
     DCR,
+    ANA,
     HLT,
 }
 
@@ -145,7 +146,7 @@ impl InstructionRegister {
             [1,0,0] => InstructionRegister::H,
             [1,0,1] => InstructionRegister::L,
             [1,1,0] => InstructionRegister::M,
-            _ => panic!("Invalid invalid register"),
+            _ => panic!("Invalid register"),
         }
     }
     
@@ -218,6 +219,12 @@ impl Encoding for Instruction {
                 &[0,0],
                 self.registers[0].encode(), 
                 &[1,0,1],
+                ].concat()]
+            },
+            InstructionCommand::ANA => {
+                vec![[
+                &[1,0,1,0,0],
+                self.registers[0].encode(), 
                 ].concat()]
             },
             InstructionCommand::MOV => {

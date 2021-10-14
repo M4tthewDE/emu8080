@@ -48,6 +48,7 @@ impl Cpu {
             InstructionCommand::SUB => self.execute_sub(&instruction.registers[0]),
             InstructionCommand::INR => self.execute_inr(&instruction.registers[0]),
             InstructionCommand::DCR => self.execute_dcr(&instruction.registers[0]),
+            InstructionCommand::ANA => self.execute_ana(&instruction.registers[0]),
             InstructionCommand::HLT => self.execute_hlt(),
         }        
     }
@@ -153,6 +154,27 @@ impl Cpu {
         }
     }
 
+    fn execute_ana(&mut self, arg: &InstructionRegister) {
+        let mut binary_a = self.int_to_binary(*self.get_register(0));
+        let binary_reg = self.int_to_binary(*self.get_register(arg.to_index().into()));
+
+        for index in 0..8 {
+            if !(binary_a[index] == 1 && binary_reg[index] == 1) {
+                binary_a[index] = 0;
+            }
+        }
+
+        let mut value = 0;
+        if binary_a[0] == 1 {
+            value = self.twocomplement_to_int(&mut binary_a);
+        } else {
+            for (index, digit) in binary_a.iter().rev().enumerate() {
+                value += (digit*u8::pow(2, u32::try_from(index).unwrap())) as i8;
+            }
+        }
+        self.change_register(0, value as i8);
+    }
+
     fn set_flag(&mut self, flag: Flag, value: u8) {
        self.flags[flag.get_index()] = value; 
     }
@@ -200,6 +222,16 @@ impl Cpu {
         }
 
         -(value as i8)
+    }
+
+    fn int_to_binary(&self, value: i8) -> Vec<u8> {
+        let binary_string = format!("{:08b}", value);
+
+        let mut result = Vec::new();
+        for c in binary_string.chars() {
+            result.push((c as u8)-48);
+        }
+        result
     }
 
     fn print_status(&self) {
@@ -321,6 +353,24 @@ mod tests {
     }
 
     #[test]
+    fn test_execute_ana() {
+        let mut cpu = initialize_cpu();
+        cpu.change_register(0, -10);
+        cpu.change_register(1, -10);
+
+        cpu.execute_ana(&InstructionRegister::B);
+        assert_eq!(cpu.get_register(0), &-10);
+
+        // -15 11110001	
+        // -10 11110110
+        // ANA 11110000
+
+        cpu.change_register(0, -15);
+        cpu.execute_ana(&InstructionRegister::B);
+        assert_eq!(cpu.get_register(0), &-16);
+    }
+
+    #[test]
     fn test_flag_get_index() {
         assert_eq!(Flag::S.get_index(), 0);
         assert_eq!(Flag::Z.get_index(), 1);
@@ -336,5 +386,13 @@ mod tests {
         let mut intermediate = [1,1,1,1,0,0,0,1];
         let result = cpu.twocomplement_to_int(&mut intermediate);
         assert_eq!(result, -15);
+    }
+
+    #[test]
+    fn test_int_to_binary() {
+        let cpu = initialize_cpu();
+        let result = cpu.int_to_binary(28);
+        let expected = [0,0,0,1,1,1,0,0];
+        assert_eq!(result, expected);
     }
 }
