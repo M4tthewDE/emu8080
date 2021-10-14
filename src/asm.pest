@@ -1,5 +1,5 @@
 register = { "A" | "B" | "C" | "D" | "E" | "H" | "L" | "M" }
-single_reg_command = { "ADD" | "SUB" | "INR" | "DCR" }
+single_reg_command = { "ADD" | "SUB" | "INR" | "DCR" | "ANA" }
 double_reg_command = { "MOV" }
 intermediate_command = { "MVI" }
 no_reg_command = { "HLT" }
