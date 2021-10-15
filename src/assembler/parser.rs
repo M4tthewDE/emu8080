@@ -16,7 +16,7 @@ pub fn parse(file_name: String) -> Vec<Instruction> {
     let mut instructions = Vec::new();
     for raw_instruction in file.into_inner() {
         // check if its a comment or eoi, since those cant be parsed
-        if is_parseable_instruction(raw_instruction.as_rule()) {
+        if !matches!(raw_instruction.as_rule(), Rule::comment | Rule::EOI) {
 
             // go one level deeper into pairs, to reach different instruction types
             let raw_instruction = raw_instruction.into_inner().peek().unwrap();
@@ -41,14 +41,6 @@ pub fn parse(file_name: String) -> Vec<Instruction> {
         }
     }
     instructions
-}
-
-fn is_parseable_instruction(rule: Rule) -> bool {
-    match rule {
-        Rule::comment => false,
-        Rule::EOI => false,
-        _ => true
-    }
 }
 
 fn parse_double_reg_instruction(mut pairs: Pairs<crate::assembler::parser::Rule>) -> Instruction {
@@ -140,15 +132,24 @@ fn parse_intermediate_reg_instruction(mut pairs: Pairs<crate::assembler::parser:
 
 #[derive(Debug, EnumString)]
 pub enum InstructionCommand {
-    MVI,
-    MOV,
-    ADD,
-    ADI,
-    SUB,
-    INR,
-    DCR,
-    ANA,
-    HLT,
+    #[strum(serialize = "MVI")]
+    Mvi,
+    #[strum(serialize = "MOV")]
+    Mov,
+    #[strum(serialize = "ADD")]
+    Add,
+    #[strum(serialize = "ADI")]
+    Adi,
+    #[strum(serialize = "SUB")]
+    Sub,
+    #[strum(serialize = "INR")]
+    Inr,
+    #[strum(serialize = "DCR")]
+    Dcr,
+    #[strum(serialize = "ANA")]
+    Ana,
+    #[strum(serialize = "HLT")]
+    Hlt,
 }
 
 #[derive(Debug, EnumString)]
@@ -232,58 +233,58 @@ pub struct Instruction {
 impl Encoding for Instruction {
     fn encode(&self) -> Vec<Vec<u8>> {
         match self.command {
-            InstructionCommand::MVI => {
+            InstructionCommand::Mvi => {
                 vec![[
                 &[0,0],
                 self.registers[0].encode(),
                 &[1,1,0]
                 ].concat(), self.intermediate.clone()]
             }
-            InstructionCommand::ADI => {
+            InstructionCommand::Adi => {
                 vec![
                     vec![1,1,0,0,0,1,1,0], 
                 self.intermediate.clone()]
             }
-            InstructionCommand::ADD => {
+            InstructionCommand::Add => {
                 vec![[
                 &[1,0,0,0,0],
                 self.registers[0].encode(), 
                 ].concat()]
             },
-            InstructionCommand::SUB => {
+            InstructionCommand::Sub => {
                 vec![[
                 &[1,0,0,1,0],
                 self.registers[0].encode(), 
                 ].concat()]
             },
-            InstructionCommand::INR => {
+            InstructionCommand::Inr => {
                 vec![[
                 &[0,0],
                 self.registers[0].encode(), 
                 &[1,0,0],
                 ].concat()]
             },
-            InstructionCommand::DCR => {
+            InstructionCommand::Dcr => {
                 vec![[
                 &[0,0],
                 self.registers[0].encode(), 
                 &[1,0,1],
                 ].concat()]
             },
-            InstructionCommand::ANA => {
+            InstructionCommand::Ana => {
                 vec![[
                 &[1,0,1,0,0],
                 self.registers[0].encode(), 
                 ].concat()]
             },
-            InstructionCommand::MOV => {
+            InstructionCommand::Mov => {
                 vec![[
                 &[0,1], 
                 self.registers[0].encode(), 
                 self.registers[1].encode(),
                 ].concat()]
             },
-            InstructionCommand::HLT => {vec![vec![0,1,1,1,0,1,1,0]]},
+            InstructionCommand::Hlt => {vec![vec![0,1,1,1,0,1,1,0]]},
         }
     }
 }

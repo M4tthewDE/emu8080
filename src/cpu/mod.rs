@@ -42,15 +42,15 @@ impl Cpu {
 
     fn execute(&mut self, instruction: &Instruction) {
         match instruction.command {
-            InstructionCommand::MVI => self.execute_mvi(&instruction.registers[0], &instruction.intermediate),
-            InstructionCommand::ADI => self.execute_adi(&instruction.intermediate),
-            InstructionCommand::MOV => self.execute_mov(&instruction.registers),
-            InstructionCommand::ADD => self.execute_add(&instruction.registers[0]),
-            InstructionCommand::SUB => self.execute_sub(&instruction.registers[0]),
-            InstructionCommand::INR => self.execute_inr(&instruction.registers[0]),
-            InstructionCommand::DCR => self.execute_dcr(&instruction.registers[0]),
-            InstructionCommand::ANA => self.execute_ana(&instruction.registers[0]),
-            InstructionCommand::HLT => self.execute_hlt(),
+            InstructionCommand::Mvi => self.execute_mvi(&instruction.registers[0], &instruction.intermediate),
+            InstructionCommand::Adi => self.execute_adi(&instruction.intermediate),
+            InstructionCommand::Mov => self.execute_mov(&instruction.registers),
+            InstructionCommand::Add => self.execute_add(&instruction.registers[0]),
+            InstructionCommand::Sub => self.execute_sub(&instruction.registers[0]),
+            InstructionCommand::Inr => self.execute_inr(&instruction.registers[0]),
+            InstructionCommand::Dcr => self.execute_dcr(&instruction.registers[0]),
+            InstructionCommand::Ana => self.execute_ana(&instruction.registers[0]),
+            InstructionCommand::Hlt => self.execute_hlt(),
         }        
     }
 
