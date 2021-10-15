@@ -162,7 +162,7 @@ pub enum InstructionRegister {
     H,
     L,
     M,
-    INVALID,
+    Invalid,
 }
 
 impl InstructionRegister {
@@ -176,7 +176,7 @@ impl InstructionRegister {
             InstructionRegister::H => &[1,0,0],
             InstructionRegister::L => &[1,0,1],
             InstructionRegister::M => &[1,1,0],
-            InstructionRegister::INVALID => {panic!("invalid register")},
+            InstructionRegister::Invalid => {panic!("invalid register")},
         }
     }
 
@@ -308,7 +308,7 @@ mod tests {
     #[test]
     #[should_panic]
     fn test_register_encoding_panic() {
-        InstructionRegister::INVALID.encode();
+        InstructionRegister::Invalid.encode();
     }
 
     #[test]
@@ -344,6 +344,6 @@ mod tests {
     #[test]
     #[should_panic]
     fn test_register_to_index_panic() {
-        InstructionRegister::INVALID.to_index();
+        InstructionRegister::Invalid.to_index();
     }
 }

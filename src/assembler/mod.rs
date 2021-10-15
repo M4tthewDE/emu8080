@@ -62,7 +62,7 @@ impl Assembler {
             // instructions that take up more than one byte (intermediates)
             // MVI
             if raw_instructions[index][0..2] == [0, 0]
-                && !matches!(InstructionRegister::decode(&raw_instructions[index][2..5]), InstructionRegister::INVALID) &&
+                && !matches!(InstructionRegister::decode(&raw_instructions[index][2..5]), InstructionRegister::Invalid) &&
                 raw_instructions[index][5..] == [1, 1, 0] {
 
                 instruction = Instruction {
@@ -91,7 +91,7 @@ impl Assembler {
             // instructions with 1 argument in the end
             // ADD
             } else if raw_instructions[index][0..5] == [1, 0, 0, 0, 0] 
-                && !matches!(InstructionRegister::decode(&raw_instructions[index][5..]), InstructionRegister::INVALID) {
+                && !matches!(InstructionRegister::decode(&raw_instructions[index][5..]), InstructionRegister::Invalid) {
                     
                 instruction = Instruction {
                     variant: InstructionType::SingleRegInstruction,
@@ -101,7 +101,7 @@ impl Assembler {
                 }
             // SUB
             } else if raw_instructions[index][0..5] == [1, 0, 0, 1, 0] 
-                && !matches!(InstructionRegister::decode(&raw_instructions[index][5..]), InstructionRegister::INVALID) {
+                && !matches!(InstructionRegister::decode(&raw_instructions[index][5..]), InstructionRegister::Invalid) {
                     
                 instruction = Instruction {
                     variant: InstructionType::SingleRegInstruction,
@@ -111,7 +111,7 @@ impl Assembler {
                 }
             // ANA 
             } else if raw_instructions[index][0..5] == [1, 0, 1, 0, 0] 
-                && !matches!(InstructionRegister::decode(&raw_instructions[index][5..]), InstructionRegister::INVALID) {
+                && !matches!(InstructionRegister::decode(&raw_instructions[index][5..]), InstructionRegister::Invalid) {
                     
                 instruction = Instruction {
                     variant: InstructionType::SingleRegInstruction,
@@ -122,7 +122,7 @@ impl Assembler {
             // instructions with 1 argument in the middle
             // INR
             } else if raw_instructions[index][0..2] == [0, 0] && raw_instructions[index][5..] == [1, 0, 0] 
-                && !matches!(InstructionRegister::decode(&raw_instructions[index][2..5]), InstructionRegister::INVALID) {
+                && !matches!(InstructionRegister::decode(&raw_instructions[index][2..5]), InstructionRegister::Invalid) {
                     
                 instruction = Instruction {
                     variant: InstructionType::SingleRegInstruction,
@@ -132,7 +132,7 @@ impl Assembler {
                 }
             // DCR
             } else if raw_instructions[index][0..2] == [0, 0] && raw_instructions[index][5..] == [1, 0, 1] 
-                && !matches!(InstructionRegister::decode(&raw_instructions[index][2..5]), InstructionRegister::INVALID) {
+                && !matches!(InstructionRegister::decode(&raw_instructions[index][2..5]), InstructionRegister::Invalid) {
 
                 instruction = Instruction {
                     variant: InstructionType::SingleRegInstruction,
@@ -143,8 +143,8 @@ impl Assembler {
             // instructions with 2 registers
             // MOV
             } else if raw_instructions[index][0..2] == [0, 1]
-                && !matches!(InstructionRegister::decode(&raw_instructions[index][2..5]), InstructionRegister::INVALID)
-                && !matches!(InstructionRegister::decode(&raw_instructions[index][5..]), InstructionRegister::INVALID) {
+                && !matches!(InstructionRegister::decode(&raw_instructions[index][2..5]), InstructionRegister::Invalid)
+                && !matches!(InstructionRegister::decode(&raw_instructions[index][5..]), InstructionRegister::Invalid) {
 
                 let args = vec![
                                 InstructionRegister::decode(&raw_instructions[index][2..5]),
