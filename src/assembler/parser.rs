@@ -52,7 +52,7 @@ fn parse_double_reg_instruction(mut pairs: Pairs<crate::assembler::parser::Rule>
     args.push(InstructionRegister::from_str(pairs.peek().unwrap().as_str()).unwrap());
 
     Instruction {
-        variant: InstructionType::DoubleRegInstruction,
+        variant: InstructionType::DoubleReg,
         command,
         registers: args,
         intermediate: Vec::new(),
@@ -66,7 +66,7 @@ fn parse_single_reg_instruction(mut pairs: Pairs<crate::assembler::parser::Rule>
     let arg = InstructionRegister::from_str(pairs.peek().unwrap().as_str()).unwrap();
 
     Instruction {
-        variant: InstructionType::SingleRegInstruction,
+        variant: InstructionType::SingleReg,
         command,
         registers: vec![arg],
         intermediate: Vec::new(),
@@ -77,7 +77,7 @@ fn parse_no_reg_instruction(pairs: Pairs<crate::assembler::parser::Rule>) -> Ins
     let command = InstructionCommand::from_str(pairs.peek().unwrap().as_str()).unwrap();
 
     Instruction {
-        variant: InstructionType::NoRegInstruction,
+        variant: InstructionType::NoReg,
         command,
         registers: Vec::new(),
         intermediate: Vec::new(),
@@ -98,7 +98,7 @@ fn parse_intermediate_instruction(mut pairs: Pairs<crate::assembler::parser::Rul
         }
     }
     Instruction {
-        variant: InstructionType::IntermediateInstruction,
+        variant: InstructionType::Intermediate,
         command,
         registers: vec![],
         intermediate,
@@ -123,7 +123,7 @@ fn parse_intermediate_reg_instruction(mut pairs: Pairs<crate::assembler::parser:
         }
     }
     Instruction {
-        variant: InstructionType::IntermediateRegInstruction,
+        variant: InstructionType::IntermediateReg,
         command,
         registers: vec![arg],
         intermediate,
@@ -215,11 +215,11 @@ pub trait Encoding {
 
 #[derive(Debug)]
 pub enum InstructionType {
-    NoRegInstruction,
-    SingleRegInstruction,
-    DoubleRegInstruction,
-    IntermediateRegInstruction,
-    IntermediateInstruction,
+    NoReg,
+    SingleReg,
+    DoubleReg,
+    IntermediateReg,
+    Intermediate,
 }
 
 #[derive(Debug)]
