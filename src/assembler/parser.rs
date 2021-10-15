@@ -1,4 +1,5 @@
 use pest::Parser;
+use pest::iterators::Pairs;
 use std::fs;
 use strum_macros::EnumString;
 use std::str::FromStr;
@@ -14,122 +15,141 @@ pub fn parse(file_name: String) -> Vec<Instruction> {
 
     let mut instructions = Vec::new();
     for raw_instruction in file.into_inner() {
-        match raw_instruction.as_rule() {
-            Rule::double_reg_instruction => {
-                let mut pairs = raw_instruction.into_inner();
+        // check if its a comment or eoi, since those cant be parsed
+        if !matches!(raw_instruction.as_rule(), Rule::comment | Rule::EOI) {
 
-                let command = InstructionCommand::from_str(pairs.peek().unwrap().as_str()).unwrap();
-                pairs.next();
-
-                let mut args = vec![InstructionRegister::from_str(pairs.peek().unwrap().as_str()).unwrap()];
-                pairs.next();
-                args.push(InstructionRegister::from_str(pairs.peek().unwrap().as_str()).unwrap());
-
-                instructions.push(
-                    Instruction {
-                        variant: InstructionType::DoubleRegInstruction,
-                        command,
-                        registers: args,
-                        intermediate: Vec::new(),
-                    }
-                )
-            },
-            Rule::single_reg_instruction => {
-                let mut pairs = raw_instruction.into_inner();
-
-                let command = InstructionCommand::from_str(pairs.peek().unwrap().as_str()).unwrap();
-                pairs.next();
-                let arg = InstructionRegister::from_str(pairs.peek().unwrap().as_str()).unwrap();
-
-                instructions.push(
-                    Instruction {
-                        variant: InstructionType::SingleRegInstruction,
-                        command,
-                        registers: vec![arg],
-                        intermediate: Vec::new(),
-                    }
-                )
-            },
-            Rule::no_reg_instruction => {
-                let pairs = raw_instruction.into_inner();
-
-                let command = InstructionCommand::from_str(pairs.peek().unwrap().as_str()).unwrap();
-                instructions.push(
-                    Instruction {
-                        variant: InstructionType::NoRegInstruction,
-                        command,
-                        registers: Vec::new(),
-                        intermediate: Vec::new(),
-                    }
-                )
-            },
-            Rule::intermediate_reg_instruction => {
-                let mut intermediate = Vec::new();
-                let mut pairs = raw_instruction.into_inner();
-
-                let command = InstructionCommand::from_str(pairs.peek().unwrap().as_str()).unwrap();
-                pairs.next();
-
-                let arg = InstructionRegister::from_str(pairs.peek().unwrap().as_str()).unwrap();
-                pairs.next();
-
-                for char in pairs.as_str().chars() {
-                    if char == '0' {
-                        intermediate.push(0);
-                    } else {
-                        intermediate.push(1);
-                    }
-                }
-                instructions.push(
-                    Instruction {
-                        variant: InstructionType::IntermediateRegInstruction,
-                        command,
-                        registers: vec![arg],
-                        intermediate,
-                    }
-                )
-            },
-            Rule::intermediate_instruction => {
-                let mut intermediate = Vec::new();
-                let mut pairs = raw_instruction.into_inner();
-
-                let command = InstructionCommand::from_str(pairs.peek().unwrap().as_str()).unwrap();
-                pairs.next();
-
-                for char in pairs.as_str().chars() {
-                    if char == '0' {
-                        intermediate.push(0);
-                    } else {
-                        intermediate.push(1);
-                    }
-                }
-                instructions.push(
-                    Instruction {
-                        variant: InstructionType::IntermediateInstruction,
-                        command,
-                        registers: vec![],
-                        intermediate,
-                    }
-                )
-            },
-            Rule::EOI => (),
-            _=> panic!{"invalid rule!"},
+            // go one level deeper into pairs, to reach different instruction types
+            let raw_instruction = raw_instruction.into_inner().peek().unwrap();
+            match raw_instruction.as_rule() {
+                Rule::double_reg_instruction => {
+                    instructions.push(parse_double_reg_instruction(raw_instruction.into_inner()))
+                },
+                Rule::single_reg_instruction => {
+                    instructions.push(parse_single_reg_instruction(raw_instruction.into_inner()))
+                },
+                Rule::no_reg_instruction => {
+                    instructions.push(parse_no_reg_instruction(raw_instruction.into_inner()))
+                },
+                Rule::intermediate_reg_instruction => {
+                    instructions.push(parse_intermediate_reg_instruction(raw_instruction.into_inner()))
+                },
+                Rule::intermediate_instruction => {
+                    instructions.push(parse_intermediate_instruction(raw_instruction.into_inner()))
+                },
+                _=> panic!{"invalid rule!"},
+            }
         }
     }
     instructions
 }
 
+fn parse_double_reg_instruction(mut pairs: Pairs<crate::assembler::parser::Rule>) -> Instruction {
+    let command = InstructionCommand::from_str(pairs.peek().unwrap().as_str()).unwrap();
+    pairs.next();
+
+    let mut args = vec![InstructionRegister::from_str(pairs.peek().unwrap().as_str()).unwrap()];
+    pairs.next();
+    args.push(InstructionRegister::from_str(pairs.peek().unwrap().as_str()).unwrap());
+
+    Instruction {
+        variant: InstructionType::DoubleReg,
+        command,
+        registers: args,
+        intermediate: Vec::new(),
+    }
+
+}
+
+fn parse_single_reg_instruction(mut pairs: Pairs<crate::assembler::parser::Rule>) -> Instruction {
+    let command = InstructionCommand::from_str(pairs.peek().unwrap().as_str()).unwrap();
+    pairs.next();
+    let arg = InstructionRegister::from_str(pairs.peek().unwrap().as_str()).unwrap();
+
+    Instruction {
+        variant: InstructionType::SingleReg,
+        command,
+        registers: vec![arg],
+        intermediate: Vec::new(),
+    }
+}
+
+fn parse_no_reg_instruction(pairs: Pairs<crate::assembler::parser::Rule>) -> Instruction {
+    let command = InstructionCommand::from_str(pairs.peek().unwrap().as_str()).unwrap();
+
+    Instruction {
+        variant: InstructionType::NoReg,
+        command,
+        registers: Vec::new(),
+        intermediate: Vec::new(),
+    }
+}
+
+fn parse_intermediate_instruction(mut pairs: Pairs<crate::assembler::parser::Rule>) -> Instruction {
+    let mut intermediate = Vec::new();
+
+    let command = InstructionCommand::from_str(pairs.peek().unwrap().as_str()).unwrap();
+    pairs.next();
+
+    for char in pairs.as_str().chars() {
+        if char == '0' {
+            intermediate.push(0);
+        } else {
+            intermediate.push(1);
+        }
+    }
+    Instruction {
+        variant: InstructionType::Intermediate,
+        command,
+        registers: vec![],
+        intermediate,
+    }
+
+}
+
+fn parse_intermediate_reg_instruction(mut pairs: Pairs<crate::assembler::parser::Rule>) -> Instruction {
+    let mut intermediate = Vec::new();
+
+    let command = InstructionCommand::from_str(pairs.peek().unwrap().as_str()).unwrap();
+    pairs.next();
+
+    let arg = InstructionRegister::from_str(pairs.peek().unwrap().as_str()).unwrap();
+    pairs.next();
+
+    for char in pairs.as_str().chars() {
+        if char == '0' {
+            intermediate.push(0);
+        } else {
+            intermediate.push(1);
+        }
+    }
+    Instruction {
+        variant: InstructionType::IntermediateReg,
+        command,
+        registers: vec![arg],
+        intermediate,
+    }
+}    
+
 #[derive(Debug, EnumString)]
 pub enum InstructionCommand {
-    MVI,
-    MOV,
-    ADD,
-    ADI,
-    SUB,
-    INR,
-    DCR,
-    ANA,
-    HLT,
+    #[strum(serialize = "MVI")]
+    Mvi,
+    #[strum(serialize = "MOV")]
+    Mov,
+    #[strum(serialize = "ADD")]
+    Add,
+    #[strum(serialize = "ADI")]
+    Adi,
+    #[strum(serialize = "SUB")]
+    Sub,
+    #[strum(serialize = "INR")]
+    Inr,
+    #[strum(serialize = "DCR")]
+    Dcr,
+    #[strum(serialize = "ANA")]
+    Ana,
+    #[strum(serialize = "HLT")]
+    Hlt,
 }
 
 #[derive(Debug, EnumString)]
@@ -142,7 +162,7 @@ pub enum InstructionRegister {
     H,
     L,
     M,
-    INVALID,
+    Invalid,
 }
 
 impl InstructionRegister {
@@ -156,7 +176,7 @@ impl InstructionRegister {
             InstructionRegister::H => &[1,0,0],
             InstructionRegister::L => &[1,0,1],
             InstructionRegister::M => &[1,1,0],
-            InstructionRegister::INVALID => {panic!("invalid register")},
+            InstructionRegister::Invalid => {panic!("invalid register")},
         }
     }
 
@@ -195,11 +215,11 @@ pub trait Encoding {
 
 #[derive(Debug)]
 pub enum InstructionType {
-    NoRegInstruction,
-    SingleRegInstruction,
-    DoubleRegInstruction,
-    IntermediateRegInstruction,
-    IntermediateInstruction,
+    NoReg,
+    SingleReg,
+    DoubleReg,
+    IntermediateReg,
+    Intermediate,
 }
 
 #[derive(Debug)]
@@ -213,58 +233,58 @@ pub struct Instruction {
 impl Encoding for Instruction {
     fn encode(&self) -> Vec<Vec<u8>> {
         match self.command {
-            InstructionCommand::MVI => {
+            InstructionCommand::Mvi => {
                 vec![[
                 &[0,0],
                 self.registers[0].encode(),
                 &[1,1,0]
                 ].concat(), self.intermediate.clone()]
             }
-            InstructionCommand::ADI => {
+            InstructionCommand::Adi => {
                 vec![
                     vec![1,1,0,0,0,1,1,0], 
                 self.intermediate.clone()]
             }
-            InstructionCommand::ADD => {
+            InstructionCommand::Add => {
                 vec![[
                 &[1,0,0,0,0],
                 self.registers[0].encode(), 
                 ].concat()]
             },
-            InstructionCommand::SUB => {
+            InstructionCommand::Sub => {
                 vec![[
                 &[1,0,0,1,0],
                 self.registers[0].encode(), 
                 ].concat()]
             },
-            InstructionCommand::INR => {
+            InstructionCommand::Inr => {
                 vec![[
                 &[0,0],
                 self.registers[0].encode(), 
                 &[1,0,0],
                 ].concat()]
             },
-            InstructionCommand::DCR => {
+            InstructionCommand::Dcr => {
                 vec![[
                 &[0,0],
                 self.registers[0].encode(), 
                 &[1,0,1],
                 ].concat()]
             },
-            InstructionCommand::ANA => {
+            InstructionCommand::Ana => {
                 vec![[
                 &[1,0,1,0,0],
                 self.registers[0].encode(), 
                 ].concat()]
             },
-            InstructionCommand::MOV => {
+            InstructionCommand::Mov => {
                 vec![[
                 &[0,1], 
                 self.registers[0].encode(), 
                 self.registers[1].encode(),
                 ].concat()]
             },
-            InstructionCommand::HLT => {vec![vec![0,1,1,1,0,1,1,0]]},
+            InstructionCommand::Hlt => {vec![vec![0,1,1,1,0,1,1,0]]},
         }
     }
 }
@@ -288,7 +308,7 @@ mod tests {
     #[test]
     #[should_panic]
     fn test_register_encoding_panic() {
-        InstructionRegister::INVALID.encode();
+        InstructionRegister::Invalid.encode();
     }
 
     #[test]
@@ -324,6 +344,6 @@ mod tests {
     #[test]
     #[should_panic]
     fn test_register_to_index_panic() {
-        InstructionRegister::INVALID.to_index();
+        InstructionRegister::Invalid.to_index();
     }
 }
