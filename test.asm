@@ -1,4 +1,5 @@
-MVI A,00011100
+; example assembly programm for tests 
+MVI A,00011100 
 MOV A,B
 ANA B
 ADD A

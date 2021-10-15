@@ -5,12 +5,13 @@ intermediate_reg_command = { "MVI" }
 intermediate_command = { "ADI" }
 no_reg_command = { "HLT" }
 intermediate  = { ("0"|"1"){8}}
+comment = { ";" ~ (ASCII_ALPHANUMERIC)* }
 
 intermediate_reg_instruction = { intermediate_reg_command ~ register ~ "," ~ intermediate }
 intermediate_instruction = { intermediate_command ~ intermediate }
 single_reg_instruction = { single_reg_command ~ register }
 double_reg_instruction = { double_reg_command ~ register ~ "," ~ register }
 no_reg_instruction = { no_reg_command }
-assembly = { ((double_reg_instruction | single_reg_instruction | no_reg_instruction | intermediate_instruction | intermediate_reg_instruction) ~ (EOI | NEWLINE))+ }
+assembly = { ((double_reg_instruction | single_reg_instruction | no_reg_instruction | intermediate_instruction | intermediate_reg_instruction | comment) ~ (EOI | NEWLINE))+ }
 
 WHITESPACE = _{ " " }
