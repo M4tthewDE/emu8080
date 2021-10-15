@@ -15,7 +15,10 @@ pub fn parse(file_name: String) -> Vec<Instruction> {
 
     let mut instructions = Vec::new();
     for raw_instruction in file.into_inner() {
+        // check if its a comment or eoi, since those cant be parsed
         if is_parseable_instruction(raw_instruction.as_rule()) {
+
+            // go one level deeper into pairs, to reach different instruction types
             let raw_instruction = raw_instruction.into_inner().peek().unwrap();
             match raw_instruction.as_rule() {
                 Rule::double_reg_instruction => {
