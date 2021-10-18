@@ -5,8 +5,8 @@ use strum_macros::EnumIter;
 
 pub fn initialize_cpu() -> Cpu {
     Cpu {
-        register: vec![0,0,0,0,0,0,0,0],
-        flags: vec![0,0,0,0,0,0,0,0],
+        register: vec![0, 0, 0, 0, 0, 0, 0, 0],
+        flags: vec![0, 0, 0, 0, 0, 0, 0, 0],
     }
 }
 
@@ -19,7 +19,7 @@ pub struct Cpu {
 }
 
 impl Cpu {
-    fn get_register(&self, index: usize) -> &i8{
+    fn get_register(&self, index: usize) -> &i8 {
         &self.register[index]
     }
 
@@ -42,7 +42,9 @@ impl Cpu {
 
     fn execute(&mut self, instruction: &Instruction) {
         match instruction.command {
-            InstructionCommand::Mvi => self.execute_mvi(&instruction.registers[0], &instruction.intermediate),
+            InstructionCommand::Mvi => {
+                self.execute_mvi(&instruction.registers[0], &instruction.intermediate)
+            }
             InstructionCommand::Adi => self.execute_adi(&instruction.intermediate),
             InstructionCommand::Mov => self.execute_mov(&instruction.registers),
             InstructionCommand::Add => self.execute_add(&instruction.registers[0]),
@@ -51,7 +53,7 @@ impl Cpu {
             InstructionCommand::Dcr => self.execute_dcr(&instruction.registers[0]),
             InstructionCommand::Ana => self.execute_ana(&instruction.registers[0]),
             InstructionCommand::Hlt => self.execute_hlt(),
-        }        
+        }
     }
 
     fn execute_mvi(&mut self, arg: &InstructionRegister, intermediate: &[u8]) {
@@ -60,18 +62,18 @@ impl Cpu {
         let mut x = vec![0; 8];
         x[0..].clone_from_slice(intermediate);
 
-        let value = self.binary_to_int(&mut x); 
+        let value = self.binary_to_int(&mut x);
 
-        self.change_register(destination_index, value); 
+        self.change_register(destination_index, value);
     }
 
     fn execute_adi(&mut self, intermediate: &[u8]) {
         let mut x = vec![0; 8];
         x[0..].clone_from_slice(intermediate);
 
-        let source_value = self.binary_to_int(&mut x);        
+        let source_value = self.binary_to_int(&mut x);
         let current_a = self.get_register(0);
-        let new_a = current_a+source_value;
+        let new_a = current_a + source_value;
 
         self.change_register(0, new_a);
 
@@ -89,16 +91,16 @@ impl Cpu {
     }
 
     fn execute_mov(&mut self, args: &[InstructionRegister]) {
-        let source_value = *self.get_register(args[0].to_index().into());        
+        let source_value = *self.get_register(args[0].to_index().into());
 
         let destination_index = args[1].to_index().into();
         self.change_register(destination_index, source_value);
     }
 
     fn execute_add(&mut self, arg: &InstructionRegister) {
-        let source_value = self.get_register(arg.to_index().into());        
+        let source_value = self.get_register(arg.to_index().into());
         let current_a = self.get_register(0);
-        let new_a = current_a+source_value;
+        let new_a = current_a + source_value;
 
         self.change_register(0, new_a);
 
@@ -116,9 +118,9 @@ impl Cpu {
     }
 
     fn execute_sub(&mut self, args: &InstructionRegister) {
-        let source_value = self.get_register(args.to_index().into());        
+        let source_value = self.get_register(args.to_index().into());
         let current_a = self.get_register(0);
-        let new_a = current_a-source_value;
+        let new_a = current_a - source_value;
 
         self.change_register(0, new_a);
 
@@ -136,7 +138,7 @@ impl Cpu {
     }
 
     fn execute_inr(&mut self, arg: &InstructionRegister) {
-        let new_value = self.get_register(arg.to_index().into())+1;        
+        let new_value = self.get_register(arg.to_index().into()) + 1;
 
         self.change_register(arg.to_index().into(), new_value);
 
@@ -154,7 +156,7 @@ impl Cpu {
     }
 
     fn execute_dcr(&mut self, arg: &InstructionRegister) {
-        let new_value = self.get_register(arg.to_index().into())-1;        
+        let new_value = self.get_register(arg.to_index().into()) - 1;
 
         self.change_register(arg.to_index().into(), new_value);
 
@@ -186,14 +188,14 @@ impl Cpu {
             value = self.binary_to_int(&mut binary_a);
         } else {
             for (index, digit) in binary_a.iter().rev().enumerate() {
-                value += (digit*u8::pow(2, u32::try_from(index).unwrap())) as i8;
+                value += (digit * u8::pow(2, u32::try_from(index).unwrap())) as i8;
             }
         }
         self.change_register(0, value as i8);
     }
 
     fn set_flag(&mut self, flag: Flag, value: u8) {
-       self.flags[flag.get_index()] = value; 
+        self.flags[flag.get_index()] = value;
     }
 
     fn get_flag(&self, flag: Flag) -> u8 {
@@ -210,8 +212,8 @@ impl Cpu {
     fn binary_to_int(&self, intermediate: &mut [u8]) -> i8 {
         if intermediate[0] == 1 {
             // subtract 1 from intermediate
-            let mut index = intermediate.len()-1;
-            while index > 0  {
+            let mut index = intermediate.len() - 1;
+            while index > 0 {
                 if intermediate[index] == 1 {
                     intermediate[index] = 0;
                     break;
@@ -219,7 +221,7 @@ impl Cpu {
                     intermediate[index] = 1;
                 }
                 index -= 1;
-            } 
+            }
 
             // build complement
             index = 0;
@@ -235,13 +237,13 @@ impl Cpu {
             // calculate binary to decimal
             let mut value = 0;
             for (index, digit) in intermediate.iter().rev().enumerate() {
-                value += digit*u8::pow(2, u32::try_from(index).unwrap());
+                value += digit * u8::pow(2, u32::try_from(index).unwrap());
             }
             -(value as i8)
         } else {
             let mut value = 0;
             for (index, digit) in intermediate.iter().rev().enumerate() {
-                value += digit*u8::pow(2, u32::try_from(index).unwrap());
+                value += digit * u8::pow(2, u32::try_from(index).unwrap());
             }
             value as i8
         }
@@ -252,14 +254,19 @@ impl Cpu {
 
         let mut result = Vec::new();
         for c in binary_string.chars() {
-            result.push((c as u8)-48);
+            result.push((c as u8) - 48);
         }
         result
     }
 
     fn print_status(&self) {
         for i in 0..7 {
-            println!("{}: {:#010b} ({})", i, self.get_register(i), self.get_register(i));
+            println!(
+                "{}: {:#010b} ({})",
+                i,
+                self.get_register(i),
+                self.get_register(i)
+            );
         }
         self.print_flags();
     }
@@ -297,13 +304,13 @@ impl Flag {
 #[cfg(test)]
 mod tests {
     use super::initialize_cpu;
-    use crate::cpu::{InstructionRegister, Flag};
+    use crate::cpu::{Flag, InstructionRegister};
 
     #[test]
     fn test_execute_mvi() {
         let mut cpu = initialize_cpu();
 
-        cpu.execute_mvi(&InstructionRegister::A, &[0,0,0,0,1,1,1,0]);
+        cpu.execute_mvi(&InstructionRegister::A, &[0, 0, 0, 0, 1, 1, 1, 0]);
         assert_eq!(cpu.get_register(0), &14);
     }
 
@@ -338,12 +345,12 @@ mod tests {
         cpu.change_register(0, 5);
         cpu.set_flag(Flag::Z, 1);
 
-        cpu.execute_adi(&[0,0,0,0,0,1,0,1]);
+        cpu.execute_adi(&[0, 0, 0, 0, 0, 1, 0, 1]);
         assert_eq!(cpu.get_register(0), &10);
         assert_eq!(cpu.get_flag(Flag::Z), 0);
 
         cpu.change_register(0, -5);
-        cpu.execute_adi(&[1,1,1,1,1,0,1,1]);
+        cpu.execute_adi(&[1, 1, 1, 1, 1, 0, 1, 1]);
         assert_eq!(cpu.get_register(0), &-10);
         assert_eq!(cpu.get_flag(Flag::S), 1);
     }
@@ -400,7 +407,7 @@ mod tests {
         cpu.execute_ana(&InstructionRegister::B);
         assert_eq!(cpu.get_register(0), &-10);
 
-        // -15 11110001	
+        // -15 11110001
         // -10 11110110
         // ANA 11110000
 
@@ -422,11 +429,11 @@ mod tests {
     fn test_binary_to_int() {
         let cpu = initialize_cpu();
 
-        let mut intermediate = [1,1,1,1,0,0,0,1];
+        let mut intermediate = [1, 1, 1, 1, 0, 0, 0, 1];
         let result = cpu.binary_to_int(&mut intermediate);
         assert_eq!(result, -15);
 
-        let mut intermediate = [0,1,1,1,0,0,0,1];
+        let mut intermediate = [0, 1, 1, 1, 0, 0, 0, 1];
         let result = cpu.binary_to_int(&mut intermediate);
         assert_eq!(result, 113);
     }
@@ -435,7 +442,7 @@ mod tests {
     fn test_int_to_binary() {
         let cpu = initialize_cpu();
         let result = cpu.int_to_binary(28);
-        let expected = [0,0,0,1,1,1,0,0];
+        let expected = [0, 0, 0, 1, 1, 1, 0, 0];
         assert_eq!(result, expected);
     }
 }
