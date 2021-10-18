@@ -1,12 +1,14 @@
-use std::fs::File;
-use std::io::{Write, Read};
 use crate::assembler::parser::Encoding;
-pub use crate::assembler::parser::{InstructionRegister, Instruction, InstructionCommand, InstructionType};
+pub use crate::assembler::parser::{
+    Instruction, InstructionCommand, InstructionRegister, InstructionType,
+};
+use std::fs::File;
+use std::io::{Read, Write};
 
 mod parser;
 
 #[derive(Debug)]
-pub struct Assembler{
+pub struct Assembler {
     input_asm: String,
     output_bin: String,
 }
@@ -62,22 +64,25 @@ impl Assembler {
             // instructions that take up more than one byte (intermediates)
             // MVI
             if raw_instructions[index][0..2] == [0, 0]
-                && !matches!(InstructionRegister::decode(&raw_instructions[index][2..5]), InstructionRegister::Invalid) &&
-                raw_instructions[index][5..] == [1, 1, 0] {
-
+                && !matches!(
+                    InstructionRegister::decode(&raw_instructions[index][2..5]),
+                    InstructionRegister::Invalid
+                )
+                && raw_instructions[index][5..] == [1, 1, 0]
+            {
                 instruction = Instruction {
                     variant: InstructionType::IntermediateReg,
                     command: InstructionCommand::Mvi,
                     registers: vec![InstructionRegister::decode(&raw_instructions[index][2..5])],
-                    intermediate: raw_instructions[index+1].to_vec(),
+                    intermediate: raw_instructions[index + 1].to_vec(),
                 };
             // ADI
-            } else if raw_instructions[index] == [1,1,0,0,0,1,1,0] {
+            } else if raw_instructions[index] == [1, 1, 0, 0, 0, 1, 1, 0] {
                 instruction = Instruction {
                     variant: InstructionType::Intermediate,
                     command: InstructionCommand::Adi,
                     registers: vec![],
-                    intermediate: raw_instructions[index+1].to_vec(),
+                    intermediate: raw_instructions[index + 1].to_vec(),
                 };
             // instructions without registers
             // HLT
@@ -90,9 +95,12 @@ impl Assembler {
                 };
             // instructions with 1 argument in the end
             // ADD
-            } else if raw_instructions[index][0..5] == [1, 0, 0, 0, 0] 
-                && !matches!(InstructionRegister::decode(&raw_instructions[index][5..]), InstructionRegister::Invalid) {
-                    
+            } else if raw_instructions[index][0..5] == [1, 0, 0, 0, 0]
+                && !matches!(
+                    InstructionRegister::decode(&raw_instructions[index][5..]),
+                    InstructionRegister::Invalid
+                )
+            {
                 instruction = Instruction {
                     variant: InstructionType::SingleReg,
                     command: InstructionCommand::Add,
@@ -100,19 +108,25 @@ impl Assembler {
                     intermediate: Vec::new(),
                 }
             // SUB
-            } else if raw_instructions[index][0..5] == [1, 0, 0, 1, 0] 
-                && !matches!(InstructionRegister::decode(&raw_instructions[index][5..]), InstructionRegister::Invalid) {
-                    
+            } else if raw_instructions[index][0..5] == [1, 0, 0, 1, 0]
+                && !matches!(
+                    InstructionRegister::decode(&raw_instructions[index][5..]),
+                    InstructionRegister::Invalid
+                )
+            {
                 instruction = Instruction {
                     variant: InstructionType::SingleReg,
                     command: InstructionCommand::Sub,
                     registers: vec![InstructionRegister::decode(&raw_instructions[index][5..])],
                     intermediate: Vec::new(),
                 }
-            // ANA 
-            } else if raw_instructions[index][0..5] == [1, 0, 1, 0, 0] 
-                && !matches!(InstructionRegister::decode(&raw_instructions[index][5..]), InstructionRegister::Invalid) {
-                    
+            // ANA
+            } else if raw_instructions[index][0..5] == [1, 0, 1, 0, 0]
+                && !matches!(
+                    InstructionRegister::decode(&raw_instructions[index][5..]),
+                    InstructionRegister::Invalid
+                )
+            {
                 instruction = Instruction {
                     variant: InstructionType::SingleReg,
                     command: InstructionCommand::Ana,
@@ -121,9 +135,13 @@ impl Assembler {
                 }
             // instructions with 1 argument in the middle
             // INR
-            } else if raw_instructions[index][0..2] == [0, 0] && raw_instructions[index][5..] == [1, 0, 0] 
-                && !matches!(InstructionRegister::decode(&raw_instructions[index][2..5]), InstructionRegister::Invalid) {
-                    
+            } else if raw_instructions[index][0..2] == [0, 0]
+                && raw_instructions[index][5..] == [1, 0, 0]
+                && !matches!(
+                    InstructionRegister::decode(&raw_instructions[index][2..5]),
+                    InstructionRegister::Invalid
+                )
+            {
                 instruction = Instruction {
                     variant: InstructionType::SingleReg,
                     command: InstructionCommand::Inr,
@@ -131,9 +149,13 @@ impl Assembler {
                     intermediate: Vec::new(),
                 }
             // DCR
-            } else if raw_instructions[index][0..2] == [0, 0] && raw_instructions[index][5..] == [1, 0, 1] 
-                && !matches!(InstructionRegister::decode(&raw_instructions[index][2..5]), InstructionRegister::Invalid) {
-
+            } else if raw_instructions[index][0..2] == [0, 0]
+                && raw_instructions[index][5..] == [1, 0, 1]
+                && !matches!(
+                    InstructionRegister::decode(&raw_instructions[index][2..5]),
+                    InstructionRegister::Invalid
+                )
+            {
                 instruction = Instruction {
                     variant: InstructionType::SingleReg,
                     command: InstructionCommand::Dcr,
@@ -143,14 +165,20 @@ impl Assembler {
             // instructions with 2 registers
             // MOV
             } else if raw_instructions[index][0..2] == [0, 1]
-                && !matches!(InstructionRegister::decode(&raw_instructions[index][2..5]), InstructionRegister::Invalid)
-                && !matches!(InstructionRegister::decode(&raw_instructions[index][5..]), InstructionRegister::Invalid) {
-
+                && !matches!(
+                    InstructionRegister::decode(&raw_instructions[index][2..5]),
+                    InstructionRegister::Invalid
+                )
+                && !matches!(
+                    InstructionRegister::decode(&raw_instructions[index][5..]),
+                    InstructionRegister::Invalid
+                )
+            {
                 let args = vec![
-                                InstructionRegister::decode(&raw_instructions[index][2..5]),
-                                InstructionRegister::decode(&raw_instructions[index][5..]),
-                            ];
-                
+                    InstructionRegister::decode(&raw_instructions[index][2..5]),
+                    InstructionRegister::decode(&raw_instructions[index][5..]),
+                ];
+
                 instruction = Instruction {
                     variant: InstructionType::DoubleReg,
                     command: InstructionCommand::Mov,
@@ -162,12 +190,12 @@ impl Assembler {
             }
 
             // skip next byte since its the intermediate of the instruction that was just parsed
-            if matches!(instruction.variant, InstructionType::Intermediate) ||
-                matches!(instruction.variant, InstructionType::IntermediateReg)
+            if matches!(instruction.variant, InstructionType::Intermediate)
+                || matches!(instruction.variant, InstructionType::IntermediateReg)
             {
-                index +=2;
+                index += 2;
             } else {
-                index +=1;
+                index += 1;
             }
             instructions.push(instruction);
         }
@@ -177,10 +205,10 @@ impl Assembler {
 
 #[cfg(test)]
 mod tests {
+    use super::parser::{InstructionCommand, InstructionRegister, InstructionType};
     use super::Assembler;
     use std::fs::File;
     use std::io::Read;
-    use super::parser::{InstructionType, InstructionCommand, InstructionRegister};
 
     #[test]
     fn test_new() {
@@ -202,17 +230,17 @@ mod tests {
         assert_eq!(binary_data.len() % 8, 0);
 
         let mut bytes = binary_data.chunks(8);
-        assert_eq!(bytes.next().unwrap(), [0,0,1,1,1,1,1,0]);
-        assert_eq!(bytes.next().unwrap(), [0,0,0,1,1,1,0,0]);
-        assert_eq!(bytes.next().unwrap(), [0,1,1,1,1,0,0,0]);
-        assert_eq!(bytes.next().unwrap(), [1,0,1,0,0,0,0,0]);
-        assert_eq!(bytes.next().unwrap(), [1,0,0,0,0,1,1,1]);
-        assert_eq!(bytes.next().unwrap(), [1,0,0,1,0,1,1,1]);
-        assert_eq!(bytes.next().unwrap(), [0,0,1,1,1,1,0,0]);
-        assert_eq!(bytes.next().unwrap(), [0,0,1,1,1,1,0,1]);
-        assert_eq!(bytes.next().unwrap(), [1,1,0,0,0,1,1,0]);
-        assert_eq!(bytes.next().unwrap(), [1,0,0,1,1,0,0,1]);
-        assert_eq!(bytes.next().unwrap(), [0,1,1,1,0,1,1,0]);
+        assert_eq!(bytes.next().unwrap(), [0, 0, 1, 1, 1, 1, 1, 0]);
+        assert_eq!(bytes.next().unwrap(), [0, 0, 0, 1, 1, 1, 0, 0]);
+        assert_eq!(bytes.next().unwrap(), [0, 1, 1, 1, 1, 0, 0, 0]);
+        assert_eq!(bytes.next().unwrap(), [1, 0, 1, 0, 0, 0, 0, 0]);
+        assert_eq!(bytes.next().unwrap(), [1, 0, 0, 0, 0, 1, 1, 1]);
+        assert_eq!(bytes.next().unwrap(), [1, 0, 0, 1, 0, 1, 1, 1]);
+        assert_eq!(bytes.next().unwrap(), [0, 0, 1, 1, 1, 1, 0, 0]);
+        assert_eq!(bytes.next().unwrap(), [0, 0, 1, 1, 1, 1, 0, 1]);
+        assert_eq!(bytes.next().unwrap(), [1, 1, 0, 0, 0, 1, 1, 0]);
+        assert_eq!(bytes.next().unwrap(), [1, 0, 0, 1, 1, 0, 0, 1]);
+        assert_eq!(bytes.next().unwrap(), [0, 1, 1, 1, 0, 1, 1, 0]);
     }
 
     #[test]
@@ -223,39 +251,87 @@ mod tests {
         let instructions = assembler.disassemble("output".to_owned());
         assert_eq!(instructions.len(), 9);
 
-        assert!(matches!(instructions[0].variant, InstructionType::IntermediateReg));
+        assert!(matches!(
+            instructions[0].variant,
+            InstructionType::IntermediateReg
+        ));
         assert!(matches!(instructions[0].command, InstructionCommand::Mvi));
-        assert!(matches!(instructions[0].registers[0], InstructionRegister::A));
-        assert_eq!(instructions[0].intermediate, [0,0,0,1,1,1,0,0]);
+        assert!(matches!(
+            instructions[0].registers[0],
+            InstructionRegister::A
+        ));
+        assert_eq!(instructions[0].intermediate, [0, 0, 0, 1, 1, 1, 0, 0]);
 
-        assert!(matches!(instructions[1].variant, InstructionType::DoubleReg));
+        assert!(matches!(
+            instructions[1].variant,
+            InstructionType::DoubleReg
+        ));
         assert!(matches!(instructions[1].command, InstructionCommand::Mov));
-        assert!(matches!(instructions[1].registers[0], InstructionRegister::A));
-        assert!(matches!(instructions[1].registers[1], InstructionRegister::B));
+        assert!(matches!(
+            instructions[1].registers[0],
+            InstructionRegister::A
+        ));
+        assert!(matches!(
+            instructions[1].registers[1],
+            InstructionRegister::B
+        ));
 
-        assert!(matches!(instructions[2].variant, InstructionType::SingleReg));
+        assert!(matches!(
+            instructions[2].variant,
+            InstructionType::SingleReg
+        ));
         assert!(matches!(instructions[2].command, InstructionCommand::Ana));
-        assert!(matches!(instructions[2].registers[0], InstructionRegister::B));
+        assert!(matches!(
+            instructions[2].registers[0],
+            InstructionRegister::B
+        ));
 
-        assert!(matches!(instructions[3].variant, InstructionType::SingleReg));
+        assert!(matches!(
+            instructions[3].variant,
+            InstructionType::SingleReg
+        ));
         assert!(matches!(instructions[3].command, InstructionCommand::Add));
-        assert!(matches!(instructions[3].registers[0], InstructionRegister::A));
+        assert!(matches!(
+            instructions[3].registers[0],
+            InstructionRegister::A
+        ));
 
-        assert!(matches!(instructions[4].variant, InstructionType::SingleReg));
+        assert!(matches!(
+            instructions[4].variant,
+            InstructionType::SingleReg
+        ));
         assert!(matches!(instructions[4].command, InstructionCommand::Sub));
-        assert!(matches!(instructions[4].registers[0], InstructionRegister::A));
+        assert!(matches!(
+            instructions[4].registers[0],
+            InstructionRegister::A
+        ));
 
-        assert!(matches!(instructions[5].variant, InstructionType::SingleReg));
+        assert!(matches!(
+            instructions[5].variant,
+            InstructionType::SingleReg
+        ));
         assert!(matches!(instructions[5].command, InstructionCommand::Inr));
-        assert!(matches!(instructions[5].registers[0], InstructionRegister::A));
+        assert!(matches!(
+            instructions[5].registers[0],
+            InstructionRegister::A
+        ));
 
-        assert!(matches!(instructions[6].variant, InstructionType::SingleReg));
+        assert!(matches!(
+            instructions[6].variant,
+            InstructionType::SingleReg
+        ));
         assert!(matches!(instructions[6].command, InstructionCommand::Dcr));
-        assert!(matches!(instructions[6].registers[0], InstructionRegister::A));
+        assert!(matches!(
+            instructions[6].registers[0],
+            InstructionRegister::A
+        ));
 
-        assert!(matches!(instructions[7].variant, InstructionType::Intermediate));
+        assert!(matches!(
+            instructions[7].variant,
+            InstructionType::Intermediate
+        ));
         assert!(matches!(instructions[7].command, InstructionCommand::Adi));
-        assert_eq!(instructions[7].intermediate, [1,0,0,1,1,0,0,1]);
+        assert_eq!(instructions[7].intermediate, [1, 0, 0, 1, 1, 0, 0, 1]);
 
         assert!(matches!(instructions[8].variant, InstructionType::NoReg));
         assert!(matches!(instructions[8].command, InstructionCommand::Hlt));
