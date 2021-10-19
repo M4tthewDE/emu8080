@@ -3,7 +3,7 @@ single_reg_command = { "ADD" | "SUB" | "INR" | "DCR" | "ANA" }
 double_reg_command = { "MOV" }
 intermediate_reg_command = { "MVI" }
 intermediate_command = { "ADI" }
-no_reg_command = { "HLT" }
+no_reg_command = { "HLT" | "STC" | "CMC" }
 intermediate  = { ("0"|"1"){8}}
 comment = { ";" ~ (LETTER | NUMBER | PUNCTUATION)* }
 
