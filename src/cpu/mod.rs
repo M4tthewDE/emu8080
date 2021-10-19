@@ -6,7 +6,7 @@ use strum_macros::EnumIter;
 pub fn initialize_cpu() -> Cpu {
     Cpu {
         register: vec![0, 0, 0, 0, 0, 0, 0, 0],
-        flags: vec![0, 0, 0, 0, 0, 0, 0, 0],
+        flags: vec![false, false, false, false, false, false, false, false],
     }
 }
 
@@ -15,7 +15,7 @@ pub struct Cpu {
     register: Vec<i8>,
 
     // S Z x A x P x C
-    flags: Vec<u8>,
+    flags: Vec<bool>,
 }
 
 impl Cpu {
@@ -80,15 +80,15 @@ impl Cpu {
         self.change_register(0, new_a);
 
         if self.get_register(0) == &0 {
-            self.set_flag(Flag::Z, 1);
+            self.set_flag(Flag::Z, true);
         } else {
-            self.set_flag(Flag::Z, 0);
+            self.set_flag(Flag::Z, false);
         }
 
         if self.get_register(0) < &0 {
-            self.set_flag(Flag::S, 1);
+            self.set_flag(Flag::S, true);
         } else {
-            self.set_flag(Flag::S, 0);
+            self.set_flag(Flag::S, false);
         }
     }
 
@@ -107,15 +107,15 @@ impl Cpu {
         self.change_register(0, new_a);
 
         if self.get_register(0) == &0 {
-            self.set_flag(Flag::Z, 1);
+            self.set_flag(Flag::Z, true);
         } else {
-            self.set_flag(Flag::Z, 0);
+            self.set_flag(Flag::Z, false);
         }
 
         if self.get_register(0) < &0 {
-            self.set_flag(Flag::S, 1);
+            self.set_flag(Flag::S, true);
         } else {
-            self.set_flag(Flag::S, 0);
+            self.set_flag(Flag::S, false);
         }
     }
 
@@ -127,15 +127,15 @@ impl Cpu {
         self.change_register(0, new_a);
 
         if self.get_register(0) == &0 {
-            self.set_flag(Flag::Z, 1);
+            self.set_flag(Flag::Z, true);
         } else {
-            self.set_flag(Flag::Z, 0);
+            self.set_flag(Flag::Z, false);
         }
 
         if self.get_register(0) < &0 {
-            self.set_flag(Flag::S, 1);
+            self.set_flag(Flag::S, true);
         } else {
-            self.set_flag(Flag::S, 0);
+            self.set_flag(Flag::S, false);
         }
     }
 
@@ -145,15 +145,15 @@ impl Cpu {
         self.change_register(arg.to_index().into(), new_value);
 
         if self.get_register(0) == &0 {
-            self.set_flag(Flag::Z, 1);
+            self.set_flag(Flag::Z, true);
         } else {
-            self.set_flag(Flag::Z, 0);
+            self.set_flag(Flag::Z, false);
         }
 
         if self.get_register(0) < &0 {
-            self.set_flag(Flag::S, 1);
+            self.set_flag(Flag::S, true);
         } else {
-            self.set_flag(Flag::S, 0);
+            self.set_flag(Flag::S, false);
         }
     }
 
@@ -163,15 +163,15 @@ impl Cpu {
         self.change_register(arg.to_index().into(), new_value);
 
         if self.get_register(0) == &0 {
-            self.set_flag(Flag::Z, 1);
+            self.set_flag(Flag::Z, true);
         } else {
-            self.set_flag(Flag::Z, 0);
+            self.set_flag(Flag::Z, false);
         }
 
         if self.get_register(0) < &0 {
-            self.set_flag(Flag::S, 1);
+            self.set_flag(Flag::S, true);
         } else {
-            self.set_flag(Flag::S, 0);
+            self.set_flag(Flag::S, false);
         }
     }
 
@@ -196,11 +196,11 @@ impl Cpu {
         self.change_register(0, value as i8);
     }
 
-    fn set_flag(&mut self, flag: Flag, value: u8) {
+    fn set_flag(&mut self, flag: Flag, value: bool) {
         self.flags[flag.get_index()] = value;
     }
 
-    fn get_flag(&self, flag: Flag) -> u8 {
+    fn get_flag(&self, flag: Flag) -> bool {
         self.flags[flag.get_index()]
     }
 
@@ -212,16 +212,11 @@ impl Cpu {
     }
 
     fn execute_stc(&mut self) {
-        self.set_flag(Flag::C, 1);
+        self.set_flag(Flag::C, true);
     }
 
     fn execute_cmc(&mut self) {
-        // TODO use bool for flags
-        match self.get_flag(Flag::C) {
-            1 => self.set_flag(Flag::C, 0),
-            0 => self.set_flag(Flag::C, 1),
-            _ => panic! {"Bit is not 1 or 0"},
-        }
+        self.set_flag(Flag::C, !self.get_flag(Flag::C));
     }
 
     fn binary_to_int(&self, intermediate: &mut [u8]) -> i8 {
@@ -342,32 +337,32 @@ mod tests {
     fn test_execute_add() {
         let mut cpu = initialize_cpu();
         cpu.change_register(0, 5);
-        cpu.set_flag(Flag::Z, 1);
+        cpu.set_flag(Flag::Z, true);
 
         cpu.execute_add(&InstructionRegister::A);
         assert_eq!(cpu.get_register(0), &10);
-        assert_eq!(cpu.get_flag(Flag::Z), 0);
+        assert_eq!(cpu.get_flag(Flag::Z), false);
 
         cpu.change_register(0, -5);
         cpu.execute_add(&InstructionRegister::A);
         assert_eq!(cpu.get_register(0), &-10);
-        assert_eq!(cpu.get_flag(Flag::S), 1);
+        assert_eq!(cpu.get_flag(Flag::S), true);
     }
 
     #[test]
     fn test_execute_adi() {
         let mut cpu = initialize_cpu();
         cpu.change_register(0, 5);
-        cpu.set_flag(Flag::Z, 1);
+        cpu.set_flag(Flag::Z, true);
 
         cpu.execute_adi(&[0, 0, 0, 0, 0, 1, 0, 1]);
         assert_eq!(cpu.get_register(0), &10);
-        assert_eq!(cpu.get_flag(Flag::Z), 0);
+        assert_eq!(cpu.get_flag(Flag::Z), false);
 
         cpu.change_register(0, -5);
         cpu.execute_adi(&[1, 1, 1, 1, 1, 0, 1, 1]);
         assert_eq!(cpu.get_register(0), &-10);
-        assert_eq!(cpu.get_flag(Flag::S), 1);
+        assert_eq!(cpu.get_flag(Flag::S), true);
     }
 
     #[test]
@@ -377,7 +372,7 @@ mod tests {
 
         cpu.execute_sub(&InstructionRegister::A);
         assert_eq!(cpu.get_register(0), &0);
-        assert_eq!(cpu.get_flag(Flag::Z), 1);
+        assert_eq!(cpu.get_flag(Flag::Z), true);
 
         cpu.change_register(0, -5);
         cpu.execute_sub(&InstructionRegister::A);
@@ -394,7 +389,7 @@ mod tests {
         cpu.change_register(0, -2);
         cpu.execute_inr(&InstructionRegister::A);
         assert_eq!(cpu.get_register(0), &-1);
-        assert_eq!(cpu.get_flag(Flag::S), 1);
+        assert_eq!(cpu.get_flag(Flag::S), true);
     }
 
     #[test]
@@ -404,13 +399,13 @@ mod tests {
 
         cpu.execute_dcr(&InstructionRegister::A);
         assert_eq!(cpu.get_register(0), &0);
-        assert_eq!(cpu.get_flag(Flag::Z), 1);
+        assert_eq!(cpu.get_flag(Flag::Z), true);
 
         cpu.change_register(0, -1);
 
         cpu.execute_dcr(&InstructionRegister::A);
         assert_eq!(cpu.get_register(0), &-2);
-        assert_eq!(cpu.get_flag(Flag::S), 1);
+        assert_eq!(cpu.get_flag(Flag::S), true);
     }
 
     #[test]
@@ -436,7 +431,7 @@ mod tests {
         let mut cpu = initialize_cpu();
 
         cpu.execute_stc();
-        assert_eq!(cpu.get_flag(Flag::C), 1);
+        assert_eq!(cpu.get_flag(Flag::C), true);
     }
 
     #[test]
@@ -444,10 +439,10 @@ mod tests {
         let mut cpu = initialize_cpu();
 
         cpu.execute_cmc();
-        assert_eq!(cpu.get_flag(Flag::C), 1);
+        assert_eq!(cpu.get_flag(Flag::C), true);
 
         cpu.execute_cmc();
-        assert_eq!(cpu.get_flag(Flag::C), 0);
+        assert_eq!(cpu.get_flag(Flag::C), false);
     }
 
     #[test]
