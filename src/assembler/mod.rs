@@ -101,6 +101,14 @@ impl Assembler {
                     registers: Vec::new(),
                     intermediate: Vec::new(),
                 }
+            // CMC
+            } else if raw_instructions[index] == [0, 0, 1, 1, 1, 1, 1, 1] {
+                instruction = Instruction {
+                    variant: InstructionType::NoReg,
+                    command: InstructionCommand::Cmc,
+                    registers: Vec::new(),
+                    intermediate: Vec::new(),
+                }
             // instructions with 1 argument in the end
             // ADD
             } else if raw_instructions[index][0..5] == [1, 0, 0, 0, 0]
@@ -249,6 +257,7 @@ mod tests {
         assert_eq!(bytes.next().unwrap(), [1, 1, 0, 0, 0, 1, 1, 0]);
         assert_eq!(bytes.next().unwrap(), [1, 0, 0, 1, 1, 0, 0, 1]);
         assert_eq!(bytes.next().unwrap(), [0, 0, 1, 1, 0, 1, 1, 1]);
+        assert_eq!(bytes.next().unwrap(), [0, 0, 1, 1, 1, 1, 1, 1]);
         assert_eq!(bytes.next().unwrap(), [0, 1, 1, 1, 0, 1, 1, 0]);
     }
 
@@ -258,7 +267,7 @@ mod tests {
         assembler.assemble();
 
         let instructions = assembler.disassemble("output".to_owned());
-        assert_eq!(instructions.len(), 10);
+        assert_eq!(instructions.len(), 11);
 
         assert!(matches!(
             instructions[0].variant,
@@ -345,7 +354,11 @@ mod tests {
         assert!(matches!(instructions[8].variant, InstructionType::NoReg));
         assert!(matches!(instructions[8].command, InstructionCommand::Stc));
 
+        println!("{:?}", instructions[9].command);
         assert!(matches!(instructions[9].variant, InstructionType::NoReg));
-        assert!(matches!(instructions[9].command, InstructionCommand::Hlt));
+        assert!(matches!(instructions[9].command, InstructionCommand::Cmc));
+
+        assert!(matches!(instructions[10].variant, InstructionType::NoReg));
+        assert!(matches!(instructions[10].command, InstructionCommand::Hlt));
     }
 }

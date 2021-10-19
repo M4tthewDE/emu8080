@@ -53,6 +53,7 @@ impl Cpu {
             InstructionCommand::Dcr => self.execute_dcr(&instruction.registers[0]),
             InstructionCommand::Ana => self.execute_ana(&instruction.registers[0]),
             InstructionCommand::Stc => self.execute_stc(),
+            InstructionCommand::Cmc => self.execute_cmc(),
             InstructionCommand::Hlt => self.execute_hlt(),
         }
     }
@@ -212,6 +213,15 @@ impl Cpu {
 
     fn execute_stc(&mut self) {
         self.set_flag(Flag::C, 1);
+    }
+
+    fn execute_cmc(&mut self) {
+        // TODO use bool for flags
+        match self.get_flag(Flag::C) {
+            1 => self.set_flag(Flag::C, 0),
+            0 => self.set_flag(Flag::C, 1),
+            _ => panic! {"Bit is not 1 or 0"},
+        }
     }
 
     fn binary_to_int(&self, intermediate: &mut [u8]) -> i8 {
@@ -427,6 +437,17 @@ mod tests {
 
         cpu.execute_stc();
         assert_eq!(cpu.get_flag(Flag::C), 1);
+    }
+
+    #[test]
+    fn test_execute_cmc() {
+        let mut cpu = initialize_cpu();
+
+        cpu.execute_cmc();
+        assert_eq!(cpu.get_flag(Flag::C), 1);
+
+        cpu.execute_cmc();
+        assert_eq!(cpu.get_flag(Flag::C), 0);
     }
 
     #[test]
