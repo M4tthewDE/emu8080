@@ -4,60 +4,79 @@ Emulation of an intel 8080 8-bit processor.
 
 # Supported instructions
 
-- [x] MOV
-- [x] MVI
-- [ ] LXI
-- [ ] LDA
-- [ ] STA
-- [ ] LHLD
-- [ ] SHLD
-- [ ] LDAX
-- [ ] STAX
-- [ ] XCHG
-- [x] ADD
-- [x] ADI
-- [ ] ADC 
-- [ ] ACI
-- [x] SUB
-- [ ] SUI
-- [ ] SBB 
-- [ ] SBI
-- [x] INR
-- [x] DCR
-- [ ] INX
-- [ ] DCX
-- [ ] DAD
-- [ ] DAA
-- [x] ANA
-- [ ] ANI
-- [ ] ORA 
-- [ ] ORI 
-- [ ] XRA 
-- [ ] XRI 
-- [ ] CMP 
-- [ ] CPI 
-- [ ] RLC 
-- [ ] RRC 
-- [ ] RAL 
-- [ ] RAR 
-- [x] CMA
+Source: [intel 8080 Assembly Language
+Programming Manual](http://dunfield.classiccmp.org/r/8080asm.pdf)
+
+## Carry Bit Instructions
 - [x] CMC
 - [x] STC
-- [ ] JMP 
-- [ ] Jccc 
-- [ ] CALL
-- [ ] Cccc
-- [ ] RET
-- [ ] Rccc
-- [ ] RST
-- [ ] PCHL
+
+## Single Register Instructions
+- [x] INR
+- [x] DCR
+- [x] CMA
+- [ ] DAA
+
+## Data Transfer Instructions
+- [x] MOV
+- [ ] LDAX
+- [ ] STAX
+
+## Register/Memory to Accumulator Instructions
+- [x] ADD
+- [ ] ADC
+- [x] SUB
+- [ ] SBB
+- [x] ANA
+- [ ] XRA
+- [ ] ORA
+- [ ] CMP
+
+## Rotate Accumulator Instructions
+- [ ] RLC
+- [ ] RRC
+- [ ] RAL
+- [ ] RAR
+
+## Register Pair Instructions
 - [ ] PUSH
 - [ ] POP
+- [ ] DAD
+- [ ] INX
+- [ ] DCX
+- [ ] XCHG
 - [ ] XTHL
 - [ ] SPHL
-- [ ] IN
-- [ ] OUT
-- [ ] EI
-- [ ] DI
+
+## Immediate Instructions
+- [ ] LXI
+- [x] MVI
+- [x] ADI
+- [ ] ACI
+- [ ] SUI
+- [ ] SBI
+- [ ] ANI
+- [ ] XRI
+- [ ] ORI
+- [ ] CPI
+
+## Direct Addressing Instructions
+- [ ] STA
+- [ ] LDA
+- [ ] SHLD
+- [ ] LHLD
+
+## Jump Instructions
+- [ ] PCHL
+- [ ] JMP
+- [ ] JC
+- [ ] JNC
+- [ ] JZ
+- [ ] JNZ
+- [ ] JM
+- [ ] JP
+- [ ] JPE
+- [ ] JPO
+
+## Halt Instruction
 - [x] HLT
-- [ ] NOP
