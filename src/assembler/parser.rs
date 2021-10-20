@@ -140,6 +140,8 @@ pub enum InstructionCommand {
     Mov,
     #[strum(serialize = "ADD")]
     Add,
+    #[strum(serialize = "ADC")]
+    Adc,
     #[strum(serialize = "ADI")]
     Adi,
     #[strum(serialize = "SUB")]
@@ -254,6 +256,9 @@ impl Encoding for Instruction {
             }
             InstructionCommand::Add => {
                 vec![[&[1, 0, 0, 0, 0], self.registers[0].encode()].concat()]
+            }
+            InstructionCommand::Adc => {
+                vec![[&[1, 0, 0, 0, 1], self.registers[0].encode()].concat()]
             }
             InstructionCommand::Sub => {
                 vec![[&[1, 0, 0, 1, 0], self.registers[0].encode()].concat()]
