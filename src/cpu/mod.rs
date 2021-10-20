@@ -48,6 +48,7 @@ impl Cpu {
             InstructionCommand::Adi => self.execute_adi(&instruction.intermediate),
             InstructionCommand::Mov => self.execute_mov(&instruction.registers),
             InstructionCommand::Add => self.execute_add(&instruction.registers[0]),
+            InstructionCommand::Adc => self.execute_adc(&instruction.registers[0]),
             InstructionCommand::Sub => self.execute_sub(&instruction.registers[0]),
             InstructionCommand::Inr => self.execute_inr(&instruction.registers[0]),
             InstructionCommand::Dcr => self.execute_dcr(&instruction.registers[0]),
@@ -104,6 +105,26 @@ impl Cpu {
         let source_value = self.get_register(arg.to_index().into());
         let current_a = self.get_register(0);
         let new_a = current_a + source_value;
+
+        self.change_register(0, new_a);
+
+        if self.get_register(0) == &0 {
+            self.set_flag(Flag::Z, true);
+        } else {
+            self.set_flag(Flag::Z, false);
+        }
+
+        if self.get_register(0) < &0 {
+            self.set_flag(Flag::S, true);
+        } else {
+            self.set_flag(Flag::S, false);
+        }
+    }
+
+    fn execute_adc(&mut self, arg: &InstructionRegister) {
+        let source_value = self.get_register(arg.to_index().into());
+        let current_a = self.get_register(0);
+        let new_a = current_a + source_value + self.get_flag(Flag::C) as i8;
 
         self.change_register(0, new_a);
 
@@ -355,6 +376,32 @@ mod tests {
         cpu.execute_add(&InstructionRegister::A);
         assert_eq!(cpu.get_register(0), &-10);
         assert_eq!(cpu.get_flag(Flag::S), true);
+    }
+
+    #[test]
+    fn test_execute_adc() {
+        let mut cpu = initialize_cpu();
+        cpu.change_register(0, 5);
+        cpu.set_flag(Flag::Z, true);
+
+        cpu.execute_add(&InstructionRegister::A);
+        assert_eq!(cpu.get_register(0), &10);
+        assert_eq!(cpu.get_flag(Flag::Z), false);
+
+        cpu.change_register(0, -5);
+        cpu.execute_add(&InstructionRegister::A);
+        assert_eq!(cpu.get_register(0), &-10);
+        assert_eq!(cpu.get_flag(Flag::S), true);
+
+        cpu.change_register(0, 10);
+        cpu.set_flag(Flag::C, false);
+        cpu.execute_adc(&InstructionRegister::A);
+        assert_eq!(cpu.get_register(0), &20);
+
+        cpu.change_register(0, 10);
+        cpu.set_flag(Flag::C, true);
+        cpu.execute_adc(&InstructionRegister::A);
+        assert_eq!(cpu.get_register(0), &21);
     }
 
     #[test]

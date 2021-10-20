@@ -24,7 +24,7 @@ Programming Manual](http://dunfield.classiccmp.org/r/8080asm.pdf)
 
 ## Register/Memory to Accumulator Instructions
 - [x] ADD
-- [ ] ADC
+- [x] ADC
 - [x] SUB
 - [ ] SBB
 - [x] ANA
