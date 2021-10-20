@@ -297,7 +297,6 @@ impl Cpu {
     }
 }
 
-#[allow(dead_code)]
 #[derive(Debug, EnumIter, Clone)]
 enum Flag {
     S,
