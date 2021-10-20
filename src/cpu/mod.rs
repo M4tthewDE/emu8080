@@ -54,6 +54,7 @@ impl Cpu {
             InstructionCommand::Ana => self.execute_ana(&instruction.registers[0]),
             InstructionCommand::Stc => self.execute_stc(),
             InstructionCommand::Cmc => self.execute_cmc(),
+            InstructionCommand::Cma => self.execute_cma(),
             InstructionCommand::Hlt => self.execute_hlt(),
         }
     }
@@ -217,6 +218,13 @@ impl Cpu {
 
     fn execute_cmc(&mut self) {
         self.set_flag(Flag::C, !self.get_flag(Flag::C));
+    }
+
+    fn execute_cma(&mut self) {
+        // complement of twos-complement is always
+        // -(num+1)
+
+        self.change_register(0, -(self.get_register(0) + 1));
     }
 
     fn binary_to_int(&self, intermediate: &mut [u8]) -> i8 {
@@ -443,6 +451,19 @@ mod tests {
 
         cpu.execute_cmc();
         assert_eq!(cpu.get_flag(Flag::C), false);
+    }
+
+    #[test]
+    fn test_execute_cma() {
+        let mut cpu = initialize_cpu();
+
+        cpu.change_register(0, 74);
+        cpu.execute_cma();
+        assert_eq!(cpu.get_register(0), &-75);
+
+        cpu.change_register(0, -45);
+        cpu.execute_cma();
+        assert_eq!(cpu.get_register(0), &44);
     }
 
     #[test]

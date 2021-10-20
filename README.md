@@ -40,7 +40,7 @@ Emulation of an intel 8080 8-bit processor.
 - [ ] RRC 
 - [ ] RAL 
 - [ ] RAR 
-- [ ] CMA 
+- [x] CMA
 - [x] CMC
 - [x] STC
 - [ ] JMP 
