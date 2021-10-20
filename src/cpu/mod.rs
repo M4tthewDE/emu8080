@@ -5,8 +5,8 @@ use strum_macros::EnumIter;
 
 pub fn initialize_cpu() -> Cpu {
     Cpu {
-        register: vec![0, 0, 0, 0, 0, 0, 0, 0],
-        flags: vec![false, false, false, false, false, false, false, false],
+        register: vec![0; 8],
+        flags: vec![false; 8],
     }
 }
 
