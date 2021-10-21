@@ -92,11 +92,9 @@ impl Cpu {
         }
 
         // if onecomplement representation added > 255 -> carry exists
-        let mut binary_x = self.int_to_binary(source_value);
-        let mut binary_y = self.int_to_binary(current_a);
-
-        if self.onecomplement_to_int(&mut binary_x) + self.onecomplement_to_int(&mut binary_y) > 255
-        {
+        // example: 127 + 127
+        // "x as u8 as u16" converts to onecomplement representation
+        if (source_value as u8 as u16) + (current_a as u8 as u16)  > 255 {
             self.set_flag(Flag::C, true);
         } else {
             self.set_flag(Flag::C, false);
@@ -132,11 +130,9 @@ impl Cpu {
         }
 
         // if onecomplement representation added > 255 -> carry exists
-        let mut binary_x = self.int_to_binary(source_value);
-        let mut binary_y = self.int_to_binary(current_a);
-
-        if self.onecomplement_to_int(&mut binary_x) + self.onecomplement_to_int(&mut binary_y) > 255
-        {
+        // example: 127 + 127
+        // "x as u8 as u16" converts to onecomplement representation
+        if (source_value as u8 as u16) + (current_a as u8 as u16)  > 255 {
             self.set_flag(Flag::C, true);
         } else {
             self.set_flag(Flag::C, false);
@@ -164,14 +160,9 @@ impl Cpu {
         }
 
         // if onecomplement representation added > 255 -> carry exists
-        let mut binary_x = self.int_to_binary(source_value);
-        let mut binary_y = self.int_to_binary(current_a);
-
-        if self.onecomplement_to_int(&mut binary_x)
-            + self.onecomplement_to_int(&mut binary_y)
-            + self.get_flag(Flag::C) as u16
-            > 255
-        {
+        // example: 127 + 127
+        // "x as u8 as u16" converts to onecomplement representation
+        if (source_value as u8 as u16) + (current_a as u8 as u16) + self.get_flag(Flag::C) as u16 > 255 {
             self.set_flag(Flag::C, true);
         } else {
             self.set_flag(Flag::C, false);
@@ -181,8 +172,8 @@ impl Cpu {
     }
 
     fn execute_sub(&mut self, args: &InstructionRegister) {
-        let source_value = self.get_register(args.to_index().into());
-        let current_a = self.get_register(0);
+        let source_value = *self.get_register(args.to_index().into());
+        let current_a = *self.get_register(0);
         let new_a = current_a - source_value;
 
         self.change_register(0, new_a);
@@ -284,7 +275,7 @@ impl Cpu {
         // complement of twos-complement is always
         // -(num+1)
 
-        self.change_register(0, -(self.get_register(0) + 1));
+        self.change_register(0, !self.get_register(0));
     }
 
     fn binary_to_int(&self, intermediate: &mut [u8]) -> i8 {
@@ -325,14 +316,6 @@ impl Cpu {
             }
             value as i8
         }
-    }
-
-    fn onecomplement_to_int(&self, num: &mut [u8]) -> u16 {
-        let mut value = 0;
-        for (index, digit) in num.iter().rev().enumerate() {
-            value += *digit as u16 * u16::pow(2, u32::try_from(index).unwrap());
-        }
-        value
     }
 
     fn int_to_binary(&self, value: i8) -> Vec<u8> {
@@ -488,7 +471,6 @@ mod tests {
         cpu.execute_adi(&[0, 1, 0, 0, 0, 0, 0, 0]);
         assert_eq!(cpu.get_register(0), &0);
         assert_eq!(cpu.get_flag(Flag::C), true);
-
 
         cpu.change_register(0, 127);
         cpu.execute_adi(&[0, 1, 1, 1, 1, 1, 1, 1]);
