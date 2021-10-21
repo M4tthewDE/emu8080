@@ -75,11 +75,9 @@ impl Cpu {
         let mut x = vec![0; 8];
         x[0..].clone_from_slice(intermediate);
 
-        let source_value = self.binary_to_int(&mut x);
-        let current_a = self.get_register(0);
-        let new_a = current_a + source_value;
-
-        self.change_register(0, new_a);
+        let source_value = self.binary_to_int(&mut x).clone();
+        let current_a = self.get_register(0).clone();
+        let new_a = current_a.wrapping_add(source_value);
 
         if self.get_register(0) == &0 {
             self.set_flag(Flag::Z, true);
@@ -92,6 +90,19 @@ impl Cpu {
         } else {
             self.set_flag(Flag::S, false);
         }
+
+        // if onecomplement representation added > 255 -> carry exists
+        let mut binary_x = self.int_to_binary(source_value);
+        let mut binary_y = self.int_to_binary(current_a);
+
+        if self.onecomplement_to_int(&mut binary_x) + self.onecomplement_to_int(&mut binary_y) > 255
+        {
+            self.set_flag(Flag::C, true);
+        } else {
+            self.set_flag(Flag::C, false);
+        }
+
+        self.change_register(0, new_a);
     }
 
     fn execute_mov(&mut self, args: &[InstructionRegister]) {
@@ -102,9 +113,9 @@ impl Cpu {
     }
 
     fn execute_add(&mut self, arg: &InstructionRegister) {
-        let source_value = self.get_register(arg.to_index().into());
-        let current_a = self.get_register(0);
-        let new_a = current_a + source_value;
+        let source_value = self.get_register(arg.to_index().into()).clone();
+        let current_a = self.get_register(0).clone();
+        let new_a = current_a.wrapping_add(source_value);
 
         self.change_register(0, new_a);
 
@@ -119,14 +130,26 @@ impl Cpu {
         } else {
             self.set_flag(Flag::S, false);
         }
+
+        // if onecomplement representation added > 255 -> carry exists
+        let mut binary_x = self.int_to_binary(source_value);
+        let mut binary_y = self.int_to_binary(current_a);
+
+        if self.onecomplement_to_int(&mut binary_x) + self.onecomplement_to_int(&mut binary_y) > 255
+        {
+            self.set_flag(Flag::C, true);
+        } else {
+            self.set_flag(Flag::C, false);
+        }
+
+        self.change_register(0, new_a);
     }
 
     fn execute_adc(&mut self, arg: &InstructionRegister) {
-        let source_value = self.get_register(arg.to_index().into());
-        let current_a = self.get_register(0);
-        let new_a = current_a + source_value + self.get_flag(Flag::C) as i8;
+        let source_value = self.get_register(arg.to_index().into()).clone();
+        let current_a = self.get_register(0).clone();
 
-        self.change_register(0, new_a);
+        let new_a = current_a + source_value + self.get_flag(Flag::C) as i8;
 
         if self.get_register(0) == &0 {
             self.set_flag(Flag::Z, true);
@@ -139,6 +162,22 @@ impl Cpu {
         } else {
             self.set_flag(Flag::S, false);
         }
+
+        // if onecomplement representation added > 255 -> carry exists
+        let mut binary_x = self.int_to_binary(source_value);
+        let mut binary_y = self.int_to_binary(current_a);
+
+        if self.onecomplement_to_int(&mut binary_x)
+            + self.onecomplement_to_int(&mut binary_y)
+            + self.get_flag(Flag::C) as u16
+            > 255
+        {
+            self.set_flag(Flag::C, true);
+        } else {
+            self.set_flag(Flag::C, false);
+        }
+
+        self.change_register(0, new_a);
     }
 
     fn execute_sub(&mut self, args: &InstructionRegister) {
@@ -288,6 +327,14 @@ impl Cpu {
         }
     }
 
+    fn onecomplement_to_int(&self, num: &mut [u8]) -> u16 {
+        let mut value = 0;
+        for (index, digit) in num.iter().rev().enumerate() {
+            value += *digit as u16 * u16::pow(2, u32::try_from(index).unwrap());
+        }
+        value
+    }
+
     fn int_to_binary(&self, value: i8) -> Vec<u8> {
         let binary_string = format!("{:08b}", value);
 
@@ -375,6 +422,19 @@ mod tests {
         cpu.execute_add(&InstructionRegister::A);
         assert_eq!(cpu.get_register(0), &-10);
         assert_eq!(cpu.get_flag(Flag::S), true);
+
+        cpu.change_register(0, 127);
+        cpu.change_register(1, 127);
+        cpu.set_flag(Flag::C, true);
+        cpu.execute_add(&InstructionRegister::B);
+        assert_eq!(cpu.get_register(0), &-2);
+        assert_eq!(cpu.get_flag(Flag::C), false);
+
+        cpu.change_register(0, -64);
+        cpu.change_register(1, 64);
+        cpu.execute_add(&InstructionRegister::B);
+        assert_eq!(cpu.get_register(0), &0);
+        assert_eq!(cpu.get_flag(Flag::C), true);
     }
 
     #[test]
@@ -382,15 +442,6 @@ mod tests {
         let mut cpu = initialize_cpu();
         cpu.change_register(0, 5);
         cpu.set_flag(Flag::Z, true);
-
-        cpu.execute_add(&InstructionRegister::A);
-        assert_eq!(cpu.get_register(0), &10);
-        assert_eq!(cpu.get_flag(Flag::Z), false);
-
-        cpu.change_register(0, -5);
-        cpu.execute_add(&InstructionRegister::A);
-        assert_eq!(cpu.get_register(0), &-10);
-        assert_eq!(cpu.get_flag(Flag::S), true);
 
         cpu.change_register(0, 10);
         cpu.set_flag(Flag::C, false);
@@ -401,6 +452,20 @@ mod tests {
         cpu.set_flag(Flag::C, true);
         cpu.execute_adc(&InstructionRegister::A);
         assert_eq!(cpu.get_register(0), &21);
+
+        cpu.change_register(0, -64);
+        cpu.change_register(1, 63);
+        cpu.set_flag(Flag::C, true);
+        cpu.execute_adc(&InstructionRegister::B);
+        assert_eq!(cpu.get_register(0), &0);
+        assert_eq!(cpu.get_flag(Flag::C), true);
+
+        cpu.change_register(0, 15);
+        cpu.change_register(1, 63);
+        cpu.set_flag(Flag::C, true);
+        cpu.execute_adc(&InstructionRegister::B);
+        assert_eq!(cpu.get_register(0), &79);
+        assert_eq!(cpu.get_flag(Flag::C), false);
     }
 
     #[test]
@@ -417,6 +482,18 @@ mod tests {
         cpu.execute_adi(&[1, 1, 1, 1, 1, 0, 1, 1]);
         assert_eq!(cpu.get_register(0), &-10);
         assert_eq!(cpu.get_flag(Flag::S), true);
+
+        cpu.change_register(0, -64);
+        cpu.set_flag(Flag::C, true);
+        cpu.execute_adi(&[0, 1, 0, 0, 0, 0, 0, 0]);
+        assert_eq!(cpu.get_register(0), &0);
+        assert_eq!(cpu.get_flag(Flag::C), true);
+
+
+        cpu.change_register(0, 127);
+        cpu.execute_adi(&[0, 1, 1, 1, 1, 1, 1, 1]);
+        assert_eq!(cpu.get_register(0), &-2);
+        assert_eq!(cpu.get_flag(Flag::C), false);
     }
 
     #[test]
