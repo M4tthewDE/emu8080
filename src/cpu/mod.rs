@@ -75,8 +75,8 @@ impl Cpu {
         let mut x = vec![0; 8];
         x[0..].clone_from_slice(intermediate);
 
-        let source_value = self.binary_to_int(&mut x).clone();
-        let current_a = self.get_register(0).clone();
+        let source_value = self.binary_to_int(&mut x);
+        let current_a = *self.get_register(0);
         let new_a = current_a.wrapping_add(source_value);
 
         if self.get_register(0) == &0 {
@@ -113,8 +113,8 @@ impl Cpu {
     }
 
     fn execute_add(&mut self, arg: &InstructionRegister) {
-        let source_value = self.get_register(arg.to_index().into()).clone();
-        let current_a = self.get_register(0).clone();
+        let source_value = *self.get_register(arg.to_index().into());
+        let current_a = *self.get_register(0);
         let new_a = current_a.wrapping_add(source_value);
 
         self.change_register(0, new_a);
@@ -146,8 +146,8 @@ impl Cpu {
     }
 
     fn execute_adc(&mut self, arg: &InstructionRegister) {
-        let source_value = self.get_register(arg.to_index().into()).clone();
-        let current_a = self.get_register(0).clone();
+        let source_value = *self.get_register(arg.to_index().into());
+        let current_a = *self.get_register(0);
 
         let new_a = current_a + source_value + self.get_flag(Flag::C) as i8;
 
