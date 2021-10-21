@@ -94,7 +94,7 @@ impl Cpu {
         // if onecomplement representation added > 255 -> carry exists
         // example: 127 + 127
         // "x as u8 as u16" converts to onecomplement representation
-        if (source_value as u8 as u16) + (current_a as u8 as u16)  > 255 {
+        if (source_value as u8 as u16) + (current_a as u8 as u16) > 255 {
             self.set_flag(Flag::C, true);
         } else {
             self.set_flag(Flag::C, false);
@@ -132,7 +132,7 @@ impl Cpu {
         // if onecomplement representation added > 255 -> carry exists
         // example: 127 + 127
         // "x as u8 as u16" converts to onecomplement representation
-        if (source_value as u8 as u16) + (current_a as u8 as u16)  > 255 {
+        if (source_value as u8 as u16) + (current_a as u8 as u16) > 255 {
             self.set_flag(Flag::C, true);
         } else {
             self.set_flag(Flag::C, false);
@@ -162,7 +162,9 @@ impl Cpu {
         // if onecomplement representation added > 255 -> carry exists
         // example: 127 + 127
         // "x as u8 as u16" converts to onecomplement representation
-        if (source_value as u8 as u16) + (current_a as u8 as u16) + self.get_flag(Flag::C) as u16 > 255 {
+        if (source_value as u8 as u16) + (current_a as u8 as u16) + self.get_flag(Flag::C) as u16
+            > 255
+        {
             self.set_flag(Flag::C, true);
         } else {
             self.set_flag(Flag::C, false);
@@ -174,7 +176,7 @@ impl Cpu {
     fn execute_sub(&mut self, args: &InstructionRegister) {
         let source_value = *self.get_register(args.to_index().into());
         let current_a = *self.get_register(0);
-        let new_a = current_a - source_value;
+        let new_a = current_a.wrapping_sub(source_value);
 
         self.change_register(0, new_a);
 
@@ -188,6 +190,14 @@ impl Cpu {
             self.set_flag(Flag::S, true);
         } else {
             self.set_flag(Flag::S, false);
+        }
+
+        // if onecomplement representation subtraction < 0 -> set carry
+        // "x as u8 as u16" converts to onecomplement representation
+        if (current_a as u8 as u16).checked_sub(source_value as u8 as u16) != None {
+            self.set_flag(Flag::C, false);
+        } else {
+            self.set_flag(Flag::C, true);
         }
     }
 
@@ -490,6 +500,26 @@ mod tests {
         cpu.change_register(0, -5);
         cpu.execute_sub(&InstructionRegister::A);
         assert_eq!(cpu.get_register(0), &0);
+
+        cpu.change_register(0, 127);
+        cpu.change_register(1, -1);
+        cpu.execute_sub(&InstructionRegister::B);
+        assert_eq!(cpu.get_register(0), &-128);
+        assert_eq!(cpu.get_flag(Flag::C), true);
+
+        cpu.change_register(0, -59);
+        cpu.change_register(1, -98);
+        cpu.set_flag(Flag::C, true);
+        cpu.execute_sub(&InstructionRegister::B);
+        assert_eq!(cpu.get_register(0), &39);
+        assert_eq!(cpu.get_flag(Flag::C), false);
+
+        cpu.change_register(0, 12);
+        cpu.change_register(1, -15);
+        cpu.set_flag(Flag::C, false);
+        cpu.execute_sub(&InstructionRegister::B);
+        assert_eq!(cpu.get_register(0), &27);
+        assert_eq!(cpu.get_flag(Flag::C), true);
     }
 
     #[test]
