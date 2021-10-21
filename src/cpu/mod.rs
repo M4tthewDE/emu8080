@@ -18,6 +18,27 @@ pub struct Cpu {
     flags: Vec<bool>,
 }
 
+#[derive(Debug, EnumIter, Clone)]
+enum Flag {
+    S,
+    Z,
+    A,
+    P,
+    C,
+}
+
+impl Flag {
+    pub fn get_index(&self) -> usize {
+        match self {
+            Flag::S => 0,
+            Flag::Z => 1,
+            Flag::A => 3,
+            Flag::P => 5,
+            Flag::C => 7,
+        }
+    }
+}
+
 impl Cpu {
     fn get_register(&self, index: usize) -> &i8 {
         &self.register[index]
@@ -354,27 +375,6 @@ impl Cpu {
         println!("Flags:");
         for flag in Flag::iter() {
             println!("{:?}: {}", flag.clone(), self.get_flag(flag));
-        }
-    }
-}
-
-#[derive(Debug, EnumIter, Clone)]
-enum Flag {
-    S,
-    Z,
-    A,
-    P,
-    C,
-}
-
-impl Flag {
-    pub fn get_index(&self) -> usize {
-        match self {
-            Flag::S => 0,
-            Flag::Z => 1,
-            Flag::A => 3,
-            Flag::P => 5,
-            Flag::C => 7,
         }
     }
 }
