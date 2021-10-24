@@ -40,8 +40,8 @@ impl Flag {
 }
 
 impl Cpu {
-    fn get_register(&self, index: usize) -> &i8 {
-        &self.register[index]
+    fn get_register(&self, index: usize) -> i8 {
+        self.register[index]
     }
 
     fn change_register(&mut self, index: usize, value: i8) {
@@ -97,16 +97,16 @@ impl Cpu {
         x[0..].clone_from_slice(intermediate);
 
         let source_value = self.binary_to_int(&mut x);
-        let current_a = *self.get_register(0);
+        let current_a = self.get_register(0);
         let new_a = current_a.wrapping_add(source_value);
 
-        if self.get_register(0) == &0 {
+        if self.get_register(0) == 0 {
             self.set_flag(Flag::Z, true);
         } else {
             self.set_flag(Flag::Z, false);
         }
 
-        if self.get_register(0) < &0 {
+        if self.get_register(0) < 0 {
             self.set_flag(Flag::S, true);
         } else {
             self.set_flag(Flag::S, false);
@@ -125,26 +125,26 @@ impl Cpu {
     }
 
     fn execute_mov(&mut self, args: &[InstructionRegister]) {
-        let source_value = *self.get_register(args[0].to_index().into());
+        let source_value = self.get_register(args[0].to_index().into());
 
         let destination_index = args[1].to_index().into();
         self.change_register(destination_index, source_value);
     }
 
     fn execute_add(&mut self, arg: &InstructionRegister) {
-        let source_value = *self.get_register(arg.to_index().into());
-        let current_a = *self.get_register(0);
+        let source_value = self.get_register(arg.to_index().into());
+        let current_a = self.get_register(0);
         let new_a = current_a.wrapping_add(source_value);
 
         self.change_register(0, new_a);
 
-        if self.get_register(0) == &0 {
+        if self.get_register(0) == 0 {
             self.set_flag(Flag::Z, true);
         } else {
             self.set_flag(Flag::Z, false);
         }
 
-        if self.get_register(0) < &0 {
+        if self.get_register(0) < 0 {
             self.set_flag(Flag::S, true);
         } else {
             self.set_flag(Flag::S, false);
@@ -163,18 +163,18 @@ impl Cpu {
     }
 
     fn execute_adc(&mut self, arg: &InstructionRegister) {
-        let source_value = *self.get_register(arg.to_index().into());
-        let current_a = *self.get_register(0);
+        let source_value = self.get_register(arg.to_index().into());
+        let current_a = self.get_register(0);
 
         let new_a = current_a + source_value + self.get_flag(Flag::C) as i8;
 
-        if self.get_register(0) == &0 {
+        if self.get_register(0) == 0 {
             self.set_flag(Flag::Z, true);
         } else {
             self.set_flag(Flag::Z, false);
         }
 
-        if self.get_register(0) < &0 {
+        if self.get_register(0) < 0 {
             self.set_flag(Flag::S, true);
         } else {
             self.set_flag(Flag::S, false);
@@ -195,19 +195,19 @@ impl Cpu {
     }
 
     fn execute_sub(&mut self, args: &InstructionRegister) {
-        let source_value = *self.get_register(args.to_index().into());
-        let current_a = *self.get_register(0);
+        let source_value = self.get_register(args.to_index().into());
+        let current_a = self.get_register(0);
         let new_a = current_a.wrapping_sub(source_value);
 
         self.change_register(0, new_a);
 
-        if self.get_register(0) == &0 {
+        if self.get_register(0) == 0 {
             self.set_flag(Flag::Z, true);
         } else {
             self.set_flag(Flag::Z, false);
         }
 
-        if self.get_register(0) < &0 {
+        if self.get_register(0) < 0 {
             self.set_flag(Flag::S, true);
         } else {
             self.set_flag(Flag::S, false);
@@ -227,13 +227,13 @@ impl Cpu {
 
         self.change_register(arg.to_index().into(), new_value);
 
-        if self.get_register(0) == &0 {
+        if self.get_register(0) == 0 {
             self.set_flag(Flag::Z, true);
         } else {
             self.set_flag(Flag::Z, false);
         }
 
-        if self.get_register(0) < &0 {
+        if self.get_register(0) < 0 {
             self.set_flag(Flag::S, true);
         } else {
             self.set_flag(Flag::S, false);
@@ -245,13 +245,13 @@ impl Cpu {
 
         self.change_register(arg.to_index().into(), new_value);
 
-        if self.get_register(0) == &0 {
+        if self.get_register(0) == 0 {
             self.set_flag(Flag::Z, true);
         } else {
             self.set_flag(Flag::Z, false);
         }
 
-        if self.get_register(0) < &0 {
+        if self.get_register(0) < 0 {
             self.set_flag(Flag::S, true);
         } else {
             self.set_flag(Flag::S, false);
@@ -259,8 +259,8 @@ impl Cpu {
     }
 
     fn execute_ana(&mut self, arg: &InstructionRegister) {
-        let mut binary_a = self.int_to_binary(*self.get_register(0));
-        let binary_reg = self.int_to_binary(*self.get_register(arg.to_index().into()));
+        let mut binary_a = self.int_to_binary(self.get_register(0));
+        let binary_reg = self.int_to_binary(self.get_register(arg.to_index().into()));
 
         for index in 0..8 {
             if !(binary_a[index] == 1 && binary_reg[index] == 1) {
@@ -389,7 +389,7 @@ mod tests {
         let mut cpu = initialize_cpu();
 
         cpu.execute_mvi(&InstructionRegister::A, &[0, 0, 0, 0, 1, 1, 1, 0]);
-        assert_eq!(cpu.get_register(0), &14);
+        assert_eq!(cpu.get_register(0), 14);
     }
 
     #[test]
@@ -398,7 +398,7 @@ mod tests {
         cpu.change_register(0, 10);
 
         cpu.execute_mov(&[InstructionRegister::A, InstructionRegister::B]);
-        assert_eq!(cpu.get_register(1), &10);
+        assert_eq!(cpu.get_register(1), 10);
     }
 
     #[test]
@@ -408,25 +408,25 @@ mod tests {
         cpu.set_flag(Flag::Z, true);
 
         cpu.execute_add(&InstructionRegister::A);
-        assert_eq!(cpu.get_register(0), &10);
+        assert_eq!(cpu.get_register(0), 10);
         assert_eq!(cpu.get_flag(Flag::Z), false);
 
         cpu.change_register(0, -5);
         cpu.execute_add(&InstructionRegister::A);
-        assert_eq!(cpu.get_register(0), &-10);
+        assert_eq!(cpu.get_register(0), -10);
         assert_eq!(cpu.get_flag(Flag::S), true);
 
         cpu.change_register(0, 127);
         cpu.change_register(1, 127);
         cpu.set_flag(Flag::C, true);
         cpu.execute_add(&InstructionRegister::B);
-        assert_eq!(cpu.get_register(0), &-2);
+        assert_eq!(cpu.get_register(0), -2);
         assert_eq!(cpu.get_flag(Flag::C), false);
 
         cpu.change_register(0, -64);
         cpu.change_register(1, 64);
         cpu.execute_add(&InstructionRegister::B);
-        assert_eq!(cpu.get_register(0), &0);
+        assert_eq!(cpu.get_register(0), 0);
         assert_eq!(cpu.get_flag(Flag::C), true);
     }
 
@@ -439,25 +439,25 @@ mod tests {
         cpu.change_register(0, 10);
         cpu.set_flag(Flag::C, false);
         cpu.execute_adc(&InstructionRegister::A);
-        assert_eq!(cpu.get_register(0), &20);
+        assert_eq!(cpu.get_register(0), 20);
 
         cpu.change_register(0, 10);
         cpu.set_flag(Flag::C, true);
         cpu.execute_adc(&InstructionRegister::A);
-        assert_eq!(cpu.get_register(0), &21);
+        assert_eq!(cpu.get_register(0), 21);
 
         cpu.change_register(0, -64);
         cpu.change_register(1, 63);
         cpu.set_flag(Flag::C, true);
         cpu.execute_adc(&InstructionRegister::B);
-        assert_eq!(cpu.get_register(0), &0);
+        assert_eq!(cpu.get_register(0), 0);
         assert_eq!(cpu.get_flag(Flag::C), true);
 
         cpu.change_register(0, 15);
         cpu.change_register(1, 63);
         cpu.set_flag(Flag::C, true);
         cpu.execute_adc(&InstructionRegister::B);
-        assert_eq!(cpu.get_register(0), &79);
+        assert_eq!(cpu.get_register(0), 79);
         assert_eq!(cpu.get_flag(Flag::C), false);
     }
 
@@ -468,23 +468,23 @@ mod tests {
         cpu.set_flag(Flag::Z, true);
 
         cpu.execute_adi(&[0, 0, 0, 0, 0, 1, 0, 1]);
-        assert_eq!(cpu.get_register(0), &10);
+        assert_eq!(cpu.get_register(0), 10);
         assert_eq!(cpu.get_flag(Flag::Z), false);
 
         cpu.change_register(0, -5);
         cpu.execute_adi(&[1, 1, 1, 1, 1, 0, 1, 1]);
-        assert_eq!(cpu.get_register(0), &-10);
+        assert_eq!(cpu.get_register(0), -10);
         assert_eq!(cpu.get_flag(Flag::S), true);
 
         cpu.change_register(0, -64);
         cpu.set_flag(Flag::C, true);
         cpu.execute_adi(&[0, 1, 0, 0, 0, 0, 0, 0]);
-        assert_eq!(cpu.get_register(0), &0);
+        assert_eq!(cpu.get_register(0), 0);
         assert_eq!(cpu.get_flag(Flag::C), true);
 
         cpu.change_register(0, 127);
         cpu.execute_adi(&[0, 1, 1, 1, 1, 1, 1, 1]);
-        assert_eq!(cpu.get_register(0), &-2);
+        assert_eq!(cpu.get_register(0), -2);
         assert_eq!(cpu.get_flag(Flag::C), false);
     }
 
@@ -494,31 +494,31 @@ mod tests {
         cpu.change_register(0, 5);
 
         cpu.execute_sub(&InstructionRegister::A);
-        assert_eq!(cpu.get_register(0), &0);
+        assert_eq!(cpu.get_register(0), 0);
         assert_eq!(cpu.get_flag(Flag::Z), true);
 
         cpu.change_register(0, -5);
         cpu.execute_sub(&InstructionRegister::A);
-        assert_eq!(cpu.get_register(0), &0);
+        assert_eq!(cpu.get_register(0), 0);
 
         cpu.change_register(0, 127);
         cpu.change_register(1, -1);
         cpu.execute_sub(&InstructionRegister::B);
-        assert_eq!(cpu.get_register(0), &-128);
+        assert_eq!(cpu.get_register(0), -128);
         assert_eq!(cpu.get_flag(Flag::C), true);
 
         cpu.change_register(0, -59);
         cpu.change_register(1, -98);
         cpu.set_flag(Flag::C, true);
         cpu.execute_sub(&InstructionRegister::B);
-        assert_eq!(cpu.get_register(0), &39);
+        assert_eq!(cpu.get_register(0), 39);
         assert_eq!(cpu.get_flag(Flag::C), false);
 
         cpu.change_register(0, 12);
         cpu.change_register(1, -15);
         cpu.set_flag(Flag::C, false);
         cpu.execute_sub(&InstructionRegister::B);
-        assert_eq!(cpu.get_register(0), &27);
+        assert_eq!(cpu.get_register(0), 27);
         assert_eq!(cpu.get_flag(Flag::C), true);
     }
 
@@ -527,11 +527,11 @@ mod tests {
         let mut cpu = initialize_cpu();
 
         cpu.execute_inr(&InstructionRegister::A);
-        assert_eq!(cpu.get_register(0), &1);
+        assert_eq!(cpu.get_register(0), 1);
 
         cpu.change_register(0, -2);
         cpu.execute_inr(&InstructionRegister::A);
-        assert_eq!(cpu.get_register(0), &-1);
+        assert_eq!(cpu.get_register(0), -1);
         assert_eq!(cpu.get_flag(Flag::S), true);
     }
 
@@ -541,13 +541,13 @@ mod tests {
         cpu.change_register(0, 1);
 
         cpu.execute_dcr(&InstructionRegister::A);
-        assert_eq!(cpu.get_register(0), &0);
+        assert_eq!(cpu.get_register(0), 0);
         assert_eq!(cpu.get_flag(Flag::Z), true);
 
         cpu.change_register(0, -1);
 
         cpu.execute_dcr(&InstructionRegister::A);
-        assert_eq!(cpu.get_register(0), &-2);
+        assert_eq!(cpu.get_register(0), -2);
         assert_eq!(cpu.get_flag(Flag::S), true);
     }
 
@@ -558,7 +558,7 @@ mod tests {
         cpu.change_register(1, -10);
 
         cpu.execute_ana(&InstructionRegister::B);
-        assert_eq!(cpu.get_register(0), &-10);
+        assert_eq!(cpu.get_register(0), -10);
 
         // -15 11110001
         // -10 11110110
@@ -566,7 +566,7 @@ mod tests {
 
         cpu.change_register(0, -15);
         cpu.execute_ana(&InstructionRegister::B);
-        assert_eq!(cpu.get_register(0), &-16);
+        assert_eq!(cpu.get_register(0), -16);
     }
 
     #[test]
@@ -594,11 +594,11 @@ mod tests {
 
         cpu.change_register(0, 74);
         cpu.execute_cma();
-        assert_eq!(cpu.get_register(0), &-75);
+        assert_eq!(cpu.get_register(0), -75);
 
         cpu.change_register(0, -45);
         cpu.execute_cma();
-        assert_eq!(cpu.get_register(0), &44);
+        assert_eq!(cpu.get_register(0), 44);
     }
 
     #[test]
