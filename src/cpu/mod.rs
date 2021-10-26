@@ -67,6 +67,7 @@ impl Cpu {
                 self.execute_mvi(&instruction.registers[0], &instruction.intermediate)
             }
             InstructionCommand::Adi => self.execute_adi(&instruction.intermediate),
+            InstructionCommand::Aci => self.execute_aci(&instruction.intermediate),
             InstructionCommand::Mov => self.execute_mov(&instruction.registers),
             InstructionCommand::Add => self.execute_add(&instruction.registers[0]),
             InstructionCommand::Adc => self.execute_adc(&instruction.registers[0]),
@@ -116,6 +117,38 @@ impl Cpu {
         // example: 127 + 127
         // "x as u8 as u16" converts to onecomplement representation
         if (source_value as u8 as u16) + (current_a as u8 as u16) > 255 {
+            self.set_flag(Flag::C, true);
+        } else {
+            self.set_flag(Flag::C, false);
+        }
+
+        self.change_register(0, new_a);
+    }
+
+    fn execute_aci(&mut self, intermediate: &[u8]) {
+        let mut x = vec![0; 8];
+        x[0..].clone_from_slice(intermediate);
+
+        let source_value = self.binary_to_int(&mut x);
+        let current_a = self.get_register(0);
+        let new_a = current_a.wrapping_add(source_value).wrapping_add(self.get_flag(Flag::C) as i8);
+
+        if self.get_register(0) == 0 {
+            self.set_flag(Flag::Z, true);
+        } else {
+            self.set_flag(Flag::Z, false);
+        }
+
+        if self.get_register(0) < 0 {
+            self.set_flag(Flag::S, true);
+        } else {
+            self.set_flag(Flag::S, false);
+        }
+
+        // if onecomplement representation added > 255 -> carry exists
+        // example: 127 + 127
+        // "x as u8 as u16" converts to onecomplement representation
+        if (source_value as u8 as u16) + (current_a as u8 as u16) + (self.get_flag(Flag::C) as u16) > 255 {
             self.set_flag(Flag::C, true);
         } else {
             self.set_flag(Flag::C, false);
@@ -486,6 +519,44 @@ mod tests {
         cpu.execute_adi(&[0, 1, 1, 1, 1, 1, 1, 1]);
         assert_eq!(cpu.get_register(0), -2);
         assert_eq!(cpu.get_flag(Flag::C), false);
+    }
+
+    #[test]
+    fn test_execute_aci() {
+        let mut cpu = initialize_cpu();
+        cpu.change_register(0, 5);
+        cpu.set_flag(Flag::Z, true);
+
+        cpu.execute_aci(&[0, 0, 0, 0, 0, 1, 0, 1]);
+        assert_eq!(cpu.get_register(0), 10);
+        assert_eq!(cpu.get_flag(Flag::Z), false);
+
+        cpu.change_register(0, -5);
+        cpu.execute_aci(&[1, 1, 1, 1, 1, 0, 1, 1]);
+        assert_eq!(cpu.get_register(0), -10);
+        assert_eq!(cpu.get_flag(Flag::S), true);
+
+        cpu.change_register(0, -64);
+        cpu.set_flag(Flag::C, true);
+        cpu.execute_aci(&[0, 1, 0, 0, 0, 0, 0, 0]);
+        assert_eq!(cpu.get_register(0), 1);
+        assert_eq!(cpu.get_flag(Flag::C), true);
+
+        cpu.change_register(0, 127);
+        cpu.set_flag(Flag::C, false);
+        cpu.execute_aci(&[0, 1, 1, 1, 1, 1, 1, 1]);
+        assert_eq!(cpu.get_register(0), -2);
+        assert_eq!(cpu.get_flag(Flag::C), false);
+
+        cpu.set_flag(Flag::C, true);
+        cpu.change_register(0, 0);
+        cpu.execute_aci(&[0, 0, 0, 0, 0, 1, 0, 0]);
+        assert_eq!(cpu.get_register(0), 5);
+
+        cpu.set_flag(Flag::C, false);
+        cpu.change_register(0, 0);
+        cpu.execute_aci(&[0, 0, 0, 0, 0, 1, 0, 0]);
+        assert_eq!(cpu.get_register(0), 4);
     }
 
     #[test]
