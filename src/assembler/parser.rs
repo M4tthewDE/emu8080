@@ -144,6 +144,8 @@ pub enum InstructionCommand {
     Adc,
     #[strum(serialize = "ADI")]
     Adi,
+    #[strum(serialize = "ACI")]
+    Aci,
     #[strum(serialize = "SUB")]
     Sub,
     #[strum(serialize = "INR")]
@@ -253,6 +255,9 @@ impl Encoding for Instruction {
             }
             InstructionCommand::Adi => {
                 vec![vec![1, 1, 0, 0, 0, 1, 1, 0], self.intermediate.clone()]
+            }
+            InstructionCommand::Aci => {
+                vec![vec![1, 1, 0, 0, 1, 1, 1, 0], self.intermediate.clone()]
             }
             InstructionCommand::Add => {
                 vec![[&[1, 0, 0, 0, 0], self.registers[0].encode()].concat()]
