@@ -92,6 +92,13 @@ impl Assembler {
                     registers: vec![],
                     intermediate: raw_instructions[index + 1].to_vec(),
                 };
+            } else if raw_instructions[index] == [1, 1, 0, 1, 0, 1, 1, 0] {
+                instruction = Instruction {
+                    variant: InstructionType::Intermediate,
+                    command: InstructionCommand::Sui,
+                    registers: vec![],
+                    intermediate: raw_instructions[index + 1].to_vec(),
+                };
             // instructions without registers
             // HLT
             } else if raw_instructions[index] == [0, 1, 1, 1, 0, 1, 1, 0] {
@@ -291,6 +298,8 @@ mod tests {
         assert_eq!(bytes.next().unwrap(), [1, 0, 0, 0, 1, 0, 0, 1]);
         assert_eq!(bytes.next().unwrap(), [1, 1, 0, 0, 1, 1, 1, 0]);
         assert_eq!(bytes.next().unwrap(), [0, 0, 0, 0, 1, 1, 0, 0]);
+        assert_eq!(bytes.next().unwrap(), [1, 1, 0, 1, 0, 1, 1, 0]);
+        assert_eq!(bytes.next().unwrap(), [0, 0, 0, 0, 1, 1, 0, 0]);
         assert_eq!(bytes.next().unwrap(), [0, 1, 1, 1, 0, 1, 1, 0]);
     }
 
@@ -300,7 +309,7 @@ mod tests {
         assembler.assemble();
 
         let instructions = assembler.disassemble("output".to_owned());
-        assert_eq!(instructions.len(), 14);
+        assert_eq!(instructions.len(), 15);
 
         assert!(matches!(
             instructions[0].variant,
@@ -405,7 +414,10 @@ mod tests {
         assert!(matches!(instructions[12].command, InstructionCommand::Aci));
         assert_eq!(instructions[12].intermediate, [0, 0, 0, 0, 1, 1, 0, 0]);
 
-        assert!(matches!(instructions[13].variant, InstructionType::NoReg));
-        assert!(matches!(instructions[13].command, InstructionCommand::Hlt));
+        assert!(matches!(instructions[13].command, InstructionCommand::Sui));
+        assert_eq!(instructions[13].intermediate, [0, 0, 0, 0, 1, 1, 0, 0]);
+
+        assert!(matches!(instructions[14].variant, InstructionType::NoReg));
+        assert!(matches!(instructions[14].command, InstructionCommand::Hlt));
     }
 }
