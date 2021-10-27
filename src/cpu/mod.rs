@@ -531,23 +531,23 @@ mod tests {
         cpu.change_register(0, 5);
         cpu.set_flag(Flag::Z, true);
 
-        cpu.execute_adi(&[0, 0, 0, 0, 0, 1, 0, 1]);
+        cpu.execute_adi(&cpu.int_to_binary(5));
         assert_eq!(cpu.get_register(0), 10);
         assert_eq!(cpu.get_flag(Flag::Z), false);
 
         cpu.change_register(0, -5);
-        cpu.execute_adi(&[1, 1, 1, 1, 1, 0, 1, 1]);
+        cpu.execute_adi(&cpu.int_to_binary(-5));
         assert_eq!(cpu.get_register(0), -10);
         assert_eq!(cpu.get_flag(Flag::S), true);
 
         cpu.change_register(0, -64);
         cpu.set_flag(Flag::C, true);
-        cpu.execute_adi(&[0, 1, 0, 0, 0, 0, 0, 0]);
+        cpu.execute_adi(&cpu.int_to_binary(64));
         assert_eq!(cpu.get_register(0), 0);
         assert_eq!(cpu.get_flag(Flag::C), true);
 
         cpu.change_register(0, 127);
-        cpu.execute_adi(&[0, 1, 1, 1, 1, 1, 1, 1]);
+        cpu.execute_adi(&cpu.int_to_binary(127));
         assert_eq!(cpu.get_register(0), -2);
         assert_eq!(cpu.get_flag(Flag::C), false);
     }
@@ -558,35 +558,35 @@ mod tests {
         cpu.change_register(0, 5);
         cpu.set_flag(Flag::Z, true);
 
-        cpu.execute_aci(&[0, 0, 0, 0, 0, 1, 0, 1]);
+        cpu.execute_aci(&cpu.int_to_binary(5));
         assert_eq!(cpu.get_register(0), 10);
         assert_eq!(cpu.get_flag(Flag::Z), false);
 
         cpu.change_register(0, -5);
-        cpu.execute_aci(&[1, 1, 1, 1, 1, 0, 1, 1]);
+        cpu.execute_aci(&cpu.int_to_binary(-5));
         assert_eq!(cpu.get_register(0), -10);
         assert_eq!(cpu.get_flag(Flag::S), true);
 
         cpu.change_register(0, -64);
         cpu.set_flag(Flag::C, true);
-        cpu.execute_aci(&[0, 1, 0, 0, 0, 0, 0, 0]);
+        cpu.execute_aci(&cpu.int_to_binary(64));
         assert_eq!(cpu.get_register(0), 1);
         assert_eq!(cpu.get_flag(Flag::C), true);
 
         cpu.change_register(0, 127);
         cpu.set_flag(Flag::C, false);
-        cpu.execute_aci(&[0, 1, 1, 1, 1, 1, 1, 1]);
+        cpu.execute_aci(&cpu.int_to_binary(127));
         assert_eq!(cpu.get_register(0), -2);
         assert_eq!(cpu.get_flag(Flag::C), false);
 
         cpu.set_flag(Flag::C, true);
         cpu.change_register(0, 0);
-        cpu.execute_aci(&[0, 0, 0, 0, 0, 1, 0, 0]);
+        cpu.execute_aci(&cpu.int_to_binary(4));
         assert_eq!(cpu.get_register(0), 5);
 
         cpu.set_flag(Flag::C, false);
         cpu.change_register(0, 0);
-        cpu.execute_aci(&[0, 0, 0, 0, 0, 1, 0, 0]);
+        cpu.execute_aci(&cpu.int_to_binary(4));
         assert_eq!(cpu.get_register(0), 4);
     }
 
@@ -596,37 +596,36 @@ mod tests {
         
         cpu.set_flag(Flag::Z, false);
         cpu.change_register(0, 5);
-        cpu.execute_sui(&[0,0,0,0,0,1,0,1]);
+        cpu.execute_sui(&cpu.int_to_binary(5));
         assert_eq!(cpu.get_register(0), 0);
         assert_eq!(cpu.get_flag(Flag::Z), true);
 
         cpu.set_flag(Flag::Z, true);
         cpu.change_register(0, -5);
-        cpu.execute_sui(&[0,0,0,0,1,0,0,0]);
+        cpu.execute_sui(&cpu.int_to_binary(8));
         assert_eq!(cpu.get_register(0), -13);
         assert_eq!(cpu.get_flag(Flag::Z), false);
 
         cpu.set_flag(Flag::S, false);
         cpu.change_register(0, 10);
-        cpu.execute_sui(&[0,0,0,1,0,0,0,0]);
+        cpu.execute_sui(&cpu.int_to_binary(16));
         assert_eq!(cpu.get_register(0), -6);
         assert_eq!(cpu.get_flag(Flag::S), true);
 
         cpu.set_flag(Flag::S, true);
         cpu.change_register(0, 10);
-        cpu.execute_sui(&[0,0,0,0,0,0,0,1]);
+        cpu.execute_sui(&cpu.int_to_binary(1));
         assert_eq!(cpu.get_register(0), 9);
         assert_eq!(cpu.get_flag(Flag::S), false);
 
         cpu.change_register(0, 127);
-        cpu.change_register(1, -1);
-        cpu.execute_sui(&[1,1,1,1,1,1,1,1]);
+        cpu.execute_sui(&cpu.int_to_binary(-1));
         assert_eq!(cpu.get_register(0), -128);
         assert_eq!(cpu.get_flag(Flag::C), true);
 
         cpu.set_flag(Flag::C, true);
         cpu.change_register(0, 10);
-        cpu.execute_sui(&[0,0,0,0,0,0,0,1]);
+        cpu.execute_sui(&cpu.int_to_binary(1));
         assert_eq!(cpu.get_register(0), 9);
         assert_eq!(cpu.get_flag(Flag::C), false);
     }
