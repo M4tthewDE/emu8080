@@ -68,6 +68,7 @@ impl Cpu {
             }
             InstructionCommand::Adi => self.execute_adi(&instruction.intermediate),
             InstructionCommand::Aci => self.execute_aci(&instruction.intermediate),
+            InstructionCommand::Sui => self.execute_sui(&instruction.intermediate),
             InstructionCommand::Mov => self.execute_mov(&instruction.registers),
             InstructionCommand::Add => self.execute_add(&instruction.registers[0]),
             InstructionCommand::Adc => self.execute_adc(&instruction.registers[0]),
@@ -155,6 +156,36 @@ impl Cpu {
         }
 
         self.change_register(0, new_a);
+    }
+
+    fn execute_sui(&mut self, intermediate: &[u8]) {
+        let mut x = vec![0; 8];
+        x[0..].clone_from_slice(intermediate);
+        let source_value = self.binary_to_int(&mut x);
+        let current_a = self.get_register(0);
+        let new_a = current_a.wrapping_sub(source_value);
+
+        self.change_register(0, new_a);
+
+        if self.get_register(0) == 0 {
+            self.set_flag(Flag::Z, true);
+        } else {
+            self.set_flag(Flag::Z, false);
+        }
+
+        if self.get_register(0) < 0 {
+            self.set_flag(Flag::S, true);
+        } else {
+            self.set_flag(Flag::S, false);
+        }
+
+        // if onecomplement representation subtraction < 0 -> set carry
+        // "x as u8 as u16" converts to onecomplement representation
+        if (current_a as u8 as u16).checked_sub(source_value as u8 as u16) != None {
+            self.set_flag(Flag::C, false);
+        } else {
+            self.set_flag(Flag::C, true);
+        }
     }
 
     fn execute_mov(&mut self, args: &[InstructionRegister]) {
@@ -557,6 +588,47 @@ mod tests {
         cpu.change_register(0, 0);
         cpu.execute_aci(&[0, 0, 0, 0, 0, 1, 0, 0]);
         assert_eq!(cpu.get_register(0), 4);
+    }
+
+    #[test]
+    fn test_excute_sui() {
+        let mut cpu = initialize_cpu();
+        
+        cpu.set_flag(Flag::Z, false);
+        cpu.change_register(0, 5);
+        cpu.execute_sui(&[0,0,0,0,0,1,0,1]);
+        assert_eq!(cpu.get_register(0), 0);
+        assert_eq!(cpu.get_flag(Flag::Z), true);
+
+        cpu.set_flag(Flag::Z, true);
+        cpu.change_register(0, -5);
+        cpu.execute_sui(&[0,0,0,0,1,0,0,0]);
+        assert_eq!(cpu.get_register(0), -13);
+        assert_eq!(cpu.get_flag(Flag::Z), false);
+
+        cpu.set_flag(Flag::S, false);
+        cpu.change_register(0, 10);
+        cpu.execute_sui(&[0,0,0,1,0,0,0,0]);
+        assert_eq!(cpu.get_register(0), -6);
+        assert_eq!(cpu.get_flag(Flag::S), true);
+
+        cpu.set_flag(Flag::S, true);
+        cpu.change_register(0, 10);
+        cpu.execute_sui(&[0,0,0,0,0,0,0,1]);
+        assert_eq!(cpu.get_register(0), 9);
+        assert_eq!(cpu.get_flag(Flag::S), false);
+
+        cpu.change_register(0, 127);
+        cpu.change_register(1, -1);
+        cpu.execute_sui(&[1,1,1,1,1,1,1,1]);
+        assert_eq!(cpu.get_register(0), -128);
+        assert_eq!(cpu.get_flag(Flag::C), true);
+
+        cpu.set_flag(Flag::C, true);
+        cpu.change_register(0, 10);
+        cpu.execute_sui(&[0,0,0,0,0,0,0,1]);
+        assert_eq!(cpu.get_register(0), 9);
+        assert_eq!(cpu.get_flag(Flag::C), false);
     }
 
     #[test]
