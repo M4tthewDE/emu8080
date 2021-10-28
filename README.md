@@ -2,7 +2,7 @@
 
 Emulation of an intel 8080 8-bit processor.
 
-# Supported instructions
+# Supported instructions (WIP)
 
 Source: [intel 8080 Assembly Language
 Programming Manual](http://dunfield.classiccmp.org/r/8080asm.pdf)
