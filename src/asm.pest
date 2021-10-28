@@ -6,13 +6,14 @@ intermediate_command = { "ADI" | "ACI" | "SUI" }
 no_reg_command = { "HLT" | "STC" | "CMC" | "CMA" }
 intermediate  = { ("0"|"1"){8}}
 comment = { ";" ~ (LETTER | NUMBER | PUNCTUATION)* }
+label = @{ ("@" | "?" | ASCII_ALPHA) ~ (ASCII_ALPHANUMERIC){, 4} ~ ":" }
 
 intermediate_reg_instruction = { intermediate_reg_command ~ register ~ "," ~ intermediate }
 intermediate_instruction = { intermediate_command ~ intermediate }
 single_reg_instruction = { single_reg_command ~ register }
 double_reg_instruction = { double_reg_command ~ register ~ "," ~ register }
 no_reg_instruction = { no_reg_command }
-instruction = { (intermediate_reg_instruction | intermediate_instruction | single_reg_instruction | double_reg_instruction | no_reg_instruction) ~ comment? }
+instruction = { (label ~ NEWLINE*)? ~ (intermediate_reg_instruction | intermediate_instruction | single_reg_instruction | double_reg_instruction | no_reg_instruction) ~ comment? }
 assembly = { ((instruction | comment) ~ (EOI | NEWLINE+))+ }
 
 WHITESPACE = _{ " " }
