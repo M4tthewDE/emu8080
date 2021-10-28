@@ -22,7 +22,8 @@ impl Assembler {
     }
 
     pub fn assemble(&self) {
-        let instructions = parser::parse(self.input_asm.to_owned());
+        let parse_result = parser::parse(self.input_asm.to_owned());
+        let instructions = parse_result.0;
 
         // write to file
         // TODO maybe write hex data instead of binary

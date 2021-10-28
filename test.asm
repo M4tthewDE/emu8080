@@ -1,17 +1,22 @@
 ; example assembly programm for tests 
 
-MVI A,00011100 ; 28
-MOV A,B
-ANA B
-ADD A
-SUB A
-INR A
-DCR A 
-ADI 10011001 ; -103
-STC
-CMC
-CMA
-ADC C
-ACI 00001100 ; 12
-SUI 00001100 ; 12
-HLT
+TEST:   
+        MVI A,00011100 ; 28
+        MOV A,B
+        ANA B
+        ADD A
+        SUB A
+        INR A
+        DCR A 
+        ADI 10011001 ; -103
+
+LABEL:
+        STC
+        CMC
+        CMA
+        ADC C
+        ACI 00001100 ; 12
+        SUI 00001100 ; 12
+
+STOP:
+        HLT
