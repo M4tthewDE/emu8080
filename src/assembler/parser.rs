@@ -37,6 +37,11 @@ pub fn parse(file_name: String) -> (Vec<Instruction>, Vec<Label>) {
                     name: inner_instruction.as_str().to_string(),
                     position: label_position,
                 }; 
+
+                if labels.contains(&label) {
+                    panic!("can't have duplicate labels: {:?}", label);
+                }
+
                 labels.push(label);
 
                 inner_instruction_pairs.next();
@@ -138,6 +143,12 @@ pub struct Label {
     pub name: String,
     pub position: usize,
 }
+
+impl PartialEq for Label {
+    fn eq(&self, other: &Self) -> bool {
+        self.name == other.name
+    }
+} 
 
 #[derive(Debug, EnumString)]
 pub enum InstructionCommand {
