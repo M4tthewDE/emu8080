@@ -31,15 +31,20 @@ pub fn parse(file_name: String) -> (Vec<Instruction>, Vec<Label>) {
 
             let mut rule = inner_instruction.as_rule();
             
-            // TODO remove ":" from label
             if matches!(rule, Rule::label) {
+                let name = inner_instruction.as_str().to_string();
+
                 let label = Label {
-                    name: inner_instruction.as_str().to_string(),
+                    name: name[0..name.len()-1].to_string(),
                     position: label_position,
                 }; 
 
                 if labels.contains(&label) {
                     panic!("can't have duplicate labels: {:?}", label);
+                } else if InstructionCommand::from_str(&label.name).is_ok() {
+                    panic!("label can't occupy reserved names: {:?}", label);
+                } else if InstructionRegister::from_str(&label.name).is_ok() {
+                    panic!("label can't occupy reserved names: {:?}", label);
                 }
 
                 labels.push(label);
