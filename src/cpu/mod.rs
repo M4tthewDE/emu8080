@@ -132,7 +132,9 @@ impl Cpu {
 
         let source_value = self.binary_to_int(&mut x);
         let current_a = self.get_register(0);
-        let new_a = current_a.wrapping_add(source_value).wrapping_add(self.get_flag(Flag::C) as i8);
+        let new_a = current_a
+            .wrapping_add(source_value)
+            .wrapping_add(self.get_flag(Flag::C) as i8);
 
         if self.get_register(0) == 0 {
             self.set_flag(Flag::Z, true);
@@ -149,7 +151,9 @@ impl Cpu {
         // if onecomplement representation added > 255 -> carry exists
         // example: 127 + 127
         // "x as u8 as u16" converts to onecomplement representation
-        if (source_value as u8 as u16) + (current_a as u8 as u16) + (self.get_flag(Flag::C) as u16) > 255 {
+        if (source_value as u8 as u16) + (current_a as u8 as u16) + (self.get_flag(Flag::C) as u16)
+            > 255
+        {
             self.set_flag(Flag::C, true);
         } else {
             self.set_flag(Flag::C, false);
@@ -593,7 +597,7 @@ mod tests {
     #[test]
     fn test_excute_sui() {
         let mut cpu = initialize_cpu();
-        
+
         cpu.set_flag(Flag::Z, false);
         cpu.change_register(0, 5);
         cpu.execute_sui(&cpu.int_to_binary(5));

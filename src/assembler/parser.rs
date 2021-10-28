@@ -30,38 +30,41 @@ pub fn parse(file_name: String) -> (Vec<Instruction>, Vec<Label>) {
             let inner_instruction = inner_instruction_pairs.peek().unwrap();
 
             let mut rule = inner_instruction.as_rule();
-            
+
             if matches!(rule, Rule::label) {
                 let name = inner_instruction.as_str().to_string();
 
                 let label = Label {
-                    name: name[0..name.len()-1].to_string(),
+                    name: name[0..name.len() - 1].to_string(),
                     position: label_position,
-                }; 
+                };
 
                 if labels.contains(&label) {
                     panic!("can't have duplicate labels: {:?}", label);
-                } else if InstructionCommand::from_str(&label.name).is_ok() {
-                    panic!("label can't occupy reserved names: {:?}", label);
-                } else if InstructionRegister::from_str(&label.name).is_ok() {
+                } else if InstructionCommand::from_str(&label.name).is_ok()
+                    || InstructionRegister::from_str(&label.name).is_ok()
+                {
                     panic!("label can't occupy reserved names: {:?}", label);
                 }
 
                 labels.push(label);
 
                 inner_instruction_pairs.next();
-            } 
+            }
 
             let mut pairs = inner_instruction_pairs.peek().unwrap().into_inner();
             let inner_instruction = pairs.peek().unwrap();
             rule = inner_instruction.as_rule();
-        
+
             let command = InstructionCommand::from_str(inner_instruction.as_str()).unwrap();
             pairs.next();
 
             match rule {
                 Rule::intermediate_reg_command => {
-                    let registers = vec![InstructionRegister::from_str(pairs.peek().unwrap().as_str()).unwrap()];
+                    let registers =
+                        vec![
+                            InstructionRegister::from_str(pairs.peek().unwrap().as_str()).unwrap(),
+                        ];
                     pairs.next();
 
                     let mut intermediate = Vec::new();
@@ -79,13 +82,18 @@ pub fn parse(file_name: String) -> (Vec<Instruction>, Vec<Label>) {
                         registers,
                         intermediate,
                     };
-                    
-                    instructions.push(instruction); 
-                },
+
+                    instructions.push(instruction);
+                }
                 Rule::double_reg_command => {
-                    let mut registers = vec![InstructionRegister::from_str(pairs.peek().unwrap().as_str()).unwrap()];
+                    let mut registers =
+                        vec![
+                            InstructionRegister::from_str(pairs.peek().unwrap().as_str()).unwrap(),
+                        ];
                     pairs.next();
-                    registers.push(InstructionRegister::from_str(pairs.peek().unwrap().as_str()).unwrap());
+                    registers.push(
+                        InstructionRegister::from_str(pairs.peek().unwrap().as_str()).unwrap(),
+                    );
                     pairs.next();
 
                     let instruction = Instruction {
@@ -94,10 +102,13 @@ pub fn parse(file_name: String) -> (Vec<Instruction>, Vec<Label>) {
                         registers,
                         intermediate: Vec::new(),
                     };
-                    instructions.push(instruction); 
-                },
+                    instructions.push(instruction);
+                }
                 Rule::single_reg_command => {
-                    let registers = vec![InstructionRegister::from_str(pairs.peek().unwrap().as_str()).unwrap()];
+                    let registers =
+                        vec![
+                            InstructionRegister::from_str(pairs.peek().unwrap().as_str()).unwrap(),
+                        ];
                     pairs.next();
 
                     let instruction = Instruction {
@@ -106,8 +117,8 @@ pub fn parse(file_name: String) -> (Vec<Instruction>, Vec<Label>) {
                         registers,
                         intermediate: Vec::new(),
                     };
-                    instructions.push(instruction); 
-                },
+                    instructions.push(instruction);
+                }
                 Rule::intermediate_command => {
                     let mut intermediate = Vec::new();
                     for char in pairs.as_str().chars() {
@@ -124,8 +135,8 @@ pub fn parse(file_name: String) -> (Vec<Instruction>, Vec<Label>) {
                         registers: Vec::new(),
                         intermediate,
                     };
-                    instructions.push(instruction); 
-                },
+                    instructions.push(instruction);
+                }
                 Rule::no_reg_command => {
                     let instruction = Instruction {
                         variant: InstructionType::SingleReg,
@@ -133,8 +144,8 @@ pub fn parse(file_name: String) -> (Vec<Instruction>, Vec<Label>) {
                         registers: Vec::new(),
                         intermediate: Vec::new(),
                     };
-                    instructions.push(instruction); 
-                },
+                    instructions.push(instruction);
+                }
                 _ => panic!("invalid rule: {:?}", rule),
             }
             label_position += 1;
@@ -153,7 +164,7 @@ impl PartialEq for Label {
     fn eq(&self, other: &Self) -> bool {
         self.name == other.name
     }
-} 
+}
 
 #[derive(Debug, EnumString)]
 pub enum InstructionCommand {
