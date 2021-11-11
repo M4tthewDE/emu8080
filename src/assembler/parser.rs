@@ -196,6 +196,8 @@ pub enum InstructionCommand {
     Cmc,
     #[strum(serialize = "CMA")]
     Cma,
+    #[strum(serialize = "RLC")]
+    Rlc,
     #[strum(serialize = "HLT")]
     Hlt,
 }
@@ -332,6 +334,9 @@ impl Encoding for Instruction {
             }
             InstructionCommand::Cma => {
                 vec![vec![0, 0, 1, 0, 1, 1, 1, 1]]
+            }
+            InstructionCommand::Rlc => {
+                vec![vec![0,0,0,0,0,1,1,1]]
             }
             InstructionCommand::Hlt => {
                 vec![vec![0, 1, 1, 1, 0, 1, 1, 0]]

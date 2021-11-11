@@ -79,6 +79,7 @@ impl Cpu {
             InstructionCommand::Stc => self.execute_stc(),
             InstructionCommand::Cmc => self.execute_cmc(),
             InstructionCommand::Cma => self.execute_cma(),
+            InstructionCommand::Rlc => self.execute_rlc(),
             InstructionCommand::Hlt => self.execute_hlt(),
         }
     }
