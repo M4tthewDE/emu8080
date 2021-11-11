@@ -493,6 +493,10 @@ mod tests {
             instructions[18].variant,
             InstructionType::SingleReg
         ));
+        assert!(matches!(
+            instructions[18].registers[0],
+            InstructionRegister::B
+        ));
         assert!(matches!(instructions[18].command, InstructionCommand::Ora));
 
         assert!(matches!(instructions[19].variant, InstructionType::NoReg));
