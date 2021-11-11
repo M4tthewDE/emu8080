@@ -379,7 +379,7 @@ impl Cpu {
     }
 
     // last bit can never be 1 after shift
-    // that's why the case of carry=0 and last bit 1 can be ignored 
+    // that's why the case of carry=0 and last bit 1 can be ignored
     fn execute_rlc(&mut self) {
         let mut acc = self.get_register(0);
         if (acc >> 7) & 1 == 1 {
@@ -773,21 +773,21 @@ mod tests {
 
         // negative with carry
         cpu.set_flag(Flag::C, false);
-        cpu.change_register(0, -14); 
+        cpu.change_register(0, -14);
         cpu.execute_rlc();
         assert_eq!(cpu.get_flag(Flag::C), true);
         assert_eq!(cpu.get_register(0), -27);
 
         // negative without carry
         cpu.set_flag(Flag::C, false);
-        cpu.change_register(0, -128); 
+        cpu.change_register(0, -128);
         cpu.execute_rlc();
         assert_eq!(cpu.get_flag(Flag::C), true);
         assert_eq!(cpu.get_register(0), 1);
 
         // positive
         cpu.set_flag(Flag::C, true);
-        cpu.change_register(0, 24); 
+        cpu.change_register(0, 24);
         cpu.execute_rlc();
         assert_eq!(cpu.get_flag(Flag::C), false);
         assert_eq!(cpu.get_register(0), 48);

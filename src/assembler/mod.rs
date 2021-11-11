@@ -422,11 +422,17 @@ mod tests {
             InstructionRegister::C
         ));
 
-        assert!(matches!(instructions[12].variant, InstructionType::Intermediate));
+        assert!(matches!(
+            instructions[12].variant,
+            InstructionType::Intermediate
+        ));
         assert!(matches!(instructions[12].command, InstructionCommand::Aci));
         assert_eq!(instructions[12].intermediate, [0, 0, 0, 0, 1, 1, 0, 0]);
 
-        assert!(matches!(instructions[12].variant, InstructionType::Intermediate));
+        assert!(matches!(
+            instructions[12].variant,
+            InstructionType::Intermediate
+        ));
         assert!(matches!(instructions[13].command, InstructionCommand::Sui));
         assert_eq!(instructions[13].intermediate, [0, 0, 0, 0, 1, 1, 0, 0]);
 

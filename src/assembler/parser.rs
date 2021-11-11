@@ -336,7 +336,7 @@ impl Encoding for Instruction {
                 vec![vec![0, 0, 1, 0, 1, 1, 1, 1]]
             }
             InstructionCommand::Rlc => {
-                vec![vec![0,0,0,0,0,1,1,1]]
+                vec![vec![0, 0, 0, 0, 0, 1, 1, 1]]
             }
             InstructionCommand::Hlt => {
                 vec![vec![0, 1, 1, 1, 0, 1, 1, 0]]
