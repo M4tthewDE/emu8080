@@ -35,7 +35,7 @@ Programming Manual](http://dunfield.classiccmp.org/r/8080asm.pdf)
 ## Rotate Accumulator Instructions
 - [x] RLC
 - [x] RRC
-- [ ] RAL
+- [x] RAL
 - [ ] RAR
 
 ## Register Pair Instructions

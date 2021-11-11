@@ -200,6 +200,8 @@ pub enum InstructionCommand {
     Rlc,
     #[strum(serialize = "RRC")]
     Rrc,
+    #[strum(serialize = "RAL")]
+    Ral,
     #[strum(serialize = "HLT")]
     Hlt,
 }
@@ -342,6 +344,9 @@ impl Encoding for Instruction {
             }
             InstructionCommand::Rrc => {
                 vec![vec![0, 0, 0, 0, 1, 1, 1, 1]]
+            }
+            InstructionCommand::Ral => {
+                vec![vec![0, 0, 0, 1, 0, 1, 1, 1]]
             }
             InstructionCommand::Hlt => {
                 vec![vec![0, 1, 1, 1, 0, 1, 1, 0]]

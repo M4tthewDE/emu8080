@@ -19,6 +19,7 @@ LABEL:
         SUI 00001100 ; 12
         RLC
         RRC
+        RAL
 
 STOP:
         HLT
