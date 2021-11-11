@@ -313,7 +313,6 @@ mod tests {
         assert_eq!(bytes.next().unwrap(), [0, 1, 1, 1, 0, 1, 1, 0]);
     }
 
-    // TODO add all possible assertions, e.g. type assertions
     #[test]
     fn test_disassemble() {
         let assembler = Assembler::new("test.asm".to_owned(), "output".to_owned());
@@ -422,9 +421,12 @@ mod tests {
             instructions[11].registers[0],
             InstructionRegister::C
         ));
+
+        assert!(matches!(instructions[12].variant, InstructionType::Intermediate));
         assert!(matches!(instructions[12].command, InstructionCommand::Aci));
         assert_eq!(instructions[12].intermediate, [0, 0, 0, 0, 1, 1, 0, 0]);
 
+        assert!(matches!(instructions[12].variant, InstructionType::Intermediate));
         assert!(matches!(instructions[13].command, InstructionCommand::Sui));
         assert_eq!(instructions[13].intermediate, [0, 0, 0, 0, 1, 1, 0, 0]);
 
