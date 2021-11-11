@@ -133,6 +133,14 @@ impl Assembler {
                     registers: Vec::new(),
                     intermediate: Vec::new(),
                 }
+            // RLC
+            } else if raw_instructions[index] == [0, 0, 0, 0, 0, 1, 1, 1] {
+                instruction = Instruction {
+                    variant: InstructionType::NoReg,
+                    command: InstructionCommand::Rlc,
+                    registers: Vec::new(),
+                    intermediate: Vec::new(),
+                }
             // instructions with 1 argument in the end
             // ADD
             } else if raw_instructions[index][0..5] == [1, 0, 0, 0, 0]
@@ -301,6 +309,7 @@ mod tests {
         assert_eq!(bytes.next().unwrap(), [0, 0, 0, 0, 1, 1, 0, 0]);
         assert_eq!(bytes.next().unwrap(), [1, 1, 0, 1, 0, 1, 1, 0]);
         assert_eq!(bytes.next().unwrap(), [0, 0, 0, 0, 1, 1, 0, 0]);
+        assert_eq!(bytes.next().unwrap(), [0, 0, 0, 0, 0, 1, 1, 1]);
         assert_eq!(bytes.next().unwrap(), [0, 1, 1, 1, 0, 1, 1, 0]);
     }
 
@@ -310,7 +319,7 @@ mod tests {
         assembler.assemble();
 
         let instructions = assembler.disassemble("output".to_owned());
-        assert_eq!(instructions.len(), 15);
+        assert_eq!(instructions.len(), 16);
 
         assert!(matches!(
             instructions[0].variant,
@@ -412,13 +421,25 @@ mod tests {
             instructions[11].registers[0],
             InstructionRegister::C
         ));
+
+        assert!(matches!(
+            instructions[12].variant,
+            InstructionType::Intermediate
+        ));
         assert!(matches!(instructions[12].command, InstructionCommand::Aci));
         assert_eq!(instructions[12].intermediate, [0, 0, 0, 0, 1, 1, 0, 0]);
 
+        assert!(matches!(
+            instructions[12].variant,
+            InstructionType::Intermediate
+        ));
         assert!(matches!(instructions[13].command, InstructionCommand::Sui));
         assert_eq!(instructions[13].intermediate, [0, 0, 0, 0, 1, 1, 0, 0]);
 
         assert!(matches!(instructions[14].variant, InstructionType::NoReg));
-        assert!(matches!(instructions[14].command, InstructionCommand::Hlt));
+        assert!(matches!(instructions[14].command, InstructionCommand::Rlc));
+
+        assert!(matches!(instructions[15].variant, InstructionType::NoReg));
+        assert!(matches!(instructions[15].command, InstructionCommand::Hlt));
     }
 }

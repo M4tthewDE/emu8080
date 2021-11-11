@@ -17,6 +17,7 @@ LABEL:
         ADC C
         ACI 00001100 ; 12
         SUI 00001100 ; 12
+        RLC
 
 STOP:
         HLT
