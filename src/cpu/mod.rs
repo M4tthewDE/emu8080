@@ -82,6 +82,7 @@ impl Cpu {
             InstructionCommand::Rlc => self.execute_rlc(),
             InstructionCommand::Rrc => self.execute_rrc(),
             InstructionCommand::Ral => self.execute_ral(),
+            InstructionCommand::Rar => self.execute_rar(),
             InstructionCommand::Hlt => self.execute_hlt(),
         }
     }
