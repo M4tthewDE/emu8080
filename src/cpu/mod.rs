@@ -18,7 +18,10 @@ pub struct Cpu {
     flags: Vec<bool>,
 }
 
-#[derive(Debug, EnumIter, Clone)] enum Flag { S, Z,
+#[derive(Debug, EnumIter, Clone)]
+enum Flag {
+    S,
+    Z,
     A,
     P,
     C,
@@ -78,6 +81,7 @@ impl Cpu {
             InstructionCommand::Cma => self.execute_cma(),
             InstructionCommand::Rlc => self.execute_rlc(),
             InstructionCommand::Rrc => self.execute_rrc(),
+            InstructionCommand::Ral => self.execute_ral(),
             InstructionCommand::Hlt => self.execute_hlt(),
         }
     }
@@ -863,7 +867,7 @@ mod tests {
 
     #[test]
     fn test_execute_ral() {
-        let mut cpu = initialize_cpu(); 
+        let mut cpu = initialize_cpu();
 
         // false -> true
         cpu.set_flag(Flag::C, false);
