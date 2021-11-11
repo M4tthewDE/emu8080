@@ -768,7 +768,7 @@ mod tests {
     }
 
     #[test]
-    fn test_execute_rca() {
+    fn test_execute_rlc() {
         let mut cpu = initialize_cpu();
 
         // negative with carry
