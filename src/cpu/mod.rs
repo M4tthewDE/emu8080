@@ -377,6 +377,25 @@ impl Cpu {
         self.change_register(0, !self.get_register(0));
     }
 
+    // last bit can never be 1 after shift
+    // that's why the case of carry=0 and last bit 1 can be ignored 
+    fn execute_rlc(&mut self) {
+        let mut acc = self.get_register(0);
+        if (acc >> 7) & 1 == 1 {
+            self.set_flag(Flag::C, true);
+        } else {
+            self.set_flag(Flag::C, false);
+        }
+
+        acc = acc << 1;
+
+        if self.get_flag(Flag::C) {
+            acc = acc | 1;
+        }
+
+        self.change_register(0, acc);
+    }
+
     fn binary_to_int(&self, intermediate: &mut [u8]) -> i8 {
         if intermediate[0] == 1 {
             // subtract 1 from intermediate
@@ -745,6 +764,32 @@ mod tests {
         cpu.change_register(0, -45);
         cpu.execute_cma();
         assert_eq!(cpu.get_register(0), 44);
+    }
+
+    #[test]
+    fn test_execute_rca() {
+        let mut cpu = initialize_cpu();
+
+        // negative with carry
+        cpu.set_flag(Flag::C, false);
+        cpu.change_register(0, -14); 
+        cpu.execute_rlc();
+        assert_eq!(cpu.get_flag(Flag::C), true);
+        assert_eq!(cpu.get_register(0), -27);
+
+        // negative without carry
+        cpu.set_flag(Flag::C, false);
+        cpu.change_register(0, -128); 
+        cpu.execute_rlc();
+        assert_eq!(cpu.get_flag(Flag::C), true);
+        assert_eq!(cpu.get_register(0), 1);
+
+        // positive
+        cpu.set_flag(Flag::C, true);
+        cpu.change_register(0, 24); 
+        cpu.execute_rlc();
+        assert_eq!(cpu.get_flag(Flag::C), false);
+        assert_eq!(cpu.get_register(0), 48);
     }
 
     #[test]
