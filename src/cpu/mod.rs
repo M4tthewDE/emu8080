@@ -83,6 +83,7 @@ impl Cpu {
             InstructionCommand::Rrc => self.execute_rrc(),
             InstructionCommand::Ral => self.execute_ral(),
             InstructionCommand::Rar => self.execute_rar(),
+            InstructionCommand::Ora => self.execute_ora(&instruction.registers[0]),
             InstructionCommand::Hlt => self.execute_hlt(),
         }
     }

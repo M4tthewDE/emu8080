@@ -204,6 +204,8 @@ pub enum InstructionCommand {
     Ral,
     #[strum(serialize = "RAR")]
     Rar,
+    #[strum(serialize = "ORA")]
+    Ora,
     #[strum(serialize = "HLT")]
     Hlt,
 }
@@ -352,6 +354,9 @@ impl Encoding for Instruction {
             }
             InstructionCommand::Rar => {
                 vec![vec![0, 0, 0, 1, 1, 1, 1, 1]]
+            }
+            InstructionCommand::Ora => {
+                vec![[&[1, 0, 1, 1, 0], self.registers[0].encode()].concat()]
             }
             InstructionCommand::Hlt => {
                 vec![vec![0, 1, 1, 1, 0, 1, 1, 0]]

@@ -21,6 +21,7 @@ LABEL:
         RRC
         RAL
         RAR
+        ORA B
 
 STOP:
         HLT
