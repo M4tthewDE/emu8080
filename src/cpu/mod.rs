@@ -18,10 +18,7 @@ pub struct Cpu {
     flags: Vec<bool>,
 }
 
-#[derive(Debug, EnumIter, Clone)]
-enum Flag {
-    S,
-    Z,
+#[derive(Debug, EnumIter, Clone)] enum Flag { S, Z,
     A,
     P,
     C,
@@ -412,6 +409,24 @@ impl Cpu {
 
         if self.get_flag(Flag::C) {
             acc |= -128;
+        }
+
+        self.change_register(0, acc);
+    }
+
+    fn execute_ral(&mut self) {
+        let mut acc = self.get_register(0);
+        let flag = self.get_flag(Flag::C);
+        if (acc >> 7) & 1 == 1 {
+            self.set_flag(Flag::C, true);
+        } else {
+            self.set_flag(Flag::C, false);
+        }
+
+        acc <<= 1;
+
+        if flag {
+            acc |= 1;
         }
 
         self.change_register(0, acc);
@@ -844,6 +859,39 @@ mod tests {
         cpu.execute_rrc();
         assert_eq!(cpu.get_flag(Flag::C), true);
         assert_eq!(cpu.get_register(0), -122);
+    }
+
+    #[test]
+    fn test_execute_ral() {
+        let mut cpu = initialize_cpu(); 
+
+        // false -> true
+        cpu.set_flag(Flag::C, false);
+        cpu.change_register(0, -75);
+        cpu.execute_ral();
+        assert_eq!(cpu.get_flag(Flag::C), true);
+        assert_eq!(cpu.get_register(0), 106);
+
+        // true -> true
+        cpu.set_flag(Flag::C, true);
+        cpu.change_register(0, -75);
+        cpu.execute_ral();
+        assert_eq!(cpu.get_flag(Flag::C), true);
+        assert_eq!(cpu.get_register(0), 107);
+
+        // false -> false
+        cpu.set_flag(Flag::C, false);
+        cpu.change_register(0, 12);
+        cpu.execute_ral();
+        assert_eq!(cpu.get_flag(Flag::C), false);
+        assert_eq!(cpu.get_register(0), 24);
+
+        // true -> false
+        cpu.set_flag(Flag::C, true);
+        cpu.change_register(0, 12);
+        cpu.execute_ral();
+        assert_eq!(cpu.get_flag(Flag::C), false);
+        assert_eq!(cpu.get_register(0), 25);
     }
 
     #[test]
