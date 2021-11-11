@@ -29,7 +29,7 @@ Programming Manual](http://dunfield.classiccmp.org/r/8080asm.pdf)
 - [ ] SBB
 - [x] ANA
 - [ ] XRA
-- [ ] ORA
+- [x] ORA
 - [ ] CMP
 
 ## Rotate Accumulator Instructions
