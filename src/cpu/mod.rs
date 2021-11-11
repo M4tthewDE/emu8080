@@ -388,10 +388,10 @@ impl Cpu {
             self.set_flag(Flag::C, false);
         }
 
-        acc = acc << 1;
+        acc <<= 1;
 
         if self.get_flag(Flag::C) {
-            acc = acc | 1;
+            acc |= 1;
         }
 
         self.change_register(0, acc);
