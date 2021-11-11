@@ -436,6 +436,26 @@ impl Cpu {
         self.change_register(0, acc);
     }
 
+    fn execute_rar(&mut self) {
+        let mut acc = self.get_register(0);
+        let flag = self.get_flag(Flag::C);
+        if (acc << 7) & -128 == -128 {
+            self.set_flag(Flag::C, true);
+        } else {
+            self.set_flag(Flag::C, false);
+        }
+
+        // convert to u8 to make sure LSR is used
+        // otherwise most significant bit is 1 after shift
+        acc = ((acc as u8) >> 1) as i8;
+
+        if flag {
+            acc |= -128;
+        }
+
+        self.change_register(0, acc);
+    }
+
     fn binary_to_int(&self, intermediate: &mut [u8]) -> i8 {
         if intermediate[0] == 1 {
             // subtract 1 from intermediate
@@ -896,6 +916,39 @@ mod tests {
         cpu.execute_ral();
         assert_eq!(cpu.get_flag(Flag::C), false);
         assert_eq!(cpu.get_register(0), 25);
+    }
+
+    #[test]
+    fn test_execute_rar() {
+        let mut cpu = initialize_cpu();
+
+        // true -> false
+        cpu.set_flag(Flag::C, true);
+        cpu.change_register(0, 106);
+        cpu.execute_rar();
+        assert_eq!(cpu.get_flag(Flag::C), false);
+        assert_eq!(cpu.get_register(0), -75);
+
+        // false -> false
+        cpu.set_flag(Flag::C, false);
+        cpu.change_register(0, 106);
+        cpu.execute_rar();
+        assert_eq!(cpu.get_flag(Flag::C), false);
+        assert_eq!(cpu.get_register(0), 53);
+
+        // false -> true
+        cpu.set_flag(Flag::C, false);
+        cpu.change_register(0, 53);
+        cpu.execute_rar();
+        assert_eq!(cpu.get_flag(Flag::C), true);
+        assert_eq!(cpu.get_register(0), 26);
+
+        // true -> true
+        cpu.set_flag(Flag::C, true);
+        cpu.change_register(0, 53);
+        cpu.execute_rar();
+        assert_eq!(cpu.get_flag(Flag::C), true);
+        assert_eq!(cpu.get_register(0), -102);
     }
 
     #[test]
