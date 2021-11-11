@@ -406,6 +406,8 @@ impl Cpu {
             self.set_flag(Flag::C, false);
         }
 
+        // convert to u8 to make sure LSR is used
+        // otherwise most significant bit is 1 after shift
         acc = ((acc as u8) >> 1) as i8;
 
         if self.get_flag(Flag::C) {
