@@ -218,6 +218,19 @@ impl Assembler {
                     registers: vec![InstructionRegister::decode(&raw_instructions[index][5..])],
                     intermediate: Vec::new(),
                 }
+            // ORA
+            } else if raw_instructions[index][0..5] == [1, 0, 1, 1, 0]
+                && !matches!(
+                    InstructionRegister::decode(&raw_instructions[index][5..]),
+                    InstructionRegister::Invalid
+                )
+            {
+                instruction = Instruction {
+                    variant: InstructionType::SingleReg,
+                    command: InstructionCommand::Ora,
+                    registers: vec![InstructionRegister::decode(&raw_instructions[index][5..])],
+                    intermediate: Vec::new(),
+                }
             // instructions with 1 argument in the middle
             // INR
             } else if raw_instructions[index][0..2] == [0, 0]
@@ -337,6 +350,7 @@ mod tests {
         assert_eq!(bytes.next().unwrap(), [0, 0, 0, 0, 1, 1, 1, 1]);
         assert_eq!(bytes.next().unwrap(), [0, 0, 0, 1, 0, 1, 1, 1]);
         assert_eq!(bytes.next().unwrap(), [0, 0, 0, 1, 1, 1, 1, 1]);
+        assert_eq!(bytes.next().unwrap(), [1, 0, 1, 1, 0, 0, 0, 0]);
         assert_eq!(bytes.next().unwrap(), [0, 1, 1, 1, 0, 1, 1, 0]);
     }
 
@@ -346,7 +360,7 @@ mod tests {
         assembler.assemble();
 
         let instructions = assembler.disassemble("output".to_owned());
-        assert_eq!(instructions.len(), 19);
+        assert_eq!(instructions.len(), 20);
 
         assert!(matches!(
             instructions[0].variant,
@@ -475,7 +489,17 @@ mod tests {
         assert!(matches!(instructions[17].variant, InstructionType::NoReg));
         assert!(matches!(instructions[17].command, InstructionCommand::Rar));
 
-        assert!(matches!(instructions[18].variant, InstructionType::NoReg));
-        assert!(matches!(instructions[18].command, InstructionCommand::Hlt));
+        assert!(matches!(
+            instructions[18].variant,
+            InstructionType::SingleReg
+        ));
+        assert!(matches!(
+            instructions[18].registers[0],
+            InstructionRegister::B
+        ));
+        assert!(matches!(instructions[18].command, InstructionCommand::Ora));
+
+        assert!(matches!(instructions[19].variant, InstructionType::NoReg));
+        assert!(matches!(instructions[19].command, InstructionCommand::Hlt));
     }
 }

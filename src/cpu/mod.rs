@@ -83,6 +83,7 @@ impl Cpu {
             InstructionCommand::Rrc => self.execute_rrc(),
             InstructionCommand::Ral => self.execute_ral(),
             InstructionCommand::Rar => self.execute_rar(),
+            InstructionCommand::Ora => self.execute_ora(&instruction.registers[0]),
             InstructionCommand::Hlt => self.execute_hlt(),
         }
     }
@@ -455,6 +456,14 @@ impl Cpu {
         }
 
         self.change_register(0, acc);
+    }
+
+    fn execute_ora(&mut self, arg: &InstructionRegister) {
+        let mut acc = self.get_register(0);
+        acc |= self.get_register(arg.to_index().into());
+
+        self.change_register(0, acc);
+        self.set_flag(Flag::C, false);
     }
 
     fn binary_to_int(&self, intermediate: &mut [u8]) -> i8 {
@@ -950,6 +959,25 @@ mod tests {
         cpu.execute_rar();
         assert_eq!(cpu.get_flag(Flag::C), true);
         assert_eq!(cpu.get_register(0), -102);
+    }
+
+    #[test]
+    fn test_execute_ora() {
+        let mut cpu = initialize_cpu();
+
+        cpu.set_flag(Flag::C, true);
+        cpu.change_register(0, 51);
+        cpu.change_register(1, 15);
+        cpu.execute_ora(&InstructionRegister::B);
+        assert_eq!(cpu.get_flag(Flag::C), false);
+        assert_eq!(cpu.get_register(0), 63);
+
+        cpu.set_flag(Flag::C, false);
+        cpu.change_register(0, -1);
+        cpu.change_register(1, 0);
+        cpu.execute_ora(&InstructionRegister::B);
+        assert_eq!(cpu.get_flag(Flag::C), false);
+        assert_eq!(cpu.get_register(0), -1);
     }
 
     #[test]
