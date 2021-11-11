@@ -80,6 +80,7 @@ impl Cpu {
             InstructionCommand::Cmc => self.execute_cmc(),
             InstructionCommand::Cma => self.execute_cma(),
             InstructionCommand::Rlc => self.execute_rlc(),
+            InstructionCommand::Rrc => self.execute_rrc(),
             InstructionCommand::Hlt => self.execute_hlt(),
         }
     }
@@ -405,7 +406,7 @@ impl Cpu {
             self.set_flag(Flag::C, false);
         }
 
-        acc  = ((acc as u8) >> 1) as i8;
+        acc = ((acc as u8) >> 1) as i8;
 
         if self.get_flag(Flag::C) {
             acc |= -128;
