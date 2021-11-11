@@ -80,6 +80,7 @@ impl Cpu {
             InstructionCommand::Cmc => self.execute_cmc(),
             InstructionCommand::Cma => self.execute_cma(),
             InstructionCommand::Rlc => self.execute_rlc(),
+            InstructionCommand::Rrc => self.execute_rrc(),
             InstructionCommand::Hlt => self.execute_hlt(),
         }
     }
@@ -392,6 +393,25 @@ impl Cpu {
 
         if self.get_flag(Flag::C) {
             acc |= 1;
+        }
+
+        self.change_register(0, acc);
+    }
+
+    fn execute_rrc(&mut self) {
+        let mut acc = self.get_register(0);
+        if (acc << 7) & -128 == -128 {
+            self.set_flag(Flag::C, true);
+        } else {
+            self.set_flag(Flag::C, false);
+        }
+
+        // convert to u8 to make sure LSR is used
+        // otherwise most significant bit is 1 after shift
+        acc = ((acc as u8) >> 1) as i8;
+
+        if self.get_flag(Flag::C) {
+            acc |= -128;
         }
 
         self.change_register(0, acc);
@@ -791,6 +811,39 @@ mod tests {
         cpu.execute_rlc();
         assert_eq!(cpu.get_flag(Flag::C), false);
         assert_eq!(cpu.get_register(0), 48);
+    }
+
+    #[test]
+    fn test_execute_rrc() {
+        let mut cpu = initialize_cpu();
+
+        // negative without carry
+        cpu.set_flag(Flag::C, true);
+        cpu.change_register(0, -14);
+        cpu.execute_rrc();
+        assert_eq!(cpu.get_flag(Flag::C), false);
+        assert_eq!(cpu.get_register(0), 121);
+
+        // negative with carry
+        cpu.set_flag(Flag::C, false);
+        cpu.change_register(0, -13);
+        cpu.execute_rrc();
+        assert_eq!(cpu.get_flag(Flag::C), true);
+        assert_eq!(cpu.get_register(0), -7);
+
+        // positive without carry
+        cpu.set_flag(Flag::C, true);
+        cpu.change_register(0, 12);
+        cpu.execute_rrc();
+        assert_eq!(cpu.get_flag(Flag::C), false);
+        assert_eq!(cpu.get_register(0), 6);
+
+        // positive with carry
+        cpu.set_flag(Flag::C, false);
+        cpu.change_register(0, 13);
+        cpu.execute_rrc();
+        assert_eq!(cpu.get_flag(Flag::C), true);
+        assert_eq!(cpu.get_register(0), -122);
     }
 
     #[test]
