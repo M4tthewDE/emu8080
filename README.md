@@ -36,7 +36,7 @@ Programming Manual](http://dunfield.classiccmp.org/r/8080asm.pdf)
 - [x] RLC
 - [x] RRC
 - [x] RAL
-- [ ] RAR
+- [x] RAR
 
 ## Register Pair Instructions
 - [ ] PUSH

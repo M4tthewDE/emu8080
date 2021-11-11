@@ -20,6 +20,7 @@ LABEL:
         RLC
         RRC
         RAL
+        RAR
 
 STOP:
         HLT
