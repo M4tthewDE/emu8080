@@ -16,7 +16,6 @@ pub fn parse(file_name: String) -> (Vec<Instruction>, Vec<Label>) {
         .unwrap();
 
     let raw_instructions = assembly.into_inner();
-    println!("{:?}", raw_instructions);
 
     let mut instructions = Vec::new();
     let mut labels = Vec::new();
