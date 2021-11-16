@@ -22,6 +22,7 @@ LABEL:
         RAL
         RAR
         ORA B
+        DAA
 
 STOP:
         HLT

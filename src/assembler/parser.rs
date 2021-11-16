@@ -16,6 +16,7 @@ pub fn parse(file_name: String) -> (Vec<Instruction>, Vec<Label>) {
         .unwrap();
 
     let raw_instructions = assembly.into_inner();
+    println!("{:?}", raw_instructions);
 
     let mut instructions = Vec::new();
     let mut labels = Vec::new();
@@ -206,6 +207,8 @@ pub enum InstructionCommand {
     Rar,
     #[strum(serialize = "ORA")]
     Ora,
+    #[strum(serialize = "DAA")]
+    Daa,
     #[strum(serialize = "HLT")]
     Hlt,
 }
@@ -357,6 +360,9 @@ impl Encoding for Instruction {
             }
             InstructionCommand::Ora => {
                 vec![[&[1, 0, 1, 1, 0], self.registers[0].encode()].concat()]
+            }
+            InstructionCommand::Daa => {
+                vec![vec![0, 0, 1, 0, 0, 1, 1, 1]]
             }
             InstructionCommand::Hlt => {
                 vec![vec![0, 1, 1, 1, 0, 1, 1, 0]]

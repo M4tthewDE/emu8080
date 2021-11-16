@@ -84,6 +84,7 @@ impl Cpu {
             InstructionCommand::Ral => self.execute_ral(),
             InstructionCommand::Rar => self.execute_rar(),
             InstructionCommand::Ora => self.execute_ora(&instruction.registers[0]),
+            InstructionCommand::Daa => self.execute_daa(),
             InstructionCommand::Hlt => self.execute_hlt(),
         }
     }
