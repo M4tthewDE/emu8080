@@ -470,7 +470,7 @@ impl Cpu {
 
         // check if 4 least significant bits are > 9
         if (acc & 15) > 9 || self.get_flag(Flag::A) {
-            acc += 6;  
+            acc = acc.wrapping_add(6);  
 
             // check if carry out happens
             if (self.get_register(0) & -16) != (acc & -16) {
@@ -488,12 +488,12 @@ impl Cpu {
             // if onecomplement representation added > 255 -> carry exists
             // example: 127 + 127
             // "x as u8 as u16" converts to onecomplement representation
-            if (acc as u8 as u16) + (96 as u8 as u16) > 255 {
+            if (acc as u8 as u16) + (96u16) > 255 {
                 self.set_flag(Flag::C, true);
             } else {
                 self.set_flag(Flag::C, false);
             }
-            acc += 96;
+            acc = acc.wrapping_add(96);  
         }
 
         self.change_register(0, acc);
