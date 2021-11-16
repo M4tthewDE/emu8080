@@ -130,7 +130,7 @@ pub fn parse(file_name: String) -> (Vec<Instruction>, Vec<Label>) {
                     }
 
                     let instruction = Instruction {
-                        variant: InstructionType::SingleReg,
+                        variant: InstructionType::IntermediateReg,
                         command,
                         registers: Vec::new(),
                         intermediate,
@@ -139,7 +139,7 @@ pub fn parse(file_name: String) -> (Vec<Instruction>, Vec<Label>) {
                 }
                 Rule::no_reg_command => {
                     let instruction = Instruction {
-                        variant: InstructionType::SingleReg,
+                        variant: InstructionType::NoReg,
                         command,
                         registers: Vec::new(),
                         intermediate: Vec::new(),
@@ -206,6 +206,8 @@ pub enum InstructionCommand {
     Rar,
     #[strum(serialize = "ORA")]
     Ora,
+    #[strum(serialize = "DAA")]
+    Daa,
     #[strum(serialize = "HLT")]
     Hlt,
 }
@@ -357,6 +359,9 @@ impl Encoding for Instruction {
             }
             InstructionCommand::Ora => {
                 vec![[&[1, 0, 1, 1, 0], self.registers[0].encode()].concat()]
+            }
+            InstructionCommand::Daa => {
+                vec![vec![0, 0, 1, 0, 0, 1, 1, 1]]
             }
             InstructionCommand::Hlt => {
                 vec![vec![0, 1, 1, 1, 0, 1, 1, 0]]

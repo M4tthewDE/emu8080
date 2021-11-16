@@ -84,6 +84,7 @@ impl Cpu {
             InstructionCommand::Ral => self.execute_ral(),
             InstructionCommand::Rar => self.execute_rar(),
             InstructionCommand::Ora => self.execute_ora(&instruction.registers[0]),
+            InstructionCommand::Daa => self.execute_daa(),
             InstructionCommand::Hlt => self.execute_hlt(),
         }
     }
@@ -464,6 +465,40 @@ impl Cpu {
 
         self.change_register(0, acc);
         self.set_flag(Flag::C, false);
+    }
+
+    fn execute_daa(&mut self) {
+        let mut acc = self.get_register(0);
+
+        // check if 4 least significant bits are > 9
+        if (acc & 15) > 9 || self.get_flag(Flag::A) {
+            acc = acc.wrapping_add(6);
+
+            // check if carry out happens
+            if (self.get_register(0) & -16) != (acc & -16) {
+                self.set_flag(Flag::A, true);
+            } else {
+                self.set_flag(Flag::A, false);
+            }
+        }
+
+        // check if 4 most significant bits are > 9
+        // increment 4 most significant bits by 6
+        // since its 4 most significant, +6 = +96
+        let most_significant_bits = (((acc & -16) as u8) >> 4) as i8;
+        if most_significant_bits > 9 || self.get_flag(Flag::C) {
+            // if onecomplement representation added > 255 -> carry exists
+            // example: 127 + 127
+            // "x as u8 as u16" converts to onecomplement representation
+            if (acc as u8 as u16) + (96u16) > 255 {
+                self.set_flag(Flag::C, true);
+            } else {
+                self.set_flag(Flag::C, false);
+            }
+            acc = acc.wrapping_add(96);
+        }
+
+        self.change_register(0, acc);
     }
 
     fn binary_to_int(&self, intermediate: &mut [u8]) -> i8 {
@@ -978,6 +1013,19 @@ mod tests {
         cpu.execute_ora(&InstructionRegister::B);
         assert_eq!(cpu.get_flag(Flag::C), false);
         assert_eq!(cpu.get_register(0), -1);
+    }
+
+    #[test]
+    fn test_execute_daa() {
+        let mut cpu = initialize_cpu();
+
+        // neither carry bit are set
+        cpu.set_flag(Flag::A, true);
+        cpu.change_register(0, -101);
+        cpu.execute_daa();
+        assert_eq!(cpu.get_register(0), 1);
+        assert_eq!(cpu.get_flag(Flag::C), true);
+        assert_eq!(cpu.get_flag(Flag::A), true);
     }
 
     #[test]

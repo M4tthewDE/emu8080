@@ -15,7 +15,7 @@ Programming Manual](http://dunfield.classiccmp.org/r/8080asm.pdf)
 - [x] INR
 - [x] DCR
 - [x] CMA
-- [ ] DAA
+- [x] DAA
 
 ## Data Transfer Instructions
 - [x] MOV
