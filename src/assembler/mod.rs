@@ -165,7 +165,7 @@ impl Assembler {
                     registers: Vec::new(),
                     intermediate: Vec::new(),
                 }
-            // DAA 
+            // DAA
             } else if raw_instructions[index] == [0, 0, 1, 0, 0, 1, 1, 1] {
                 instruction = Instruction {
                     variant: InstructionType::NoReg,

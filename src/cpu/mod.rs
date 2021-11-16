@@ -194,7 +194,9 @@ impl Cpu {
         if (current_a as u8 as u16).checked_sub(source_value as u8 as u16) != None {
             self.set_flag(Flag::C, false);
         } else {
-            self.set_flag(Flag::C, true); } }
+            self.set_flag(Flag::C, true);
+        }
+    }
 
     fn execute_mov(&mut self, args: &[InstructionRegister]) {
         let source_value = self.get_register(args[0].to_index().into());
@@ -470,7 +472,7 @@ impl Cpu {
 
         // check if 4 least significant bits are > 9
         if (acc & 15) > 9 || self.get_flag(Flag::A) {
-            acc = acc.wrapping_add(6);  
+            acc = acc.wrapping_add(6);
 
             // check if carry out happens
             if (self.get_register(0) & -16) != (acc & -16) {
@@ -481,7 +483,7 @@ impl Cpu {
         }
 
         // check if 4 most significant bits are > 9
-        // increment 4 most significant bits by 6 
+        // increment 4 most significant bits by 6
         // since its 4 most significant, +6 = +96
         let most_significant_bits = (((acc & -16) as u8) >> 4) as i8;
         if most_significant_bits > 9 || self.get_flag(Flag::C) {
@@ -493,7 +495,7 @@ impl Cpu {
             } else {
                 self.set_flag(Flag::C, false);
             }
-            acc = acc.wrapping_add(96);  
+            acc = acc.wrapping_add(96);
         }
 
         self.change_register(0, acc);
@@ -1017,7 +1019,7 @@ mod tests {
     fn test_execute_daa() {
         let mut cpu = initialize_cpu();
 
-        // neither carry bit are set 
+        // neither carry bit are set
         cpu.set_flag(Flag::A, true);
         cpu.change_register(0, -101);
         cpu.execute_daa();
