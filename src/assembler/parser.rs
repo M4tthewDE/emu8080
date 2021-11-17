@@ -225,6 +225,8 @@ pub enum InstructionCommand {
     Daa,
     #[strum(serialize = "STAX")]
     Stax,
+    #[strum(serialize = "LDAX")]
+    Ldax,
     #[strum(serialize = "HLT")]
     Hlt,
 }
@@ -389,6 +391,15 @@ impl Encoding for Instruction {
                     vec![vec![0, 0, 0, 1, 0, 0, 1, 0]]
                 }
                 _ => panic!("Invalid register provided for instruction STAX"),
+            },
+            InstructionCommand::Ldax => match self.registers[0] {
+                InstructionRegister::B | InstructionRegister::C => {
+                    vec![vec![0, 0, 0, 0, 1, 0, 1, 0]]
+                }
+                InstructionRegister::D | InstructionRegister::E => {
+                    vec![vec![0, 0, 0, 1, 1, 0, 1, 0]]
+                }
+                _ => panic!("Invalid register provided for instruction LDAX"),
             },
             InstructionCommand::Hlt => {
                 vec![vec![0, 1, 1, 1, 0, 1, 1, 0]]

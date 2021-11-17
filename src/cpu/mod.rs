@@ -96,6 +96,7 @@ impl Cpu {
             InstructionCommand::Ora => self.execute_ora(&instruction.registers[0]),
             InstructionCommand::Daa => self.execute_daa(),
             InstructionCommand::Stax => self.execute_stax(&instruction.registers),
+            InstructionCommand::Ldax => self.execute_ldax(&instruction.registers),
             InstructionCommand::Hlt => self.execute_hlt(),
         }
     }
