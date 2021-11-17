@@ -19,8 +19,8 @@ Programming Manual](http://dunfield.classiccmp.org/r/8080asm.pdf)
 
 ## Data Transfer Instructions
 - [x] MOV
-- [ ] LDAX
-- [ ] STAX
+- [x] LDAX
+- [x] STAX
 
 ## Register/Memory to Accumulator Instructions
 - [x] ADD
