@@ -6,6 +6,7 @@ use strum_macros::EnumIter;
 pub fn initialize_cpu() -> Cpu {
     Cpu {
         register: vec![0; 8],
+        memory: vec![0; 65536],
         flags: vec![false; 8],
     }
 }
@@ -13,6 +14,7 @@ pub fn initialize_cpu() -> Cpu {
 #[derive(Debug)]
 pub struct Cpu {
     register: Vec<i8>,
+    memory: Vec<i8>,
 
     // S Z x A x P x C
     flags: Vec<bool>,
@@ -46,6 +48,14 @@ impl Cpu {
 
     fn change_register(&mut self, index: usize, value: i8) {
         self.register[index] = value;
+    }
+
+    fn set_memory(&mut self, address: u16, value: i8) {
+        self.memory[address as usize] = value;
+    }
+
+    fn get_memory(&self, address: u16) -> i8 {
+        self.memory[address as usize]
     }
 
     pub fn run(&mut self, instructions: &[Instruction]) {
@@ -1026,6 +1036,14 @@ mod tests {
         assert_eq!(cpu.get_register(0), 1);
         assert_eq!(cpu.get_flag(Flag::C), true);
         assert_eq!(cpu.get_flag(Flag::A), true);
+    }
+
+    #[test]
+    fn test_memory() {
+        let mut cpu = initialize_cpu();
+
+        cpu.set_memory(65535, 42);
+        assert_eq!(cpu.get_memory(65535), 42);
     }
 
     #[test]
