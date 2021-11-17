@@ -95,6 +95,7 @@ impl Cpu {
             InstructionCommand::Rar => self.execute_rar(),
             InstructionCommand::Ora => self.execute_ora(&instruction.registers[0]),
             InstructionCommand::Daa => self.execute_daa(),
+            InstructionCommand::Stax => self.execute_stax(&instruction.registers),
             InstructionCommand::Hlt => self.execute_hlt(),
         }
     }
@@ -511,10 +512,10 @@ impl Cpu {
         self.change_register(0, acc);
     }
 
-    fn execute_stax(&mut self, register_pair: (&InstructionRegister, &InstructionRegister)) {
+    fn execute_stax(&mut self, registers: &[InstructionRegister]) {
         let acc = self.get_register(0);
-        let mut first_register = self.get_register(register_pair.0.to_index() as usize) as u16;
-        let second_register = self.get_register(register_pair.1.to_index() as usize) as u16;
+        let mut first_register = self.get_register(registers[0].to_index() as usize) as u16;
+        let second_register = self.get_register(registers[1].to_index() as usize) as u16;
 
         first_register <<= 8;
 
@@ -1057,7 +1058,7 @@ mod tests {
         cpu.change_register(1, 123);
         cpu.change_register(2, 17);
 
-        cpu.execute_stax((&InstructionRegister::B, &InstructionRegister::C));
+        cpu.execute_stax(&vec![InstructionRegister::B, InstructionRegister::C]);
         assert_eq!(cpu.get_memory(31505), 42);
     }
 

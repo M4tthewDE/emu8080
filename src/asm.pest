@@ -1,8 +1,10 @@
 register = { "A" | "B" | "C" | "D" | "E" | "H" | "L" | "M" }
+pair_reg_register = { "B" | "D" }
 single_reg_command = { "ADD" | "ADC" | "SUB" | "INR" | "DCR" | "ANA" | "ORA" }
 double_reg_command = { "MOV" }
 intermediate_reg_command = { "MVI" }
 intermediate_command = { "ADI" | "ACI" | "SUI" }
+pair_reg_command = { "STAX" }
 no_reg_command = { "HLT" | "STC" | "DAA" | "CMC" | "CMA" | "RLC" | "RRC" | "RAL" | "RAR" }
 intermediate  = { ("0"|"1"){8}}
 comment = { ";" ~ (LETTER | NUMBER | PUNCTUATION)* }
@@ -13,7 +15,8 @@ intermediate_instruction = { intermediate_command ~ intermediate }
 single_reg_instruction = { single_reg_command ~ register }
 double_reg_instruction = { double_reg_command ~ register ~ "," ~ register }
 no_reg_instruction = { no_reg_command }
-instruction = { (label ~ NEWLINE*)? ~ (intermediate_reg_instruction | intermediate_instruction | single_reg_instruction | double_reg_instruction | no_reg_instruction) ~ comment? }
+pair_reg_instruction = { pair_reg_command ~ pair_reg_register }
+instruction = { (label ~ NEWLINE*)? ~ (intermediate_reg_instruction | intermediate_instruction | single_reg_instruction | double_reg_instruction | no_reg_instruction | pair_reg_instruction) ~ comment? }
 assembly = { ((instruction | comment) ~ (EOI | NEWLINE+))+ }
 
 WHITESPACE = _{ " " }

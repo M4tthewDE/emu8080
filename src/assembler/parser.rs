@@ -119,6 +119,21 @@ pub fn parse(file_name: String) -> (Vec<Instruction>, Vec<Label>) {
                     };
                     instructions.push(instruction);
                 }
+                Rule::pair_reg_command => {
+                    let registers =
+                        vec![
+                            InstructionRegister::from_str(pairs.peek().unwrap().as_str()).unwrap(),
+                        ];
+                    pairs.next();
+
+                    let instruction = Instruction {
+                        variant: InstructionType::PairReg,
+                        command,
+                        registers,
+                        intermediate: Vec::new(),
+                    };
+                    instructions.push(instruction);
+                }
                 Rule::intermediate_command => {
                     let mut intermediate = Vec::new();
                     for char in pairs.as_str().chars() {
@@ -208,6 +223,8 @@ pub enum InstructionCommand {
     Ora,
     #[strum(serialize = "DAA")]
     Daa,
+    #[strum(serialize = "STAX")]
+    Stax,
     #[strum(serialize = "HLT")]
     Hlt,
 }
@@ -282,6 +299,7 @@ pub enum InstructionType {
     DoubleReg,
     IntermediateReg,
     Intermediate,
+    PairReg,
 }
 
 #[derive(Debug)]
@@ -363,6 +381,15 @@ impl Encoding for Instruction {
             InstructionCommand::Daa => {
                 vec![vec![0, 0, 1, 0, 0, 1, 1, 1]]
             }
+            InstructionCommand::Stax => match self.registers[0] {
+                InstructionRegister::B | InstructionRegister::C => {
+                    vec![vec![0, 0, 0, 0, 0, 0, 1, 0]]
+                }
+                InstructionRegister::D | InstructionRegister::E => {
+                    vec![vec![0, 0, 0, 1, 0, 0, 1, 0]]
+                }
+                _ => panic!("Invalid register provided for instruction STAX"),
+            },
             InstructionCommand::Hlt => {
                 vec![vec![0, 1, 1, 1, 0, 1, 1, 0]]
             }
