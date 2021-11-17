@@ -240,6 +240,42 @@ impl Assembler {
                     intermediate: Vec::new(),
                 }
             // instructions with 1 argument in the middle
+            // instructions with a register pair
+            // STAX
+            } else if raw_instructions[index][0..3] == [0, 0, 0]
+                && raw_instructions[index][4..] == [0, 0, 1, 0]
+            {
+                let registers: Vec<InstructionRegister>;
+                if raw_instructions[index][4] == 0 {
+                    registers = vec![InstructionRegister::B, InstructionRegister::C];
+                } else {
+                    registers = vec![InstructionRegister::D, InstructionRegister::E];
+                }
+
+                instruction = Instruction {
+                    variant: InstructionType::PairReg,
+                    command: InstructionCommand::Stax,
+                    registers,
+                    intermediate: Vec::new(),
+                }
+            // LDAX
+            } else if raw_instructions[index][0..3] == [0, 0, 0]
+                && raw_instructions[index][4..] == [1, 0, 1, 0]
+            {
+                let registers: Vec<InstructionRegister>;
+                if raw_instructions[index][4] == 0 {
+                    registers = vec![InstructionRegister::B, InstructionRegister::C];
+                } else {
+                    registers = vec![InstructionRegister::D, InstructionRegister::E];
+                }
+
+                instruction = Instruction {
+                    variant: InstructionType::PairReg,
+                    command: InstructionCommand::Ldax,
+                    registers,
+                    intermediate: Vec::new(),
+                }
+            // instructions with 1 register in the middle
             // INR
             } else if raw_instructions[index][0..2] == [0, 0]
                 && raw_instructions[index][5..] == [1, 0, 0]
@@ -360,6 +396,8 @@ mod tests {
         assert_eq!(bytes.next().unwrap(), [0, 0, 0, 1, 1, 1, 1, 1]);
         assert_eq!(bytes.next().unwrap(), [1, 0, 1, 1, 0, 0, 0, 0]);
         assert_eq!(bytes.next().unwrap(), [0, 0, 1, 0, 0, 1, 1, 1]);
+        assert_eq!(bytes.next().unwrap(), [0, 0, 0, 0, 0, 0, 1, 0]);
+        assert_eq!(bytes.next().unwrap(), [0, 0, 0, 1, 1, 0, 1, 0]);
         assert_eq!(bytes.next().unwrap(), [0, 1, 1, 1, 0, 1, 1, 0]);
     }
 
@@ -369,7 +407,7 @@ mod tests {
         assembler.assemble();
 
         let instructions = assembler.disassemble("output".to_owned());
-        assert_eq!(instructions.len(), 21);
+        assert_eq!(instructions.len(), 23);
 
         assert!(matches!(
             instructions[0].variant,
@@ -511,7 +549,29 @@ mod tests {
         assert!(matches!(instructions[19].variant, InstructionType::NoReg));
         assert!(matches!(instructions[19].command, InstructionCommand::Daa));
 
-        assert!(matches!(instructions[20].variant, InstructionType::NoReg));
-        assert!(matches!(instructions[20].command, InstructionCommand::Hlt));
+        assert!(matches!(instructions[20].variant, InstructionType::PairReg));
+        assert!(matches!(instructions[20].command, InstructionCommand::Stax));
+        assert!(matches!(
+            instructions[20].registers[0],
+            InstructionRegister::B
+        ));
+        assert!(matches!(
+            instructions[20].registers[1],
+            InstructionRegister::C
+        ));
+
+        assert!(matches!(instructions[21].variant, InstructionType::PairReg));
+        assert!(matches!(instructions[21].command, InstructionCommand::Ldax));
+        assert!(matches!(
+            instructions[21].registers[0],
+            InstructionRegister::D
+        ));
+        assert!(matches!(
+            instructions[21].registers[1],
+            InstructionRegister::E
+        ));
+
+        assert!(matches!(instructions[22].variant, InstructionType::NoReg));
+        assert!(matches!(instructions[22].command, InstructionCommand::Hlt));
     }
 }

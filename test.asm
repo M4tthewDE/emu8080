@@ -23,6 +23,8 @@ LABEL:
         RAR
         ORA B
         DAA
+        STAX B
+        LDAX D
 
 STOP:
         HLT

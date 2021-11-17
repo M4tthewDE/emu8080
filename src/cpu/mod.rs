@@ -6,6 +6,7 @@ use strum_macros::EnumIter;
 pub fn initialize_cpu() -> Cpu {
     Cpu {
         register: vec![0; 8],
+        memory: vec![0; 65536],
         flags: vec![false; 8],
     }
 }
@@ -13,6 +14,7 @@ pub fn initialize_cpu() -> Cpu {
 #[derive(Debug)]
 pub struct Cpu {
     register: Vec<i8>,
+    memory: Vec<i8>,
 
     // S Z x A x P x C
     flags: Vec<bool>,
@@ -46,6 +48,14 @@ impl Cpu {
 
     fn change_register(&mut self, index: usize, value: i8) {
         self.register[index] = value;
+    }
+
+    fn set_memory(&mut self, address: u16, value: i8) {
+        self.memory[address as usize] = value;
+    }
+
+    fn get_memory(&self, address: u16) -> i8 {
+        self.memory[address as usize]
     }
 
     pub fn run(&mut self, instructions: &[Instruction]) {
@@ -85,6 +95,8 @@ impl Cpu {
             InstructionCommand::Rar => self.execute_rar(),
             InstructionCommand::Ora => self.execute_ora(&instruction.registers[0]),
             InstructionCommand::Daa => self.execute_daa(),
+            InstructionCommand::Stax => self.execute_stax(&instruction.registers),
+            InstructionCommand::Ldax => self.execute_ldax(&instruction.registers),
             InstructionCommand::Hlt => self.execute_hlt(),
         }
     }
@@ -501,6 +513,33 @@ impl Cpu {
         self.change_register(0, acc);
     }
 
+    fn execute_stax(&mut self, registers: &[InstructionRegister]) {
+        let acc = self.get_register(0);
+        let mut first_register = self.get_register(registers[0].to_index() as usize) as u16;
+        let mut second_register = self.get_register(registers[1].to_index() as usize) as u16;
+
+        // make sure first 8 bits are 0 because of negative numbers
+        second_register &= 255;
+
+        first_register <<= 8;
+
+        let address = first_register | second_register;
+        self.set_memory(address, acc);
+    }
+
+    fn execute_ldax(&mut self, registers: &[InstructionRegister]) {
+        let mut first_register = self.get_register(registers[0].to_index() as usize) as u16;
+        let mut second_register = self.get_register(registers[1].to_index() as usize) as u16;
+
+        // make sure first 8 bits are 0 because of negative numbers
+        second_register &= 255;
+
+        first_register <<= 8;
+
+        let address = first_register | second_register;
+        self.change_register(0, self.get_memory(address));
+    }
+
     fn binary_to_int(&self, intermediate: &mut [u8]) -> i8 {
         if intermediate[0] == 1 {
             // subtract 1 from intermediate
@@ -561,12 +600,22 @@ impl Cpu {
             );
         }
         self.print_flags();
+        self.print_memory();
     }
 
     fn print_flags(&self) {
         println!("Flags:");
         for flag in Flag::iter() {
             println!("{:?}: {}", flag.clone(), self.get_flag(flag));
+        }
+    }
+
+    fn print_memory(&self) {
+        println!("Memory:");
+        for (address, value) in self.memory.iter().enumerate() {
+            if *value != 0 {
+                println!("{}: {}", address, value);
+            }
         }
     }
 }
@@ -1026,6 +1075,37 @@ mod tests {
         assert_eq!(cpu.get_register(0), 1);
         assert_eq!(cpu.get_flag(Flag::C), true);
         assert_eq!(cpu.get_flag(Flag::A), true);
+    }
+
+    #[test]
+    fn test_stax() {
+        let mut cpu = initialize_cpu();
+
+        cpu.change_register(0, 42);
+        cpu.change_register(1, 123);
+        cpu.change_register(2, 17);
+
+        cpu.execute_stax(&vec![InstructionRegister::B, InstructionRegister::C]);
+        assert_eq!(cpu.get_memory(31505), 42);
+    }
+
+    #[test]
+    fn test_ldax() {
+        let mut cpu = initialize_cpu();
+
+        cpu.change_register(3, -109);
+        cpu.change_register(4, -117);
+        cpu.set_memory(37771, 42);
+        cpu.execute_ldax(&vec![InstructionRegister::D, InstructionRegister::E]);
+        assert_eq!(cpu.get_register(0), 42);
+    }
+
+    #[test]
+    fn test_memory() {
+        let mut cpu = initialize_cpu();
+
+        cpu.set_memory(65535, 42);
+        assert_eq!(cpu.get_memory(65535), 42);
     }
 
     #[test]
