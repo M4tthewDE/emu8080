@@ -583,12 +583,22 @@ impl Cpu {
             );
         }
         self.print_flags();
+        self.print_memory();
     }
 
     fn print_flags(&self) {
         println!("Flags:");
         for flag in Flag::iter() {
             println!("{:?}: {}", flag.clone(), self.get_flag(flag));
+        }
+    }
+
+    fn print_memory(&self) {
+        println!("Memory:");
+        for (address, value) in self.memory.iter().enumerate() {
+            if *value != 0 {
+                println!("{}: {}", address, value);
+            }
         }
     }
 }
