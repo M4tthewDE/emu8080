@@ -515,12 +515,28 @@ impl Cpu {
     fn execute_stax(&mut self, registers: &[InstructionRegister]) {
         let acc = self.get_register(0);
         let mut first_register = self.get_register(registers[0].to_index() as usize) as u16;
-        let second_register = self.get_register(registers[1].to_index() as usize) as u16;
+        let mut second_register = self.get_register(registers[1].to_index() as usize) as u16;
+
+        // make sure first 8 bits are 0 because of negative numbers
+        second_register &= 255;
 
         first_register <<= 8;
 
         let address = first_register | second_register;
         self.set_memory(address, acc);
+    }
+
+    fn execute_ldax(&mut self, registers: &[InstructionRegister]) {
+        let mut first_register = self.get_register(registers[0].to_index() as usize) as u16;
+        let mut second_register = self.get_register(registers[1].to_index() as usize) as u16;
+
+        // make sure first 8 bits are 0 because of negative numbers
+        second_register &= 255;
+
+        first_register <<= 8;
+
+        let address = first_register | second_register;
+        self.change_register(0, self.get_memory(address));
     }
 
     fn binary_to_int(&self, intermediate: &mut [u8]) -> i8 {
@@ -1061,7 +1077,7 @@ mod tests {
     }
 
     #[test]
-    fn text_stax() {
+    fn test_stax() {
         let mut cpu = initialize_cpu();
 
         cpu.change_register(0, 42);
@@ -1070,6 +1086,17 @@ mod tests {
 
         cpu.execute_stax(&vec![InstructionRegister::B, InstructionRegister::C]);
         assert_eq!(cpu.get_memory(31505), 42);
+    }
+
+    #[test]
+    fn test_ldax() {
+        let mut cpu = initialize_cpu();
+
+        cpu.change_register(3, -109);
+        cpu.change_register(4, -117);
+        cpu.set_memory(37771, 42);
+        cpu.execute_ldax(&vec![InstructionRegister::D, InstructionRegister::E]);
+        assert_eq!(cpu.get_register(0), 42);
     }
 
     #[test]
