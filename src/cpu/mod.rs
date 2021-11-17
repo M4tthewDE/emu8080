@@ -511,6 +511,17 @@ impl Cpu {
         self.change_register(0, acc);
     }
 
+    fn execute_stax(&mut self, register_pair: (&InstructionRegister, &InstructionRegister)) {
+        let acc = self.get_register(0);
+        let mut first_register = self.get_register(register_pair.0.to_index() as usize) as u16;
+        let second_register = self.get_register(register_pair.1.to_index() as usize) as u16;
+
+        first_register <<= 8;
+
+        let address = first_register | second_register;
+        self.set_memory(address, acc);
+    }
+
     fn binary_to_int(&self, intermediate: &mut [u8]) -> i8 {
         if intermediate[0] == 1 {
             // subtract 1 from intermediate
@@ -1036,6 +1047,18 @@ mod tests {
         assert_eq!(cpu.get_register(0), 1);
         assert_eq!(cpu.get_flag(Flag::C), true);
         assert_eq!(cpu.get_flag(Flag::A), true);
+    }
+
+    #[test]
+    fn text_stax() {
+        let mut cpu = initialize_cpu();
+
+        cpu.change_register(0, 42);
+        cpu.change_register(1, 123);
+        cpu.change_register(2, 17);
+
+        cpu.execute_stax((&InstructionRegister::B, &InstructionRegister::C));
+        assert_eq!(cpu.get_memory(31505), 42);
     }
 
     #[test]
