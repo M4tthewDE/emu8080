@@ -586,6 +586,29 @@ impl Cpu {
         self.change_register(register.to_index() as usize, result);
     }
 
+    fn execute_sbb(&mut self, register: &InstructionRegister) {
+        let acc = self.get_register(0);
+        let mut reg = self.get_register(register.to_index() as usize);
+
+        reg = reg.wrapping_add(self.get_flag(Flag::C) as i8);
+
+        let result = acc.wrapping_sub(reg);
+
+        if result == 0 {
+            self.set_flag(Flag::Z, true);
+        } else {
+            self.set_flag(Flag::Z, false);
+        }
+
+        if (acc as u8).checked_add(-reg as u8) == None {
+            self.set_flag(Flag::C, false);
+        } else {
+            self.set_flag(Flag::C, true);
+        }
+
+        self.change_register(0, result);
+    }
+
     fn binary_to_int(&self, intermediate: &mut [u8]) -> i8 {
         if intermediate[0] == 1 {
             // subtract 1 from intermediate
@@ -1191,6 +1214,20 @@ mod tests {
         cpu.execute_xra(&InstructionRegister::B);
         assert_eq!(cpu.get_register(1), 36);
         assert_eq!(cpu.get_flag(Flag::Z), false);
+    }
+
+    #[test]
+    fn test_execute_sbb() {
+        let mut cpu = initialize_cpu();
+
+        cpu.set_flag(Flag::Z, true);
+        cpu.set_flag(Flag::C, true);
+        cpu.change_register(0, 4);
+        cpu.change_register(6, 2);
+        cpu.execute_sbb(&InstructionRegister::L);
+        assert_eq!(cpu.get_register(0), 1);
+        assert_eq!(cpu.get_flag(Flag::Z), false);
+        assert_eq!(cpu.get_flag(Flag::C), false);
     }
 
     #[test]
