@@ -28,7 +28,7 @@ Programming Manual](http://dunfield.classiccmp.org/r/8080asm.pdf)
 - [x] SUB
 - [ ] SBB
 - [x] ANA
-- [ ] XRA
+- [x] XRA
 - [x] ORA
 - [x] CMP
 
