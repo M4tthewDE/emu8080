@@ -97,6 +97,7 @@ impl Cpu {
             InstructionCommand::Daa => self.execute_daa(),
             InstructionCommand::Stax => self.execute_stax(&instruction.registers),
             InstructionCommand::Ldax => self.execute_ldax(&instruction.registers),
+            InstructionCommand::Cmp => self.execute_cmp(&instruction.registers[0]),
             InstructionCommand::Hlt => self.execute_hlt(),
         }
     }
@@ -553,8 +554,8 @@ impl Cpu {
         }
 
         // "x as u8 as u16" converts to onecomplement representation
-        // if onecomplement representation subtraction < 0 -> carry happens 
-        // only works if subtraction is happening, if reg is negative, 
+        // if onecomplement representation subtraction < 0 -> carry happens
+        // only works if subtraction is happening, if reg is negative,
         // comparision with 255 has to be done
         if reg < 0 {
             if ((acc as u8 as u16) + (reg as u8 as u16)) > 255 {
@@ -562,12 +563,10 @@ impl Cpu {
             } else {
                 self.set_flag(Flag::C, true);
             }
+        } else if (acc as u8 as u16).checked_sub(reg as u8 as u16) == None {
+            self.set_flag(Flag::C, false);
         } else {
-            if (acc as u8 as u16).checked_sub(reg as u8 as u16) == None {
-                self.set_flag(Flag::C, false);
-            } else {
-                self.set_flag(Flag::C, true);
-            }
+            self.set_flag(Flag::C, true);
         }
     }
 
