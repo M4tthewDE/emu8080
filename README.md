@@ -26,11 +26,11 @@ Programming Manual](http://dunfield.classiccmp.org/r/8080asm.pdf)
 - [x] ADD
 - [x] ADC
 - [x] SUB
-- [ ] SBB
+- [x] SBB
 - [x] ANA
-- [ ] XRA
+- [x] XRA
 - [x] ORA
-- [ ] CMP
+- [x] CMP
 
 ## Rotate Accumulator Instructions
 - [x] RLC

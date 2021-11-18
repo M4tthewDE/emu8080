@@ -97,6 +97,9 @@ impl Cpu {
             InstructionCommand::Daa => self.execute_daa(),
             InstructionCommand::Stax => self.execute_stax(&instruction.registers),
             InstructionCommand::Ldax => self.execute_ldax(&instruction.registers),
+            InstructionCommand::Cmp => self.execute_cmp(&instruction.registers[0]),
+            InstructionCommand::Xra => self.execute_xra(&instruction.registers[0]),
+            InstructionCommand::Sbb => self.execute_sbb(&instruction.registers[0]),
             InstructionCommand::Hlt => self.execute_hlt(),
         }
     }
@@ -538,6 +541,73 @@ impl Cpu {
 
         let address = first_register | second_register;
         self.change_register(0, self.get_memory(address));
+    }
+
+    fn execute_cmp(&mut self, register: &InstructionRegister) {
+        let acc = self.get_register(0);
+        let reg = self.get_register(register.to_index() as usize);
+
+        let result = acc.wrapping_sub(reg);
+
+        if result == 0 {
+            self.set_flag(Flag::Z, true);
+        } else {
+            self.set_flag(Flag::Z, false);
+        }
+
+        // "x as u8 as u16" converts to onecomplement representation
+        // if onecomplement representation subtraction < 0 -> carry happens
+        // only works if subtraction is happening, if reg is negative,
+        // comparision with 255 has to be done
+        if reg < 0 {
+            if ((acc as u8 as u16) + (reg as u8 as u16)) > 255 {
+                self.set_flag(Flag::C, false);
+            } else {
+                self.set_flag(Flag::C, true);
+            }
+        } else if (acc as u8 as u16).checked_sub(reg as u8 as u16) == None {
+            self.set_flag(Flag::C, false);
+        } else {
+            self.set_flag(Flag::C, true);
+        }
+    }
+
+    fn execute_xra(&mut self, register: &InstructionRegister) {
+        let acc = self.get_register(0);
+        let reg = self.get_register(register.to_index() as usize);
+
+        let result = acc ^ reg;
+
+        if result == 0 {
+            self.set_flag(Flag::Z, true);
+        } else {
+            self.set_flag(Flag::Z, false);
+        }
+
+        self.change_register(register.to_index() as usize, result);
+    }
+
+    fn execute_sbb(&mut self, register: &InstructionRegister) {
+        let acc = self.get_register(0);
+        let mut reg = self.get_register(register.to_index() as usize);
+
+        reg = reg.wrapping_add(self.get_flag(Flag::C) as i8);
+
+        let result = acc.wrapping_sub(reg);
+
+        if result == 0 {
+            self.set_flag(Flag::Z, true);
+        } else {
+            self.set_flag(Flag::Z, false);
+        }
+
+        if (acc as u8).checked_add(-reg as u8) == None {
+            self.set_flag(Flag::C, false);
+        } else {
+            self.set_flag(Flag::C, true);
+        }
+
+        self.change_register(0, result);
     }
 
     fn binary_to_int(&self, intermediate: &mut [u8]) -> i8 {
@@ -1078,7 +1148,7 @@ mod tests {
     }
 
     #[test]
-    fn test_stax() {
+    fn test_execute_stax() {
         let mut cpu = initialize_cpu();
 
         cpu.change_register(0, 42);
@@ -1090,7 +1160,7 @@ mod tests {
     }
 
     #[test]
-    fn test_ldax() {
+    fn test_execute_ldax() {
         let mut cpu = initialize_cpu();
 
         cpu.change_register(3, -109);
@@ -1098,6 +1168,67 @@ mod tests {
         cpu.set_memory(37771, 42);
         cpu.execute_ldax(&vec![InstructionRegister::D, InstructionRegister::E]);
         assert_eq!(cpu.get_register(0), 42);
+    }
+
+    #[test]
+    fn test_execute_cmp() {
+        let mut cpu = initialize_cpu();
+
+        cpu.set_flag(Flag::C, true);
+        cpu.set_flag(Flag::Z, true);
+        cpu.change_register(0, 10);
+        cpu.change_register(4, -5);
+        cpu.execute_cmp(&InstructionRegister::E);
+        assert_eq!(cpu.get_flag(Flag::C), false);
+        assert_eq!(cpu.get_flag(Flag::Z), false);
+
+        cpu.set_flag(Flag::C, false);
+        cpu.set_flag(Flag::Z, true);
+        cpu.change_register(0, 2);
+        cpu.change_register(4, -5);
+        cpu.execute_cmp(&InstructionRegister::E);
+        assert_eq!(cpu.get_flag(Flag::C), true);
+        assert_eq!(cpu.get_flag(Flag::Z), false);
+
+        cpu.set_flag(Flag::C, true);
+        cpu.set_flag(Flag::Z, true);
+        cpu.change_register(0, -27);
+        cpu.change_register(4, -5);
+        cpu.execute_cmp(&InstructionRegister::E);
+        assert_eq!(cpu.get_flag(Flag::C), false);
+        assert_eq!(cpu.get_flag(Flag::Z), false);
+    }
+
+    #[test]
+    fn test_execute_xra() {
+        let mut cpu = initialize_cpu();
+
+        cpu.set_flag(Flag::Z, false);
+        cpu.change_register(0, 123);
+        cpu.execute_xra(&InstructionRegister::A);
+        assert_eq!(cpu.get_register(0), 0);
+        assert_eq!(cpu.get_flag(Flag::Z), true);
+
+        cpu.set_flag(Flag::Z, true);
+        cpu.change_register(0, 92);
+        cpu.change_register(1, 120);
+        cpu.execute_xra(&InstructionRegister::B);
+        assert_eq!(cpu.get_register(1), 36);
+        assert_eq!(cpu.get_flag(Flag::Z), false);
+    }
+
+    #[test]
+    fn test_execute_sbb() {
+        let mut cpu = initialize_cpu();
+
+        cpu.set_flag(Flag::Z, true);
+        cpu.set_flag(Flag::C, true);
+        cpu.change_register(0, 4);
+        cpu.change_register(6, 2);
+        cpu.execute_sbb(&InstructionRegister::L);
+        assert_eq!(cpu.get_register(0), 1);
+        assert_eq!(cpu.get_flag(Flag::Z), false);
+        assert_eq!(cpu.get_flag(Flag::C), false);
     }
 
     #[test]

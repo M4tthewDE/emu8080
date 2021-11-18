@@ -25,6 +25,9 @@ LABEL:
         DAA
         STAX B
         LDAX D
+        CMP B
+        XRA B
+        SBB B
 
 STOP:
         HLT

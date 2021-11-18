@@ -227,6 +227,12 @@ pub enum InstructionCommand {
     Stax,
     #[strum(serialize = "LDAX")]
     Ldax,
+    #[strum(serialize = "CMP")]
+    Cmp,
+    #[strum(serialize = "XRA")]
+    Xra,
+    #[strum(serialize = "SBB")]
+    Sbb,
     #[strum(serialize = "HLT")]
     Hlt,
 }
@@ -401,6 +407,15 @@ impl Encoding for Instruction {
                 }
                 _ => panic!("Invalid register provided for instruction LDAX"),
             },
+            InstructionCommand::Cmp => {
+                vec![[&[1, 0, 1, 1, 1], self.registers[0].encode()].concat()]
+            }
+            InstructionCommand::Xra => {
+                vec![[&[1, 0, 1, 0, 1], self.registers[0].encode()].concat()]
+            }
+            InstructionCommand::Sbb => {
+                vec![[&[1, 0, 0, 1, 1], self.registers[0].encode()].concat()]
+            }
             InstructionCommand::Hlt => {
                 vec![vec![0, 1, 1, 1, 0, 1, 1, 0]]
             }
