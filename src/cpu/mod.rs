@@ -570,6 +570,21 @@ impl Cpu {
         }
     }
 
+    fn execute_xra(&mut self, register: &InstructionRegister) {
+        let acc = self.get_register(0);
+        let reg = self.get_register(register.to_index() as usize);
+
+        let result = acc^reg; 
+
+        if result == 0 {
+            self.set_flag(Flag::Z, true);
+        } else {
+            self.set_flag(Flag::Z, false);
+        }
+
+        self.change_register(register.to_index() as usize, result);
+    }
+
     fn binary_to_int(&self, intermediate: &mut [u8]) -> i8 {
         if intermediate[0] == 1 {
             // subtract 1 from intermediate
@@ -1156,6 +1171,24 @@ mod tests {
         cpu.change_register(4, -5);
         cpu.execute_cmp(&InstructionRegister::E);
         assert_eq!(cpu.get_flag(Flag::C), false);
+        assert_eq!(cpu.get_flag(Flag::Z), false);
+    }
+
+    #[test]
+    fn test_execute_xra() {
+        let mut cpu = initialize_cpu();
+
+        cpu.set_flag(Flag::Z, false);
+        cpu.change_register(0, 123);
+        cpu.execute_xra(&InstructionRegister::A);
+        assert_eq!(cpu.get_register(0), 0);
+        assert_eq!(cpu.get_flag(Flag::Z), true);
+
+        cpu.set_flag(Flag::Z, true);
+        cpu.change_register(0, 92);
+        cpu.change_register(1, 120);
+        cpu.execute_xra(&InstructionRegister::B);
+        assert_eq!(cpu.get_register(1), 36);
         assert_eq!(cpu.get_flag(Flag::Z), false);
     }
 
