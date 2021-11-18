@@ -1108,7 +1108,7 @@ mod tests {
     }
 
     #[test]
-    fn test_stax() {
+    fn test_execute_stax() {
         let mut cpu = initialize_cpu();
 
         cpu.change_register(0, 42);
@@ -1120,7 +1120,7 @@ mod tests {
     }
 
     #[test]
-    fn test_ldax() {
+    fn test_execute_ldax() {
         let mut cpu = initialize_cpu();
 
         cpu.change_register(3, -109);
@@ -1131,7 +1131,7 @@ mod tests {
     }
 
     #[test]
-    fn test_cmp() {
+    fn test_execute_cmp() {
         let mut cpu = initialize_cpu();
 
         cpu.set_flag(Flag::C, true);
