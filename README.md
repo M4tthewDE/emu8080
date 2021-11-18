@@ -30,7 +30,7 @@ Programming Manual](http://dunfield.classiccmp.org/r/8080asm.pdf)
 - [x] ANA
 - [ ] XRA
 - [x] ORA
-- [ ] CMP
+- [x] CMP
 
 ## Rotate Accumulator Instructions
 - [x] RLC
