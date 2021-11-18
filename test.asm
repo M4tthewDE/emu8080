@@ -27,6 +27,7 @@ LABEL:
         LDAX D
         CMP B
         XRA B
+        SBB B
 
 STOP:
         HLT

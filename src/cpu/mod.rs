@@ -99,6 +99,7 @@ impl Cpu {
             InstructionCommand::Ldax => self.execute_ldax(&instruction.registers),
             InstructionCommand::Cmp => self.execute_cmp(&instruction.registers[0]),
             InstructionCommand::Xra => self.execute_xra(&instruction.registers[0]),
+            InstructionCommand::Sbb => self.execute_sbb(&instruction.registers[0]),
             InstructionCommand::Hlt => self.execute_hlt(),
         }
     }
