@@ -540,6 +540,37 @@ impl Cpu {
         self.change_register(0, self.get_memory(address));
     }
 
+    fn execute_cmp(&mut self, register: &InstructionRegister) {
+        let acc = self.get_register(0);
+        let reg = self.get_register(register.to_index() as usize);
+
+        let result = acc.wrapping_sub(reg);
+
+        if result == 0 {
+            self.set_flag(Flag::Z, true);
+        } else {
+            self.set_flag(Flag::Z, false);
+        }
+
+        // "x as u8 as u16" converts to onecomplement representation
+        // if onecomplement representation subtraction < 0 -> carry happens 
+        // only works if subtraction is happening, if reg is negative, 
+        // comparision with 255 has to be done
+        if reg < 0 {
+            if ((acc as u8 as u16) + (reg as u8 as u16)) > 255 {
+                self.set_flag(Flag::C, false);
+            } else {
+                self.set_flag(Flag::C, true);
+            }
+        } else {
+            if (acc as u8 as u16).checked_sub(reg as u8 as u16) == None {
+                self.set_flag(Flag::C, false);
+            } else {
+                self.set_flag(Flag::C, true);
+            }
+        }
+    }
+
     fn binary_to_int(&self, intermediate: &mut [u8]) -> i8 {
         if intermediate[0] == 1 {
             // subtract 1 from intermediate
@@ -1098,6 +1129,35 @@ mod tests {
         cpu.set_memory(37771, 42);
         cpu.execute_ldax(&vec![InstructionRegister::D, InstructionRegister::E]);
         assert_eq!(cpu.get_register(0), 42);
+    }
+
+    #[test]
+    fn test_cmp() {
+        let mut cpu = initialize_cpu();
+
+        cpu.set_flag(Flag::C, true);
+        cpu.set_flag(Flag::Z, true);
+        cpu.change_register(0, 10);
+        cpu.change_register(4, -5);
+        cpu.execute_cmp(&InstructionRegister::E);
+        assert_eq!(cpu.get_flag(Flag::C), false);
+        assert_eq!(cpu.get_flag(Flag::Z), false);
+
+        cpu.set_flag(Flag::C, false);
+        cpu.set_flag(Flag::Z, true);
+        cpu.change_register(0, 2);
+        cpu.change_register(4, -5);
+        cpu.execute_cmp(&InstructionRegister::E);
+        assert_eq!(cpu.get_flag(Flag::C), true);
+        assert_eq!(cpu.get_flag(Flag::Z), false);
+
+        cpu.set_flag(Flag::C, true);
+        cpu.set_flag(Flag::Z, true);
+        cpu.change_register(0, -27);
+        cpu.change_register(4, -5);
+        cpu.execute_cmp(&InstructionRegister::E);
+        assert_eq!(cpu.get_flag(Flag::C), false);
+        assert_eq!(cpu.get_flag(Flag::Z), false);
     }
 
     #[test]
