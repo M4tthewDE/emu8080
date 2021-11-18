@@ -229,6 +229,8 @@ pub enum InstructionCommand {
     Ldax,
     #[strum(serialize = "CMP")]
     Cmp,
+    #[strum(serialize = "XRA")]
+    Xra,
     #[strum(serialize = "HLT")]
     Hlt,
 }
@@ -405,6 +407,9 @@ impl Encoding for Instruction {
             },
             InstructionCommand::Cmp => {
                 vec![[&[1, 0, 1, 1, 1], self.registers[0].encode()].concat()]
+            }
+            InstructionCommand::Xra => {
+                vec![[&[1, 0, 1, 0, 1], self.registers[0].encode()].concat()]
             }
             InstructionCommand::Hlt => {
                 vec![vec![0, 1, 1, 1, 0, 1, 1, 0]]

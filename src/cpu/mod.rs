@@ -98,6 +98,7 @@ impl Cpu {
             InstructionCommand::Stax => self.execute_stax(&instruction.registers),
             InstructionCommand::Ldax => self.execute_ldax(&instruction.registers),
             InstructionCommand::Cmp => self.execute_cmp(&instruction.registers[0]),
+            InstructionCommand::Xra => self.execute_xra(&instruction.registers[0]),
             InstructionCommand::Hlt => self.execute_hlt(),
         }
     }
@@ -574,7 +575,7 @@ impl Cpu {
         let acc = self.get_register(0);
         let reg = self.get_register(register.to_index() as usize);
 
-        let result = acc^reg; 
+        let result = acc ^ reg;
 
         if result == 0 {
             self.set_flag(Flag::Z, true);

@@ -1,6 +1,6 @@
 register = { "A" | "B" | "C" | "D" | "E" | "H" | "L" | "M" }
 pair_reg_register = { "B" | "D" }
-single_reg_command = { "ADD" | "ADC" | "SUB" | "INR" | "DCR" | "ANA" | "ORA" | "CMP" }
+single_reg_command = { "ADD" | "ADC" | "SUB" | "INR" | "DCR" | "ANA" | "ORA" | "CMP" | "XRA" }
 double_reg_command = { "MOV" }
 intermediate_reg_command = { "MVI" }
 intermediate_command = { "ADI" | "ACI" | "SUI" }
