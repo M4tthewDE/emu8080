@@ -348,24 +348,10 @@ impl Cpu {
     }
 
     fn execute_ana(&mut self, arg: &InstructionRegister) {
-        let mut binary_a = self.int_to_binary(self.get_register(0));
-        let binary_reg = self.int_to_binary(self.get_register(arg.to_index().into()));
+        let acc = self.get_register(0);
+        let reg = self.get_register(arg.to_index().into());
 
-        for index in 0..8 {
-            if !(binary_a[index] == 1 && binary_reg[index] == 1) {
-                binary_a[index] = 0;
-            }
-        }
-
-        let mut value = 0;
-        if binary_a[0] == 1 {
-            value = self.binary_to_int(&mut binary_a);
-        } else {
-            for (index, digit) in binary_a.iter().rev().enumerate() {
-                value += (digit * u8::pow(2, u32::try_from(index).unwrap())) as i8;
-            }
-        }
-        self.change_register(0, value as i8);
+        self.change_register(0, acc & reg);
     }
 
     fn set_flag(&mut self, flag: Flag, value: bool) {
