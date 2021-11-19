@@ -1,4 +1,5 @@
 use pest::Parser;
+use std::convert::TryFrom;
 use std::fs;
 use std::str::FromStr;
 use strum_macros::EnumString;
@@ -80,7 +81,7 @@ pub fn parse(file_name: String) -> (Vec<Instruction>, Vec<Label>) {
                         variant: InstructionType::IntermediateReg,
                         command,
                         registers,
-                        intermediate,
+                        intermediate: binary_to_int(&mut intermediate),
                     };
 
                     instructions.push(instruction);
@@ -100,7 +101,7 @@ pub fn parse(file_name: String) -> (Vec<Instruction>, Vec<Label>) {
                         variant: InstructionType::DoubleReg,
                         command,
                         registers,
-                        intermediate: Vec::new(),
+                        intermediate: 0,
                     };
                     instructions.push(instruction);
                 }
@@ -115,7 +116,7 @@ pub fn parse(file_name: String) -> (Vec<Instruction>, Vec<Label>) {
                         variant: InstructionType::SingleReg,
                         command,
                         registers,
-                        intermediate: Vec::new(),
+                        intermediate: 0,
                     };
                     instructions.push(instruction);
                 }
@@ -130,7 +131,7 @@ pub fn parse(file_name: String) -> (Vec<Instruction>, Vec<Label>) {
                         variant: InstructionType::PairReg,
                         command,
                         registers,
-                        intermediate: Vec::new(),
+                        intermediate: 0,
                     };
                     instructions.push(instruction);
                 }
@@ -148,7 +149,7 @@ pub fn parse(file_name: String) -> (Vec<Instruction>, Vec<Label>) {
                         variant: InstructionType::IntermediateReg,
                         command,
                         registers: Vec::new(),
-                        intermediate,
+                        intermediate: binary_to_int(&mut intermediate),
                     };
                     instructions.push(instruction);
                 }
@@ -157,7 +158,7 @@ pub fn parse(file_name: String) -> (Vec<Instruction>, Vec<Label>) {
                         variant: InstructionType::NoReg,
                         command,
                         registers: Vec::new(),
-                        intermediate: Vec::new(),
+                        intermediate: 0,
                     };
                     instructions.push(instruction);
                 }
@@ -315,7 +316,7 @@ pub struct Instruction {
     pub variant: InstructionType,
     pub command: InstructionCommand,
     pub registers: Vec<InstructionRegister>,
-    pub intermediate: Vec<u8>,
+    pub intermediate: i8,
 }
 
 impl Encoding for Instruction {
@@ -324,17 +325,26 @@ impl Encoding for Instruction {
             InstructionCommand::Mvi => {
                 vec![
                     [&[0, 0], self.registers[0].encode(), &[1, 1, 0]].concat(),
-                    self.intermediate.clone(),
+                    int_to_binary(self.intermediate),
                 ]
             }
             InstructionCommand::Adi => {
-                vec![vec![1, 1, 0, 0, 0, 1, 1, 0], self.intermediate.clone()]
+                vec![
+                    vec![1, 1, 0, 0, 0, 1, 1, 0],
+                    int_to_binary(self.intermediate),
+                ]
             }
             InstructionCommand::Aci => {
-                vec![vec![1, 1, 0, 0, 1, 1, 1, 0], self.intermediate.clone()]
+                vec![
+                    vec![1, 1, 0, 0, 1, 1, 1, 0],
+                    int_to_binary(self.intermediate),
+                ]
             }
             InstructionCommand::Sui => {
-                vec![vec![1, 1, 0, 1, 0, 1, 1, 0], self.intermediate.clone()]
+                vec![
+                    vec![1, 1, 0, 1, 0, 1, 1, 0],
+                    int_to_binary(self.intermediate),
+                ]
             }
             InstructionCommand::Add => {
                 vec![[&[1, 0, 0, 0, 0], self.registers[0].encode()].concat()]
@@ -420,6 +430,56 @@ impl Encoding for Instruction {
                 vec![vec![0, 1, 1, 1, 0, 1, 1, 0]]
             }
         }
+    }
+}
+
+fn int_to_binary(value: i8) -> Vec<u8> {
+    let binary_string = format!("{:08b}", value);
+
+    let mut result = Vec::new();
+    for c in binary_string.chars() {
+        result.push((c as u8) - 48);
+    }
+    result
+}
+
+pub fn binary_to_int(intermediate: &mut [u8]) -> i8 {
+    if intermediate[0] == 1 {
+        // subtract 1 from intermediate
+        let mut index = intermediate.len() - 1;
+        while index > 0 {
+            if intermediate[index] == 1 {
+                intermediate[index] = 0;
+                break;
+            } else {
+                intermediate[index] = 1;
+            }
+            index -= 1;
+        }
+
+        // build complement
+        index = 0;
+        while index < intermediate.len() {
+            if intermediate[index] == 0 {
+                intermediate[index] = 1;
+            } else {
+                intermediate[index] = 0;
+            }
+            index += 1;
+        }
+
+        // calculate binary to decimal
+        let mut value = 0;
+        for (index, digit) in intermediate.iter().rev().enumerate() {
+            value += digit * u8::pow(2, u32::try_from(index).unwrap());
+        }
+        -(value as i8)
+    } else {
+        let mut value = 0;
+        for (index, digit) in intermediate.iter().rev().enumerate() {
+            value += digit * u8::pow(2, u32::try_from(index).unwrap());
+        }
+        value as i8
     }
 }
 

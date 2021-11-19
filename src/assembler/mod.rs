@@ -75,7 +75,7 @@ impl Assembler {
                     variant: InstructionType::IntermediateReg,
                     command: InstructionCommand::Mvi,
                     registers: vec![InstructionRegister::decode(&raw_instructions[index][2..5])],
-                    intermediate: raw_instructions[index + 1].to_vec(),
+                    intermediate: parser::binary_to_int(&mut raw_instructions[index + 1].to_vec()),
                 };
             // ADI
             } else if raw_instructions[index] == [1, 1, 0, 0, 0, 1, 1, 0] {
@@ -83,7 +83,7 @@ impl Assembler {
                     variant: InstructionType::Intermediate,
                     command: InstructionCommand::Adi,
                     registers: vec![],
-                    intermediate: raw_instructions[index + 1].to_vec(),
+                    intermediate: parser::binary_to_int(&mut raw_instructions[index + 1].to_vec()),
                 };
             // ACI
             } else if raw_instructions[index] == [1, 1, 0, 0, 1, 1, 1, 0] {
@@ -91,14 +91,14 @@ impl Assembler {
                     variant: InstructionType::Intermediate,
                     command: InstructionCommand::Aci,
                     registers: vec![],
-                    intermediate: raw_instructions[index + 1].to_vec(),
+                    intermediate: parser::binary_to_int(&mut raw_instructions[index + 1].to_vec()),
                 };
             } else if raw_instructions[index] == [1, 1, 0, 1, 0, 1, 1, 0] {
                 instruction = Instruction {
                     variant: InstructionType::Intermediate,
                     command: InstructionCommand::Sui,
                     registers: vec![],
-                    intermediate: raw_instructions[index + 1].to_vec(),
+                    intermediate: parser::binary_to_int(&mut raw_instructions[index + 1].to_vec()),
                 };
             // instructions without registers
             // HLT
@@ -107,7 +107,7 @@ impl Assembler {
                     variant: InstructionType::NoReg,
                     command: InstructionCommand::Hlt,
                     registers: Vec::new(),
-                    intermediate: Vec::new(),
+                    intermediate: 0,
                 };
             // STC
             } else if raw_instructions[index] == [0, 0, 1, 1, 0, 1, 1, 1] {
@@ -115,7 +115,7 @@ impl Assembler {
                     variant: InstructionType::NoReg,
                     command: InstructionCommand::Stc,
                     registers: Vec::new(),
-                    intermediate: Vec::new(),
+                    intermediate: 0,
                 }
             // CMC
             } else if raw_instructions[index] == [0, 0, 1, 1, 1, 1, 1, 1] {
@@ -123,7 +123,7 @@ impl Assembler {
                     variant: InstructionType::NoReg,
                     command: InstructionCommand::Cmc,
                     registers: Vec::new(),
-                    intermediate: Vec::new(),
+                    intermediate: 0,
                 }
             // CMA
             } else if raw_instructions[index] == [0, 0, 1, 0, 1, 1, 1, 1] {
@@ -131,7 +131,7 @@ impl Assembler {
                     variant: InstructionType::NoReg,
                     command: InstructionCommand::Cma,
                     registers: Vec::new(),
-                    intermediate: Vec::new(),
+                    intermediate: 0,
                 }
             // RLC
             } else if raw_instructions[index] == [0, 0, 0, 0, 0, 1, 1, 1] {
@@ -139,7 +139,7 @@ impl Assembler {
                     variant: InstructionType::NoReg,
                     command: InstructionCommand::Rlc,
                     registers: Vec::new(),
-                    intermediate: Vec::new(),
+                    intermediate: 0,
                 }
             // RRC
             } else if raw_instructions[index] == [0, 0, 0, 0, 1, 1, 1, 1] {
@@ -147,7 +147,7 @@ impl Assembler {
                     variant: InstructionType::NoReg,
                     command: InstructionCommand::Rrc,
                     registers: Vec::new(),
-                    intermediate: Vec::new(),
+                    intermediate: 0,
                 }
             // RAL
             } else if raw_instructions[index] == [0, 0, 0, 1, 0, 1, 1, 1] {
@@ -155,7 +155,7 @@ impl Assembler {
                     variant: InstructionType::NoReg,
                     command: InstructionCommand::Ral,
                     registers: Vec::new(),
-                    intermediate: Vec::new(),
+                    intermediate: 0,
                 }
             // RAR
             } else if raw_instructions[index] == [0, 0, 0, 1, 1, 1, 1, 1] {
@@ -163,7 +163,7 @@ impl Assembler {
                     variant: InstructionType::NoReg,
                     command: InstructionCommand::Rar,
                     registers: Vec::new(),
-                    intermediate: Vec::new(),
+                    intermediate: 0,
                 }
             // DAA
             } else if raw_instructions[index] == [0, 0, 1, 0, 0, 1, 1, 1] {
@@ -171,7 +171,7 @@ impl Assembler {
                     variant: InstructionType::NoReg,
                     command: InstructionCommand::Daa,
                     registers: Vec::new(),
-                    intermediate: Vec::new(),
+                    intermediate: 0,
                 }
             // instructions with 1 argument in the end
             // ADD
@@ -185,7 +185,7 @@ impl Assembler {
                     variant: InstructionType::SingleReg,
                     command: InstructionCommand::Add,
                     registers: vec![InstructionRegister::decode(&raw_instructions[index][5..])],
-                    intermediate: Vec::new(),
+                    intermediate: 0,
                 }
             // ADC
             } else if raw_instructions[index][0..5] == [1, 0, 0, 0, 1]
@@ -198,7 +198,7 @@ impl Assembler {
                     variant: InstructionType::SingleReg,
                     command: InstructionCommand::Adc,
                     registers: vec![InstructionRegister::decode(&raw_instructions[index][5..])],
-                    intermediate: Vec::new(),
+                    intermediate: 0,
                 }
             // SUB
             } else if raw_instructions[index][0..5] == [1, 0, 0, 1, 0]
@@ -211,7 +211,7 @@ impl Assembler {
                     variant: InstructionType::SingleReg,
                     command: InstructionCommand::Sub,
                     registers: vec![InstructionRegister::decode(&raw_instructions[index][5..])],
-                    intermediate: Vec::new(),
+                    intermediate: 0,
                 }
             // ANA
             } else if raw_instructions[index][0..5] == [1, 0, 1, 0, 0]
@@ -224,7 +224,7 @@ impl Assembler {
                     variant: InstructionType::SingleReg,
                     command: InstructionCommand::Ana,
                     registers: vec![InstructionRegister::decode(&raw_instructions[index][5..])],
-                    intermediate: Vec::new(),
+                    intermediate: 0,
                 }
             // ORA
             } else if raw_instructions[index][0..5] == [1, 0, 1, 1, 0]
@@ -237,7 +237,7 @@ impl Assembler {
                     variant: InstructionType::SingleReg,
                     command: InstructionCommand::Ora,
                     registers: vec![InstructionRegister::decode(&raw_instructions[index][5..])],
-                    intermediate: Vec::new(),
+                    intermediate: 0,
                 }
             // CMP
             } else if raw_instructions[index][0..5] == [1, 0, 1, 1, 1]
@@ -250,7 +250,7 @@ impl Assembler {
                     variant: InstructionType::SingleReg,
                     command: InstructionCommand::Cmp,
                     registers: vec![InstructionRegister::decode(&raw_instructions[index][5..])],
-                    intermediate: Vec::new(),
+                    intermediate: 0,
                 }
             // XRA
             } else if raw_instructions[index][0..5] == [1, 0, 1, 0, 1]
@@ -263,7 +263,7 @@ impl Assembler {
                     variant: InstructionType::SingleReg,
                     command: InstructionCommand::Xra,
                     registers: vec![InstructionRegister::decode(&raw_instructions[index][5..])],
-                    intermediate: Vec::new(),
+                    intermediate: 0,
                 }
             // SBB
             } else if raw_instructions[index][0..5] == [1, 0, 0, 1, 1]
@@ -276,7 +276,7 @@ impl Assembler {
                     variant: InstructionType::SingleReg,
                     command: InstructionCommand::Sbb,
                     registers: vec![InstructionRegister::decode(&raw_instructions[index][5..])],
-                    intermediate: Vec::new(),
+                    intermediate: 0,
                 }
             // instructions with 1 argument in the middle
             // instructions with a register pair
@@ -295,7 +295,7 @@ impl Assembler {
                     variant: InstructionType::PairReg,
                     command: InstructionCommand::Stax,
                     registers,
-                    intermediate: Vec::new(),
+                    intermediate: 0,
                 }
             // LDAX
             } else if raw_instructions[index][0..3] == [0, 0, 0]
@@ -312,7 +312,7 @@ impl Assembler {
                     variant: InstructionType::PairReg,
                     command: InstructionCommand::Ldax,
                     registers,
-                    intermediate: Vec::new(),
+                    intermediate: 0,
                 }
             // instructions with 1 register in the middle
             // INR
@@ -327,7 +327,7 @@ impl Assembler {
                     variant: InstructionType::SingleReg,
                     command: InstructionCommand::Inr,
                     registers: vec![InstructionRegister::decode(&raw_instructions[index][2..5])],
-                    intermediate: Vec::new(),
+                    intermediate: 0,
                 }
             // DCR
             } else if raw_instructions[index][0..2] == [0, 0]
@@ -341,7 +341,7 @@ impl Assembler {
                     variant: InstructionType::SingleReg,
                     command: InstructionCommand::Dcr,
                     registers: vec![InstructionRegister::decode(&raw_instructions[index][2..5])],
-                    intermediate: Vec::new(),
+                    intermediate: 0,
                 }
             // instructions with 2 registers
             // MOV
@@ -364,7 +364,7 @@ impl Assembler {
                     variant: InstructionType::DoubleReg,
                     command: InstructionCommand::Mov,
                     registers: args,
-                    intermediate: Vec::new(),
+                    intermediate: 0,
                 }
             } else {
                 panic!("Invalid instruction!");
@@ -460,7 +460,7 @@ mod tests {
             instructions[0].registers[0],
             InstructionRegister::A
         ));
-        assert_eq!(instructions[0].intermediate, [0, 0, 0, 1, 1, 1, 0, 0]);
+        assert_eq!(instructions[0].intermediate, 28);
 
         assert!(matches!(
             instructions[1].variant,
@@ -531,7 +531,7 @@ mod tests {
             InstructionType::Intermediate
         ));
         assert!(matches!(instructions[7].command, InstructionCommand::Adi));
-        assert_eq!(instructions[7].intermediate, [1, 0, 0, 1, 1, 0, 0, 1]);
+        assert_eq!(instructions[7].intermediate, -103);
 
         assert!(matches!(instructions[8].variant, InstructionType::NoReg));
         assert!(matches!(instructions[8].command, InstructionCommand::Stc));
@@ -557,14 +557,14 @@ mod tests {
             InstructionType::Intermediate
         ));
         assert!(matches!(instructions[12].command, InstructionCommand::Aci));
-        assert_eq!(instructions[12].intermediate, [0, 0, 0, 0, 1, 1, 0, 0]);
+        assert_eq!(instructions[12].intermediate, 12);
 
         assert!(matches!(
             instructions[12].variant,
             InstructionType::Intermediate
         ));
         assert!(matches!(instructions[13].command, InstructionCommand::Sui));
-        assert_eq!(instructions[13].intermediate, [0, 0, 0, 0, 1, 1, 0, 0]);
+        assert_eq!(instructions[13].intermediate, 12);
 
         assert!(matches!(instructions[14].variant, InstructionType::NoReg));
         assert!(matches!(instructions[14].command, InstructionCommand::Rlc));

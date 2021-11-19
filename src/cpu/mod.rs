@@ -1,5 +1,4 @@
 use crate::assembler::{Instruction, InstructionCommand, InstructionRegister};
-use std::convert::TryFrom;
 use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
 
@@ -74,11 +73,11 @@ impl Cpu {
     fn execute(&mut self, instruction: &Instruction) {
         match instruction.command {
             InstructionCommand::Mvi => {
-                self.execute_mvi(&instruction.registers[0], &instruction.intermediate)
+                self.execute_mvi(&instruction.registers[0], instruction.intermediate)
             }
-            InstructionCommand::Adi => self.execute_adi(&instruction.intermediate),
-            InstructionCommand::Aci => self.execute_aci(&instruction.intermediate),
-            InstructionCommand::Sui => self.execute_sui(&instruction.intermediate),
+            InstructionCommand::Adi => self.execute_adi(instruction.intermediate),
+            InstructionCommand::Aci => self.execute_aci(instruction.intermediate),
+            InstructionCommand::Sui => self.execute_sui(instruction.intermediate),
             InstructionCommand::Mov => self.execute_mov(&instruction.registers),
             InstructionCommand::Add => self.execute_add(&instruction.registers[0]),
             InstructionCommand::Adc => self.execute_adc(&instruction.registers[0]),
@@ -104,24 +103,15 @@ impl Cpu {
         }
     }
 
-    fn execute_mvi(&mut self, arg: &InstructionRegister, intermediate: &[u8]) {
+    fn execute_mvi(&mut self, arg: &InstructionRegister, intermediate: i8) {
         let destination_index = arg.to_index().into();
 
-        let mut x = vec![0; 8];
-        x[0..].clone_from_slice(intermediate);
-
-        let value = self.binary_to_int(&mut x);
-
-        self.change_register(destination_index, value);
+        self.change_register(destination_index, intermediate);
     }
 
-    fn execute_adi(&mut self, intermediate: &[u8]) {
-        let mut x = vec![0; 8];
-        x[0..].clone_from_slice(intermediate);
-
-        let source_value = self.binary_to_int(&mut x);
+    fn execute_adi(&mut self, intermediate: i8) {
         let current_a = self.get_register(0);
-        let new_a = current_a.wrapping_add(source_value);
+        let new_a = current_a.wrapping_add(intermediate);
 
         if self.get_register(0) == 0 {
             self.set_flag(Flag::Z, true);
@@ -138,7 +128,7 @@ impl Cpu {
         // if onecomplement representation added > 255 -> carry exists
         // example: 127 + 127
         // "x as u8 as u16" converts to onecomplement representation
-        if (source_value as u8 as u16) + (current_a as u8 as u16) > 255 {
+        if (intermediate as u8 as u16) + (current_a as u8 as u16) > 255 {
             self.set_flag(Flag::C, true);
         } else {
             self.set_flag(Flag::C, false);
@@ -147,14 +137,10 @@ impl Cpu {
         self.change_register(0, new_a);
     }
 
-    fn execute_aci(&mut self, intermediate: &[u8]) {
-        let mut x = vec![0; 8];
-        x[0..].clone_from_slice(intermediate);
-
-        let source_value = self.binary_to_int(&mut x);
+    fn execute_aci(&mut self, intermediate: i8) {
         let current_a = self.get_register(0);
         let new_a = current_a
-            .wrapping_add(source_value)
+            .wrapping_add(intermediate)
             .wrapping_add(self.get_flag(Flag::C) as i8);
 
         if self.get_register(0) == 0 {
@@ -172,7 +158,7 @@ impl Cpu {
         // if onecomplement representation added > 255 -> carry exists
         // example: 127 + 127
         // "x as u8 as u16" converts to onecomplement representation
-        if (source_value as u8 as u16) + (current_a as u8 as u16) + (self.get_flag(Flag::C) as u16)
+        if (intermediate as u8 as u16) + (current_a as u8 as u16) + (self.get_flag(Flag::C) as u16)
             > 255
         {
             self.set_flag(Flag::C, true);
@@ -183,12 +169,9 @@ impl Cpu {
         self.change_register(0, new_a);
     }
 
-    fn execute_sui(&mut self, intermediate: &[u8]) {
-        let mut x = vec![0; 8];
-        x[0..].clone_from_slice(intermediate);
-        let source_value = self.binary_to_int(&mut x);
+    fn execute_sui(&mut self, intermediate: i8) {
         let current_a = self.get_register(0);
-        let new_a = current_a.wrapping_sub(source_value);
+        let new_a = current_a.wrapping_sub(intermediate);
 
         self.change_register(0, new_a);
 
@@ -206,7 +189,7 @@ impl Cpu {
 
         // if onecomplement representation subtraction < 0 -> set carry
         // "x as u8 as u16" converts to onecomplement representation
-        if (current_a as u8 as u16).checked_sub(source_value as u8 as u16) != None {
+        if (current_a as u8 as u16).checked_sub(intermediate as u8 as u16) != None {
             self.set_flag(Flag::C, false);
         } else {
             self.set_flag(Flag::C, true);
@@ -596,56 +579,6 @@ impl Cpu {
         self.change_register(0, result);
     }
 
-    fn binary_to_int(&self, intermediate: &mut [u8]) -> i8 {
-        if intermediate[0] == 1 {
-            // subtract 1 from intermediate
-            let mut index = intermediate.len() - 1;
-            while index > 0 {
-                if intermediate[index] == 1 {
-                    intermediate[index] = 0;
-                    break;
-                } else {
-                    intermediate[index] = 1;
-                }
-                index -= 1;
-            }
-
-            // build complement
-            index = 0;
-            while index < intermediate.len() {
-                if intermediate[index] == 0 {
-                    intermediate[index] = 1;
-                } else {
-                    intermediate[index] = 0;
-                }
-                index += 1;
-            }
-
-            // calculate binary to decimal
-            let mut value = 0;
-            for (index, digit) in intermediate.iter().rev().enumerate() {
-                value += digit * u8::pow(2, u32::try_from(index).unwrap());
-            }
-            -(value as i8)
-        } else {
-            let mut value = 0;
-            for (index, digit) in intermediate.iter().rev().enumerate() {
-                value += digit * u8::pow(2, u32::try_from(index).unwrap());
-            }
-            value as i8
-        }
-    }
-
-    fn int_to_binary(&self, value: i8) -> Vec<u8> {
-        let binary_string = format!("{:08b}", value);
-
-        let mut result = Vec::new();
-        for c in binary_string.chars() {
-            result.push((c as u8) - 48);
-        }
-        result
-    }
-
     fn print_status(&self) {
         for i in 0..7 {
             println!(
@@ -685,7 +618,7 @@ mod tests {
     fn test_execute_mvi() {
         let mut cpu = initialize_cpu();
 
-        cpu.execute_mvi(&InstructionRegister::A, &[0, 0, 0, 0, 1, 1, 1, 0]);
+        cpu.execute_mvi(&InstructionRegister::A, 14);
         assert_eq!(cpu.get_register(0), 14);
     }
 
@@ -764,23 +697,23 @@ mod tests {
         cpu.change_register(0, 5);
         cpu.set_flag(Flag::Z, true);
 
-        cpu.execute_adi(&cpu.int_to_binary(5));
+        cpu.execute_adi(5);
         assert_eq!(cpu.get_register(0), 10);
         assert_eq!(cpu.get_flag(Flag::Z), false);
 
         cpu.change_register(0, -5);
-        cpu.execute_adi(&cpu.int_to_binary(-5));
+        cpu.execute_adi(-5);
         assert_eq!(cpu.get_register(0), -10);
         assert_eq!(cpu.get_flag(Flag::S), true);
 
         cpu.change_register(0, -64);
         cpu.set_flag(Flag::C, true);
-        cpu.execute_adi(&cpu.int_to_binary(64));
+        cpu.execute_adi(64);
         assert_eq!(cpu.get_register(0), 0);
         assert_eq!(cpu.get_flag(Flag::C), true);
 
         cpu.change_register(0, 127);
-        cpu.execute_adi(&cpu.int_to_binary(127));
+        cpu.execute_adi(127);
         assert_eq!(cpu.get_register(0), -2);
         assert_eq!(cpu.get_flag(Flag::C), false);
     }
@@ -791,35 +724,35 @@ mod tests {
         cpu.change_register(0, 5);
         cpu.set_flag(Flag::Z, true);
 
-        cpu.execute_aci(&cpu.int_to_binary(5));
+        cpu.execute_aci(5);
         assert_eq!(cpu.get_register(0), 10);
         assert_eq!(cpu.get_flag(Flag::Z), false);
 
         cpu.change_register(0, -5);
-        cpu.execute_aci(&cpu.int_to_binary(-5));
+        cpu.execute_aci(-5);
         assert_eq!(cpu.get_register(0), -10);
         assert_eq!(cpu.get_flag(Flag::S), true);
 
         cpu.change_register(0, -64);
         cpu.set_flag(Flag::C, true);
-        cpu.execute_aci(&cpu.int_to_binary(64));
+        cpu.execute_aci(64);
         assert_eq!(cpu.get_register(0), 1);
         assert_eq!(cpu.get_flag(Flag::C), true);
 
         cpu.change_register(0, 127);
         cpu.set_flag(Flag::C, false);
-        cpu.execute_aci(&cpu.int_to_binary(127));
+        cpu.execute_aci(127);
         assert_eq!(cpu.get_register(0), -2);
         assert_eq!(cpu.get_flag(Flag::C), false);
 
         cpu.set_flag(Flag::C, true);
         cpu.change_register(0, 0);
-        cpu.execute_aci(&cpu.int_to_binary(4));
+        cpu.execute_aci(4);
         assert_eq!(cpu.get_register(0), 5);
 
         cpu.set_flag(Flag::C, false);
         cpu.change_register(0, 0);
-        cpu.execute_aci(&cpu.int_to_binary(4));
+        cpu.execute_aci(4);
         assert_eq!(cpu.get_register(0), 4);
     }
 
@@ -829,36 +762,36 @@ mod tests {
 
         cpu.set_flag(Flag::Z, false);
         cpu.change_register(0, 5);
-        cpu.execute_sui(&cpu.int_to_binary(5));
+        cpu.execute_sui(5);
         assert_eq!(cpu.get_register(0), 0);
         assert_eq!(cpu.get_flag(Flag::Z), true);
 
         cpu.set_flag(Flag::Z, true);
         cpu.change_register(0, -5);
-        cpu.execute_sui(&cpu.int_to_binary(8));
+        cpu.execute_sui(8);
         assert_eq!(cpu.get_register(0), -13);
         assert_eq!(cpu.get_flag(Flag::Z), false);
 
         cpu.set_flag(Flag::S, false);
         cpu.change_register(0, 10);
-        cpu.execute_sui(&cpu.int_to_binary(16));
+        cpu.execute_sui(16);
         assert_eq!(cpu.get_register(0), -6);
         assert_eq!(cpu.get_flag(Flag::S), true);
 
         cpu.set_flag(Flag::S, true);
         cpu.change_register(0, 10);
-        cpu.execute_sui(&cpu.int_to_binary(1));
+        cpu.execute_sui(1);
         assert_eq!(cpu.get_register(0), 9);
         assert_eq!(cpu.get_flag(Flag::S), false);
 
         cpu.change_register(0, 127);
-        cpu.execute_sui(&cpu.int_to_binary(-1));
+        cpu.execute_sui(-1);
         assert_eq!(cpu.get_register(0), -128);
         assert_eq!(cpu.get_flag(Flag::C), true);
 
         cpu.set_flag(Flag::C, true);
         cpu.change_register(0, 10);
-        cpu.execute_sui(&cpu.int_to_binary(1));
+        cpu.execute_sui(1);
         assert_eq!(cpu.get_register(0), 9);
         assert_eq!(cpu.get_flag(Flag::C), false);
     }
@@ -1232,26 +1165,5 @@ mod tests {
         assert_eq!(Flag::A.get_index(), 3);
         assert_eq!(Flag::P.get_index(), 5);
         assert_eq!(Flag::C.get_index(), 7);
-    }
-
-    #[test]
-    fn test_binary_to_int() {
-        let cpu = initialize_cpu();
-
-        let mut intermediate = [1, 1, 1, 1, 0, 0, 0, 1];
-        let result = cpu.binary_to_int(&mut intermediate);
-        assert_eq!(result, -15);
-
-        let mut intermediate = [0, 1, 1, 1, 0, 0, 0, 1];
-        let result = cpu.binary_to_int(&mut intermediate);
-        assert_eq!(result, 113);
-    }
-
-    #[test]
-    fn test_int_to_binary() {
-        let cpu = initialize_cpu();
-        let result = cpu.int_to_binary(28);
-        let expected = [0, 0, 0, 1, 1, 1, 0, 0];
-        assert_eq!(result, expected);
     }
 }
