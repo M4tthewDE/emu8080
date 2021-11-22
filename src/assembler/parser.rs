@@ -586,6 +586,17 @@ mod tests {
         assert_eq!(InstructionRegister::L.to_index(), 6);
         assert_eq!(InstructionRegister::M.to_index(), 7);
     }
+    #[test]
+    fn test_from_index() {
+        assert!(matches!(InstructionRegister::from_index(0), InstructionRegister::A));
+        assert!(matches!(InstructionRegister::from_index(1), InstructionRegister::B));
+        assert!(matches!(InstructionRegister::from_index(2), InstructionRegister::C));
+        assert!(matches!(InstructionRegister::from_index(3), InstructionRegister::D));
+        assert!(matches!(InstructionRegister::from_index(4), InstructionRegister::E));
+        assert!(matches!(InstructionRegister::from_index(5), InstructionRegister::H));
+        assert!(matches!(InstructionRegister::from_index(6), InstructionRegister::L));
+        assert!(matches!(InstructionRegister::from_index(7), InstructionRegister::M));
+    }
 
     #[test]
     #[should_panic]
