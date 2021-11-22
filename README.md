@@ -44,7 +44,7 @@ Programming Manual](http://dunfield.classiccmp.org/r/8080asm.pdf)
 - [ ] DAD
 - [ ] INX
 - [ ] DCX
-- [ ] XCHG
+- [x] XCHG
 - [ ] XTHL
 - [x] SPHL
 
