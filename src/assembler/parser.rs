@@ -287,7 +287,7 @@ impl InstructionRegister {
         }
     }
 
-    pub fn to_index(&self) -> u8 {
+    pub fn to_index(self) -> u8 {
         match self {
             InstructionRegister::A => 0,
             InstructionRegister::B => 1,
