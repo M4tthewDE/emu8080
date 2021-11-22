@@ -6,6 +6,7 @@ pub fn initialize_cpu() -> Cpu {
     Cpu {
         register: vec![0; 8],
         memory: vec![0; 65536],
+        stack_pointer: 0,
         flags: vec![false; 8],
     }
 }
@@ -14,6 +15,7 @@ pub fn initialize_cpu() -> Cpu {
 pub struct Cpu {
     register: Vec<i8>,
     memory: Vec<i8>,
+    stack_pointer: i16,
 
     // S Z x A x P x C
     flags: Vec<bool>,
@@ -55,6 +57,14 @@ impl Cpu {
 
     fn get_memory(&self, address: u16) -> i8 {
         self.memory[address as usize]
+    }
+
+    fn set_stack_pointer(&mut self, value: i16) {
+        self.stack_pointer = value;
+    }
+
+    fn get_stack_pointer(&self) -> i16 {
+        self.stack_pointer
     }
 
     pub fn run(&mut self, instructions: &[Instruction]) {
