@@ -6,6 +6,7 @@ pub fn initialize_cpu() -> Cpu {
     Cpu {
         register: vec![0; 8],
         memory: vec![0; 65536],
+        stack_pointer: 0,
         flags: vec![false; 8],
     }
 }
@@ -14,6 +15,7 @@ pub fn initialize_cpu() -> Cpu {
 pub struct Cpu {
     register: Vec<i8>,
     memory: Vec<i8>,
+    stack_pointer: u16,
 
     // S Z x A x P x C
     flags: Vec<bool>,
@@ -55,6 +57,14 @@ impl Cpu {
 
     fn get_memory(&self, address: u16) -> i8 {
         self.memory[address as usize]
+    }
+
+    fn set_stack_pointer(&mut self, value: u16) {
+        self.stack_pointer = value;
+    }
+
+    fn get_stack_pointer(&self) -> u16 {
+        self.stack_pointer
     }
 
     pub fn run(&mut self, instructions: &[Instruction]) {
@@ -100,6 +110,7 @@ impl Cpu {
             InstructionCommand::Xra => self.execute_xra(&instruction.registers[0]),
             InstructionCommand::Sbb => self.execute_sbb(&instruction.registers[0]),
             InstructionCommand::Xchg => self.execute_xchg(),
+            InstructionCommand::Sphl => self.execute_sphl(),
             InstructionCommand::Hlt => self.execute_hlt(),
         }
     }
@@ -592,6 +603,19 @@ impl Cpu {
         self.change_register(6, reg_e);
     }
 
+    fn execute_sphl(&mut self) {
+        let mut reg_h = self.get_register(5) as u16;
+        let mut reg_l = self.get_register(6) as u16;
+
+        // make sure first 8 bits are 0 because of negative numbers
+        reg_l &= 255;
+
+        reg_h <<= 8;
+
+        let stack_pointer = reg_l | reg_h;
+        self.set_stack_pointer(stack_pointer);
+    }
+
     fn print_status(&self) {
         for i in 0..7 {
             println!(
@@ -602,6 +626,7 @@ impl Cpu {
             );
         }
         self.print_flags();
+        self.print_stack_pointer();
         self.print_memory();
     }
 
@@ -619,6 +644,10 @@ impl Cpu {
                 println!("{}: {}", address, value);
             }
         }
+    }
+
+    fn print_stack_pointer(&self) {
+        println!("Stack Pointer: {}", self.get_stack_pointer());
     }
 }
 
@@ -1177,6 +1206,17 @@ mod tests {
         assert_eq!(cpu.get_register(6), 85);
         assert_eq!(cpu.get_register(3), 0);
         assert_eq!(cpu.get_register(4), -128);
+    }
+
+    #[test]
+    fn test_execute_sphl() {
+        let mut cpu = initialize_cpu();
+
+        cpu.change_register(5, 80);
+        cpu.change_register(6, 108);
+        cpu.execute_sphl();
+
+        assert_eq!(cpu.get_stack_pointer(), 20588);
     }
 
     #[test]

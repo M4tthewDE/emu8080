@@ -236,6 +236,8 @@ pub enum InstructionCommand {
     Sbb,
     #[strum(serialize = "XCHG")]
     Xchg,
+    #[strum(serialize = "SPHL")]
+    Sphl,
     #[strum(serialize = "HLT")]
     Hlt,
 }
@@ -430,6 +432,9 @@ impl Encoding for Instruction {
             }
             InstructionCommand::Xchg => {
                 vec![vec![1, 1, 1, 0, 1, 0, 1, 1]]
+            }
+            InstructionCommand::Sphl => {
+                vec![vec![1, 1, 1, 1, 1, 0, 0, 1]]
             }
             InstructionCommand::Hlt => {
                 vec![vec![0, 1, 1, 1, 0, 1, 1, 0]]
