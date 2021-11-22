@@ -99,6 +99,7 @@ impl Cpu {
             InstructionCommand::Cmp => self.execute_cmp(&instruction.registers[0]),
             InstructionCommand::Xra => self.execute_xra(&instruction.registers[0]),
             InstructionCommand::Sbb => self.execute_sbb(&instruction.registers[0]),
+            InstructionCommand::Xchg => self.execute_xchg(),
             InstructionCommand::Hlt => self.execute_hlt(),
         }
     }
@@ -577,6 +578,18 @@ impl Cpu {
         }
 
         self.change_register(0, result);
+    }
+
+    fn execute_xchg(&mut self) {
+        let reg_d = self.get_register(3);
+        let reg_e = self.get_register(4);
+        let reg_h = self.get_register(5);
+        let reg_l = self.get_register(6);
+
+        self.change_register(3, reg_h);
+        self.change_register(4, reg_l);
+        self.change_register(5, reg_d);
+        self.change_register(6, reg_e);
     }
 
     fn print_status(&self) {
@@ -1148,6 +1161,22 @@ mod tests {
         assert_eq!(cpu.get_register(0), 1);
         assert_eq!(cpu.get_flag(Flag::Z), false);
         assert_eq!(cpu.get_flag(Flag::C), false);
+    }
+
+    #[test]
+    fn test_execute_xchg() {
+        let mut cpu = initialize_cpu();
+
+        cpu.change_register(3, 51);
+        cpu.change_register(4, 85);
+        cpu.change_register(5, 0);
+        cpu.change_register(6, -128);
+        cpu.execute_xchg();
+
+        assert_eq!(cpu.get_register(5), 51);
+        assert_eq!(cpu.get_register(6), 85);
+        assert_eq!(cpu.get_register(3), 0);
+        assert_eq!(cpu.get_register(4), -128);
     }
 
     #[test]

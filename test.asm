@@ -28,6 +28,7 @@ LABEL:
         CMP B
         XRA B
         SBB B
+        XCHG
 
 STOP:
         HLT
