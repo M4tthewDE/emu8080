@@ -243,7 +243,7 @@ pub enum InstructionCommand {
     Hlt,
 }
 
-#[derive(Debug, EnumString)]
+#[derive(Debug, Copy, Clone, EnumString)]
 pub enum InstructionRegister {
     A,
     B,
@@ -297,6 +297,20 @@ impl InstructionRegister {
             InstructionRegister::H => 5,
             InstructionRegister::L => 6,
             InstructionRegister::M => 7,
+            _ => panic!("Invalid argument provided!"),
+        }
+    }
+
+    pub fn from_index(index: i32) -> InstructionRegister {
+        match index {
+            0 => InstructionRegister::A,
+            1 => InstructionRegister::B,
+            2 => InstructionRegister::C,
+            3 => InstructionRegister::D,
+            4 => InstructionRegister::E,
+            5 => InstructionRegister::H,
+            6 => InstructionRegister::L,
+            7 => InstructionRegister::M,
             _ => panic!("Invalid argument provided!"),
         }
     }
