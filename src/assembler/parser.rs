@@ -56,7 +56,6 @@ pub fn parse(file_name: String) -> (Vec<Instruction>, Vec<Label>) {
             let mut pairs = inner_instruction_pairs.peek().unwrap().into_inner();
             let inner_instruction = pairs.peek().unwrap();
             rule = inner_instruction.as_rule();
-
             let command = InstructionCommand::from_str(inner_instruction.as_str()).unwrap();
             pairs.next();
 
@@ -238,6 +237,8 @@ pub enum InstructionCommand {
     Xchg,
     #[strum(serialize = "SPHL")]
     Sphl,
+    #[strum(serialize = "XTHL")]
+    Xthl,
     #[strum(serialize = "HLT")]
     Hlt,
 }
@@ -435,6 +436,9 @@ impl Encoding for Instruction {
             }
             InstructionCommand::Sphl => {
                 vec![vec![1, 1, 1, 1, 1, 0, 0, 1]]
+            }
+            InstructionCommand::Xthl => {
+                vec![vec![1, 1, 1, 0, 0, 0, 1, 1]]
             }
             InstructionCommand::Hlt => {
                 vec![vec![0, 1, 1, 1, 0, 1, 1, 0]]
