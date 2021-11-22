@@ -626,6 +626,7 @@ impl Cpu {
             );
         }
         self.print_flags();
+        self.print_stack_pointer();
         self.print_memory();
     }
 
@@ -643,6 +644,10 @@ impl Cpu {
                 println!("{}: {}", address, value);
             }
         }
+    }
+
+    fn print_stack_pointer(&self) {
+        println!("Stack Pointer: {}", self.get_stack_pointer());
     }
 }
 

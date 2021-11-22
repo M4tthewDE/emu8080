@@ -181,7 +181,7 @@ impl Assembler {
                     registers: Vec::new(),
                     intermediate: 0,
                 }
-            // SPHL 
+            // SPHL
             } else if raw_instructions[index] == [1, 1, 1, 1, 1, 0, 0, 1] {
                 instruction = Instruction {
                     variant: InstructionType::NoReg,
