@@ -30,6 +30,7 @@ LABEL:
         SBB B
         XCHG
         SPHL
+        XTHL
 
 STOP:
         HLT

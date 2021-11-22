@@ -111,6 +111,7 @@ impl Cpu {
             InstructionCommand::Sbb => self.execute_sbb(&instruction.registers[0]),
             InstructionCommand::Xchg => self.execute_xchg(),
             InstructionCommand::Sphl => self.execute_sphl(),
+            InstructionCommand::Xthl => self.execute_xthl(),
             InstructionCommand::Hlt => self.execute_hlt(),
         }
     }
