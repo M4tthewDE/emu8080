@@ -616,6 +616,19 @@ impl Cpu {
         self.set_stack_pointer(stack_pointer);
     }
 
+    fn execute_xthl(&mut self) {
+        let reg_l = self.get_register(6);
+        let reg_h = self.get_register(5);
+
+        let memory = self.get_memory(self.get_stack_pointer());
+        let memory_incr = self.get_memory(self.get_stack_pointer() + 1);
+
+        self.change_register(6, memory);
+        self.change_register(5, memory_incr);
+        self.set_memory(self.get_stack_pointer(), reg_l);
+        self.set_memory(self.get_stack_pointer() + 1, reg_h);
+    }
+
     fn print_status(&self) {
         for i in 0..7 {
             println!(
@@ -1217,6 +1230,23 @@ mod tests {
         cpu.execute_sphl();
 
         assert_eq!(cpu.get_stack_pointer(), 20588);
+    }
+
+    #[test]
+    fn test_execute_xthl() {
+        let mut cpu = initialize_cpu();
+
+        cpu.set_stack_pointer(4269);
+        cpu.change_register(5, 11);
+        cpu.change_register(6, 60);
+        cpu.set_memory(4269, -16);
+        cpu.set_memory(4270, 13);
+        cpu.execute_xthl();
+
+        assert_eq!(cpu.get_register(5), 13);
+        assert_eq!(cpu.get_register(6), -16);
+        assert_eq!(cpu.get_memory(4269), 60);
+        assert_eq!(cpu.get_memory(4270), 11);
     }
 
     #[test]
