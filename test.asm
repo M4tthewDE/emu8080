@@ -29,6 +29,7 @@ LABEL:
         XRA B
         SBB B
         XCHG
+        SPHL
 
 STOP:
         HLT
