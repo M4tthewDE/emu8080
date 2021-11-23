@@ -67,7 +67,7 @@ impl Cpu {
         self.stack_pointer
     }
 
-    pub fn run(&mut self, instructions: &[Instruction]) {
+    pub fn run(&mut self, instructions: Vec<Box<Instruction>>) {
         println!("Initial status:");
         self.print_status();
 
@@ -75,26 +75,26 @@ impl Cpu {
             println!("-------------");
             println!("{:?}", instruction);
 
-            self.execute(instruction);
+            self.execute(&instruction);
             self.print_status();
         }
     }
 
     fn execute(&mut self, instruction: &Instruction) {
+        match instruction.get_type() {
+            InstructionType::NoReg => self.execute_no_reg_instruction(instruction),
+            InstructionType::SingleReg => self.execute_single_reg_instruction(instruction),
+            InstructionType::DoubleReg => self.execute_double_reg_instruction(instruction),
+            InstructionType::Intermediate => self.execute_intermediate_instruction(instruction),
+            InstructionType::IntermediateReg => self.execute_intermediate_reg_instruction(instruction),
+            InstructionType::PairReg => self.execute_pair_reg_instruction(instruction),
+        }
+    }
+
+    fn execute_no_reg_instruction(&mut self, abstract_instruction: &Instruction) {
+        let instruction = a.as_any().downcast_ref::<NoRegInstruction>();
+
         match instruction.command {
-            InstructionCommand::Mvi => {
-                self.execute_mvi(instruction.registers[0], instruction.intermediate)
-            }
-            InstructionCommand::Adi => self.execute_adi(instruction.intermediate),
-            InstructionCommand::Aci => self.execute_aci(instruction.intermediate),
-            InstructionCommand::Sui => self.execute_sui(instruction.intermediate),
-            InstructionCommand::Mov => self.execute_mov(&instruction.registers),
-            InstructionCommand::Add => self.execute_add(instruction.registers[0]),
-            InstructionCommand::Adc => self.execute_adc(instruction.registers[0]),
-            InstructionCommand::Sub => self.execute_sub(instruction.registers[0]),
-            InstructionCommand::Inr => self.execute_inr(instruction.registers[0]),
-            InstructionCommand::Dcr => self.execute_dcr(instruction.registers[0]),
-            InstructionCommand::Ana => self.execute_ana(instruction.registers[0]),
             InstructionCommand::Stc => self.execute_stc(),
             InstructionCommand::Cmc => self.execute_cmc(),
             InstructionCommand::Cma => self.execute_cma(),
@@ -102,22 +102,58 @@ impl Cpu {
             InstructionCommand::Rrc => self.execute_rrc(),
             InstructionCommand::Ral => self.execute_ral(),
             InstructionCommand::Rar => self.execute_rar(),
-            InstructionCommand::Ora => self.execute_ora(instruction.registers[0]),
-            InstructionCommand::Daa => self.execute_daa(),
-            InstructionCommand::Stax => self.execute_stax(&instruction.registers),
-            InstructionCommand::Ldax => self.execute_ldax(&instruction.registers),
-            InstructionCommand::Cmp => self.execute_cmp(instruction.registers[0]),
-            InstructionCommand::Xra => self.execute_xra(instruction.registers[0]),
-            InstructionCommand::Sbb => self.execute_sbb(instruction.registers[0]),
-            InstructionCommand::Xchg => self.execute_xchg(),
-            InstructionCommand::Sphl => self.execute_sphl(),
-            InstructionCommand::Xthl => self.execute_xthl(),
-            InstructionCommand::Hlt => self.execute_hlt(),
+        }
+    }
+
+    fn execute_single_reg_instruction(&mut self, abstract_instruction: &Instruction) {
+        let instruction = a.as_any().downcast_ref::<SingleRegInstruction>();
+
+        match instruction.command {
+            InstructionCommand::Add => self.execute_add(instruction.register),
+            InstructionCommand::Adc => self.execute_adc(instruction.register),
+            InstructionCommand::Sub => self.execute_sub(instruction.register),
+            InstructionCommand::Inr => self.execute_inr(instruction.register),
+            InstructionCommand::Dcr => self.execute_dcr(instruction.register),
+            InstructionCommand::Ana => self.execute_ana(instruction.register),
+        }
+    }
+
+    fn execute_double_reg_instruction(&mut self, abstract_instruction: &Instruction) {
+        let instruction = a.as_any().downcast_ref::<DoubleRegInstruction>();
+
+        match instruction.command {
+            InstructionCommand::Mov => self.execute_mov(instruction.registers),
+        }
+    }
+
+    fn execute_intermediate_instruction(&mut self, abstract_instruction: &Instruction) {
+        let instruction = a.as_any().downcast_ref::<IntermediateInstruction>();
+
+        match instruction.command {
+            InstructionCommand::Adi => self.execute_adi(instruction.intermediate),
+            InstructionCommand::Aci => self.execute_aci(instruction.intermediate),
+            InstructionCommand::Sui => self.execute_sui(instruction.intermediate),
+        }
+    }
+
+    fn execute_intermediate_reg_instruction(&mut self, abstract_instruction: &Instruction) {
+        let instruction = a.as_any().downcast_ref::<IntermediateRegInstruction>();
+
+        match instruction.command {
+            InstructionCommand::Mvi => self.execute_mvi(instruction.register, instruction.intermediate),
+        }
+    }
+
+    fn execute_pair_reg_instruction(&mut self, abstract_instruction: &Instruction) {
+        let instruction = a.as_any().downcast_ref::<PairRegInstruction>();
+
+        match instruction.command {
+            InstructionCommand::Stax => self.execute_stax(instruction.register_pair),
+            InstructionCommand::Ldax => self.execute_ldax(instruction.register_pair),
         }
     }
 
     fn execute_mvi(&mut self, arg: InstructionRegister, intermediate: i8) {
-
         self.change_register(arg, intermediate);
     }
 

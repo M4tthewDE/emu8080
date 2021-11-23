@@ -36,7 +36,7 @@ impl Assembler {
         }
     }
 
-    pub fn disassemble(&self, input_bin: String) -> Vec<Instruction> {
+    pub fn disassemble(&self, input_bin: String) -> Vec<Box<Instruction>> {
         let mut file = File::open(input_bin).unwrap();
         let mut binary_data = Vec::new();
 
@@ -54,7 +54,7 @@ impl Assembler {
         self.parse_binary_instructions(&raw_instructions)
     }
 
-    fn parse_binary_instructions(&self, raw_instructions: &[&[u8]]) -> Vec<Instruction> {
+    fn parse_binary_instructions(&self, raw_instructions: &[&[u8]]) -> Vec<Box<Instruction>> {
         let mut instructions = Vec::new();
 
         let mut index = 0;
