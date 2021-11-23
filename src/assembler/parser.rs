@@ -243,6 +243,11 @@ pub enum InstructionCommand {
     Hlt,
 }
 
+pub trait InstructionArgument {
+    fn encode(&self) -> &[u8];
+    fn decode(raw_bits: &[u8]) -> Self;
+}
+
 #[derive(Debug, Copy, Clone, EnumString)]
 pub enum InstructionRegister {
     A,
@@ -253,11 +258,10 @@ pub enum InstructionRegister {
     H,
     L,
     M,
-    Invalid,
 }
 
-impl InstructionRegister {
-    pub fn encode(&self) -> &[u8] {
+impl InstructionArgument for InstructionRegister {
+    fn encode(&self) -> &[u8] {
         match self {
             InstructionRegister::A => &[1, 1, 1],
             InstructionRegister::B => &[0, 0, 0],
@@ -267,14 +271,11 @@ impl InstructionRegister {
             InstructionRegister::H => &[1, 0, 0],
             InstructionRegister::L => &[1, 0, 1],
             InstructionRegister::M => &[1, 1, 0],
-            InstructionRegister::Invalid => {
-                panic!("invalid register")
-            }
         }
     }
 
-    pub fn decode(raw_bytes: &[u8]) -> InstructionRegister {
-        match *raw_bytes {
+    fn decode(raw_bits: &[u8]) -> InstructionRegister {
+        match *raw_bits {
             [1, 1, 1] => InstructionRegister::A,
             [0, 0, 0] => InstructionRegister::B,
             [0, 0, 1] => InstructionRegister::C,
@@ -286,7 +287,9 @@ impl InstructionRegister {
             _ => panic!("Invalid register"),
         }
     }
+}
 
+impl InstructionRegister {
     pub fn to_index(self) -> u8 {
         match self {
             InstructionRegister::A => 0,
@@ -297,7 +300,6 @@ impl InstructionRegister {
             InstructionRegister::H => 5,
             InstructionRegister::L => 6,
             InstructionRegister::M => 7,
-            _ => panic!("Invalid argument provided!"),
         }
     }
 
@@ -514,6 +516,7 @@ pub fn binary_to_int(intermediate: &mut [u8]) -> i8 {
 #[cfg(test)]
 mod tests {
     use super::InstructionRegister;
+    use crate::assembler::parser::InstructionArgument;
 
     #[test]
     fn test_register_encoding() {
@@ -528,43 +531,37 @@ mod tests {
     }
 
     #[test]
-    #[should_panic]
-    fn test_register_encoding_panic() {
-        InstructionRegister::Invalid.encode();
-    }
-
-    #[test]
     fn test_register_decoding() {
         assert!(matches!(
-            InstructionRegister::decode(&[1, 1, 1]),
+            InstructionArgument::decode(&[1, 1, 1]),
             InstructionRegister::A
         ));
         assert!(matches!(
-            InstructionRegister::decode(&[0, 0, 0]),
+            InstructionArgument::decode(&[0, 0, 0]),
             InstructionRegister::B
         ));
         assert!(matches!(
-            InstructionRegister::decode(&[0, 0, 1]),
+            InstructionArgument::decode(&[0, 0, 1]),
             InstructionRegister::C
         ));
         assert!(matches!(
-            InstructionRegister::decode(&[0, 1, 0]),
+            InstructionArgument::decode(&[0, 1, 0]),
             InstructionRegister::D
         ));
         assert!(matches!(
-            InstructionRegister::decode(&[0, 1, 1]),
+            InstructionArgument::decode(&[0, 1, 1]),
             InstructionRegister::E
         ));
         assert!(matches!(
-            InstructionRegister::decode(&[1, 0, 0]),
+            InstructionArgument::decode(&[1, 0, 0]),
             InstructionRegister::H
         ));
         assert!(matches!(
-            InstructionRegister::decode(&[1, 0, 1]),
+            InstructionArgument::decode(&[1, 0, 1]),
             InstructionRegister::L
         ));
         assert!(matches!(
-            InstructionRegister::decode(&[1, 1, 0]),
+            InstructionArgument::decode(&[1, 1, 0]),
             InstructionRegister::M
         ));
     }
@@ -596,11 +593,5 @@ mod tests {
         assert!(matches!(InstructionRegister::from_index(5), InstructionRegister::H));
         assert!(matches!(InstructionRegister::from_index(6), InstructionRegister::L));
         assert!(matches!(InstructionRegister::from_index(7), InstructionRegister::M));
-    }
-
-    #[test]
-    #[should_panic]
-    fn test_register_to_index_panic() {
-        InstructionRegister::Invalid.to_index();
     }
 }

@@ -1,6 +1,6 @@
 use crate::assembler::parser::Encoding;
 pub use crate::assembler::parser::{
-    Instruction, InstructionCommand, InstructionRegister, InstructionType,
+    Instruction, InstructionCommand, InstructionRegister, InstructionType,InstructionArgument
 };
 use std::fs::File;
 use std::io::{Read, Write};
@@ -65,10 +65,6 @@ impl Assembler {
             // instructions that take up more than one byte (intermediates)
             // MVI
             if raw_instructions[index][0..2] == [0, 0]
-                && !matches!(
-                    InstructionRegister::decode(&raw_instructions[index][2..5]),
-                    InstructionRegister::Invalid
-                )
                 && raw_instructions[index][5..] == [1, 1, 0]
             {
                 instruction = Instruction {
@@ -200,10 +196,6 @@ impl Assembler {
             // instructions with 1 argument in the end
             // ADD
             } else if raw_instructions[index][0..5] == [1, 0, 0, 0, 0]
-                && !matches!(
-                    InstructionRegister::decode(&raw_instructions[index][5..]),
-                    InstructionRegister::Invalid
-                )
             {
                 instruction = Instruction {
                     variant: InstructionType::SingleReg,
@@ -213,10 +205,6 @@ impl Assembler {
                 }
             // ADC
             } else if raw_instructions[index][0..5] == [1, 0, 0, 0, 1]
-                && !matches!(
-                    InstructionRegister::decode(&raw_instructions[index][5..]),
-                    InstructionRegister::Invalid
-                )
             {
                 instruction = Instruction {
                     variant: InstructionType::SingleReg,
@@ -226,10 +214,6 @@ impl Assembler {
                 }
             // SUB
             } else if raw_instructions[index][0..5] == [1, 0, 0, 1, 0]
-                && !matches!(
-                    InstructionRegister::decode(&raw_instructions[index][5..]),
-                    InstructionRegister::Invalid
-                )
             {
                 instruction = Instruction {
                     variant: InstructionType::SingleReg,
@@ -239,10 +223,6 @@ impl Assembler {
                 }
             // ANA
             } else if raw_instructions[index][0..5] == [1, 0, 1, 0, 0]
-                && !matches!(
-                    InstructionRegister::decode(&raw_instructions[index][5..]),
-                    InstructionRegister::Invalid
-                )
             {
                 instruction = Instruction {
                     variant: InstructionType::SingleReg,
@@ -252,10 +232,6 @@ impl Assembler {
                 }
             // ORA
             } else if raw_instructions[index][0..5] == [1, 0, 1, 1, 0]
-                && !matches!(
-                    InstructionRegister::decode(&raw_instructions[index][5..]),
-                    InstructionRegister::Invalid
-                )
             {
                 instruction = Instruction {
                     variant: InstructionType::SingleReg,
@@ -265,10 +241,6 @@ impl Assembler {
                 }
             // CMP
             } else if raw_instructions[index][0..5] == [1, 0, 1, 1, 1]
-                && !matches!(
-                    InstructionRegister::decode(&raw_instructions[index][5..]),
-                    InstructionRegister::Invalid
-                )
             {
                 instruction = Instruction {
                     variant: InstructionType::SingleReg,
@@ -278,10 +250,6 @@ impl Assembler {
                 }
             // XRA
             } else if raw_instructions[index][0..5] == [1, 0, 1, 0, 1]
-                && !matches!(
-                    InstructionRegister::decode(&raw_instructions[index][5..]),
-                    InstructionRegister::Invalid
-                )
             {
                 instruction = Instruction {
                     variant: InstructionType::SingleReg,
@@ -291,10 +259,6 @@ impl Assembler {
                 }
             // SBB
             } else if raw_instructions[index][0..5] == [1, 0, 0, 1, 1]
-                && !matches!(
-                    InstructionRegister::decode(&raw_instructions[index][5..]),
-                    InstructionRegister::Invalid
-                )
             {
                 instruction = Instruction {
                     variant: InstructionType::SingleReg,
@@ -342,10 +306,6 @@ impl Assembler {
             // INR
             } else if raw_instructions[index][0..2] == [0, 0]
                 && raw_instructions[index][5..] == [1, 0, 0]
-                && !matches!(
-                    InstructionRegister::decode(&raw_instructions[index][2..5]),
-                    InstructionRegister::Invalid
-                )
             {
                 instruction = Instruction {
                     variant: InstructionType::SingleReg,
@@ -356,10 +316,6 @@ impl Assembler {
             // DCR
             } else if raw_instructions[index][0..2] == [0, 0]
                 && raw_instructions[index][5..] == [1, 0, 1]
-                && !matches!(
-                    InstructionRegister::decode(&raw_instructions[index][2..5]),
-                    InstructionRegister::Invalid
-                )
             {
                 instruction = Instruction {
                     variant: InstructionType::SingleReg,
@@ -370,14 +326,6 @@ impl Assembler {
             // instructions with 2 registers
             // MOV
             } else if raw_instructions[index][0..2] == [0, 1]
-                && !matches!(
-                    InstructionRegister::decode(&raw_instructions[index][2..5]),
-                    InstructionRegister::Invalid
-                )
-                && !matches!(
-                    InstructionRegister::decode(&raw_instructions[index][5..]),
-                    InstructionRegister::Invalid
-                )
             {
                 let args = vec![
                     InstructionRegister::decode(&raw_instructions[index][2..5]),
