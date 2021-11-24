@@ -576,8 +576,7 @@ pub fn binary_to_int(intermediate: &mut [u8]) -> i8 {
 
 #[cfg(test)]
 mod tests {
-    use super::InstructionRegister;
-    use crate::assembler::parser::InstructionArgument;
+    use super::{InstructionRegister, InstructionRegisterPair, InstructionArgument};
 
     #[test]
     fn test_register_encoding() {
@@ -594,36 +593,48 @@ mod tests {
     #[test]
     fn test_register_decoding() {
         assert!(matches!(
-            InstructionArgument::decode(&[1, 1, 1]),
+            InstructionRegister::decode(&[1, 1, 1]),
             InstructionRegister::A
         ));
         assert!(matches!(
-            InstructionArgument::decode(&[0, 0, 0]),
+            InstructionRegister::decode(&[0, 0, 0]),
             InstructionRegister::B
         ));
         assert!(matches!(
-            InstructionArgument::decode(&[0, 0, 1]),
+            InstructionRegister::decode(&[0, 0, 1]),
             InstructionRegister::C
         ));
         assert!(matches!(
-            InstructionArgument::decode(&[0, 1, 0]),
+            InstructionRegister::decode(&[0, 1, 0]),
             InstructionRegister::D
         ));
         assert!(matches!(
-            InstructionArgument::decode(&[0, 1, 1]),
+            InstructionRegister::decode(&[0, 1, 1]),
             InstructionRegister::E
         ));
         assert!(matches!(
-            InstructionArgument::decode(&[1, 0, 0]),
+            InstructionRegister::decode(&[1, 0, 0]),
             InstructionRegister::H
         ));
         assert!(matches!(
-            InstructionArgument::decode(&[1, 0, 1]),
+            InstructionRegister::decode(&[1, 0, 1]),
             InstructionRegister::L
         ));
         assert!(matches!(
-            InstructionArgument::decode(&[1, 1, 0]),
+            InstructionRegister::decode(&[1, 1, 0]),
             InstructionRegister::M
+        ));
+    }
+
+    #[test]
+    fn test_register_pair_decoding(){
+        assert!(matches!(
+            InstructionRegisterPair::decode(&[0,0]),
+            InstructionRegisterPair::BC
+        ));
+        assert!(matches!(
+            InstructionRegisterPair::decode(&[0, 1]),
+            InstructionRegisterPair::DE
         ));
     }
 
