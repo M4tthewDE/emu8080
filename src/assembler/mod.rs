@@ -46,13 +46,13 @@ impl Assembler {
 
         let mut raw_instructions = Vec::new();
         for chunk in binary_data.chunks(8) {
-            raw_instructions.push(chunk);
+            raw_instructions.push(chunk.to_vec());
         }
 
         self.parse_binary_instructions(&raw_instructions)
     }
 
-    fn parse_binary_instructions(&self, raw_instructions: &[&[u8]]) -> Vec<Instruction> {
+    fn parse_binary_instructions(&self, raw_instructions: &[Vec<u8>]) -> Vec<Instruction> {
         let mut instructions = Vec::new();
 
         let mut index = 0;
@@ -72,65 +72,65 @@ impl Assembler {
                     register,
                 );
             // ADI
-            } else if raw_instructions[index] == [1, 1, 0, 0, 0, 1, 1, 0] {
+            } else if raw_instructions[index] == vec![1, 1, 0, 0, 0, 1, 1, 0] {
                 let intermediate = parser::binary_to_int(&mut raw_instructions[index + 1].to_vec());
                 instruction = Instruction::Intermediate(InstructionCommand::Adi, intermediate);
             // ACI
-            } else if raw_instructions[index] == [1, 1, 0, 0, 1, 1, 1, 0] {
+            } else if raw_instructions[index] == vec![1, 1, 0, 0, 1, 1, 1, 0] {
                 let intermediate = parser::binary_to_int(&mut raw_instructions[index + 1].to_vec());
                 instruction = Instruction::Intermediate(InstructionCommand::Aci, intermediate);
             // SUI
-            } else if raw_instructions[index] == [1, 1, 0, 1, 0, 1, 1, 0] {
+            } else if raw_instructions[index] == vec![1, 1, 0, 1, 0, 1, 1, 0] {
                 let intermediate = parser::binary_to_int(&mut raw_instructions[index + 1].to_vec());
                 instruction = Instruction::Intermediate(InstructionCommand::Sui, intermediate);
 
             // instructions without registers
             // HLT
-            } else if raw_instructions[index] == [0, 1, 1, 1, 0, 1, 1, 0] {
+            } else if raw_instructions[index] == vec![0, 1, 1, 1, 0, 1, 1, 0] {
                 instruction = Instruction::NoRegister(InstructionCommand::Hlt);
 
             // STC
-            } else if raw_instructions[index] == [0, 0, 1, 1, 0, 1, 1, 1] {
+            } else if raw_instructions[index] == vec![0, 0, 1, 1, 0, 1, 1, 1] {
                 instruction = Instruction::NoRegister(InstructionCommand::Stc);
 
             // CMC
-            } else if raw_instructions[index] == [0, 0, 1, 1, 1, 1, 1, 1] {
+            } else if raw_instructions[index] == vec![0, 0, 1, 1, 1, 1, 1, 1] {
                 instruction = Instruction::NoRegister(InstructionCommand::Cmc);
 
             // CMA
-            } else if raw_instructions[index] == [0, 0, 1, 0, 1, 1, 1, 1] {
+            } else if raw_instructions[index] == vec![0, 0, 1, 0, 1, 1, 1, 1] {
                 instruction = Instruction::NoRegister(InstructionCommand::Cma);
 
             // RLC
-            } else if raw_instructions[index] == [0, 0, 0, 0, 0, 1, 1, 1] {
+            } else if raw_instructions[index] == vec![0, 0, 0, 0, 0, 1, 1, 1] {
                 instruction = Instruction::NoRegister(InstructionCommand::Rlc);
 
             // RRC
-            } else if raw_instructions[index] == [0, 0, 0, 0, 1, 1, 1, 1] {
+            } else if raw_instructions[index] == vec![0, 0, 0, 0, 1, 1, 1, 1] {
                 instruction = Instruction::NoRegister(InstructionCommand::Rrc);
 
             // RAL
-            } else if raw_instructions[index] == [0, 0, 0, 1, 0, 1, 1, 1] {
+            } else if raw_instructions[index] == vec![0, 0, 0, 1, 0, 1, 1, 1] {
                 instruction = Instruction::NoRegister(InstructionCommand::Ral);
 
             // RAR
-            } else if raw_instructions[index] == [0, 0, 0, 1, 1, 1, 1, 1] {
+            } else if raw_instructions[index] == vec![0, 0, 0, 1, 1, 1, 1, 1] {
                 instruction = Instruction::NoRegister(InstructionCommand::Rar);
 
             // DAA
-            } else if raw_instructions[index] == [0, 0, 1, 0, 0, 1, 1, 1] {
+            } else if raw_instructions[index] == vec![0, 0, 1, 0, 0, 1, 1, 1] {
                 instruction = Instruction::NoRegister(InstructionCommand::Daa);
 
             // XCHG
-            } else if raw_instructions[index] == [1, 1, 1, 0, 1, 0, 1, 1] {
+            } else if raw_instructions[index] == vec![1, 1, 1, 0, 1, 0, 1, 1] {
                 instruction = Instruction::NoRegister(InstructionCommand::Xchg);
 
             // SPHL
-            } else if raw_instructions[index] == [1, 1, 1, 1, 1, 0, 0, 1] {
+            } else if raw_instructions[index] == vec![1, 1, 1, 1, 1, 0, 0, 1] {
                 instruction = Instruction::NoRegister(InstructionCommand::Sphl);
 
             // XTHL
-            } else if raw_instructions[index] == [1, 1, 1, 0, 0, 0, 1, 1] {
+            } else if raw_instructions[index] == vec![1, 1, 1, 0, 0, 0, 1, 1] {
                 instruction = Instruction::NoRegister(InstructionCommand::Xthl);
 
             // instructions with 1 argument in the end
@@ -453,5 +453,14 @@ mod tests {
         file.write_all(&vec![0,0,0,0]).unwrap();
         let assembler = Assembler::new("test.asm".to_owned(), "output".to_owned());
         assembler.disassemble("output".to_string());
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_if_unknown_instruction() {
+        let assembler = Assembler::new("test.asm".to_owned(), "output".to_owned());
+        let instruction = vec![vec![0,0,0,0,0,0,0,1]];
+
+        assembler.parse_binary_instructions(&instruction);
     }
 }
