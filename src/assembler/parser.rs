@@ -573,6 +573,7 @@ pub fn binary_to_int(intermediate: &mut [u8]) -> i8 {
 
 #[cfg(test)]
 mod tests {
+    use super::parse;
     use super::{InstructionArgument, InstructionRegister, InstructionRegisterPair};
 
     #[test]
@@ -686,5 +687,11 @@ mod tests {
             InstructionRegister::from_index(7),
             InstructionRegister::M
         ));
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_duplicate_labels() {
+        parse("data/test/duplicate_labels.asm".to_string());
     }
 }
