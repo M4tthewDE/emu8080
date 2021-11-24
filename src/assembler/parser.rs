@@ -348,48 +348,45 @@ pub enum Instruction {
 impl Instruction {
     pub fn encode(&self) -> Vec<u8> {
         match self {
-            Instruction::NoRegister(command) => {
-                println!("{:?}", command);
-                match command {
-                    InstructionCommand::Stc => {
-                        vec![0, 0, 1, 1, 0, 1, 1, 1]
-                    }
-                    InstructionCommand::Cmc => {
-                        vec![0, 0, 1, 1, 1, 1, 1, 1]
-                    }
-                    InstructionCommand::Cma => {
-                        vec![0, 0, 1, 0, 1, 1, 1, 1]
-                    }
-                    InstructionCommand::Rlc => {
-                        vec![0, 0, 0, 0, 0, 1, 1, 1]
-                    }
-                    InstructionCommand::Rrc => {
-                        vec![0, 0, 0, 0, 1, 1, 1, 1]
-                    }
-                    InstructionCommand::Ral => {
-                        vec![0, 0, 0, 1, 0, 1, 1, 1]
-                    }
-                    InstructionCommand::Rar => {
-                        vec![0, 0, 0, 1, 1, 1, 1, 1]
-                    }
-                    InstructionCommand::Daa => {
-                        vec![0, 0, 1, 0, 0, 1, 1, 1]
-                    }
-                    InstructionCommand::Xchg => {
-                        vec![1, 1, 1, 0, 1, 0, 1, 1]
-                    }
-                    InstructionCommand::Sphl => {
-                        vec![1, 1, 1, 1, 1, 0, 0, 1]
-                    }
-                    InstructionCommand::Xthl => {
-                        vec![1, 1, 1, 0, 0, 0, 1, 1]
-                    }
-                    InstructionCommand::Hlt => {
-                        vec![0, 1, 1, 1, 0, 1, 1, 0]
-                    }
-                    _ => panic!("invalid instruction"),
+            Instruction::NoRegister(command) => match command {
+                InstructionCommand::Stc => {
+                    vec![0, 0, 1, 1, 0, 1, 1, 1]
                 }
-            }
+                InstructionCommand::Cmc => {
+                    vec![0, 0, 1, 1, 1, 1, 1, 1]
+                }
+                InstructionCommand::Cma => {
+                    vec![0, 0, 1, 0, 1, 1, 1, 1]
+                }
+                InstructionCommand::Rlc => {
+                    vec![0, 0, 0, 0, 0, 1, 1, 1]
+                }
+                InstructionCommand::Rrc => {
+                    vec![0, 0, 0, 0, 1, 1, 1, 1]
+                }
+                InstructionCommand::Ral => {
+                    vec![0, 0, 0, 1, 0, 1, 1, 1]
+                }
+                InstructionCommand::Rar => {
+                    vec![0, 0, 0, 1, 1, 1, 1, 1]
+                }
+                InstructionCommand::Daa => {
+                    vec![0, 0, 1, 0, 0, 1, 1, 1]
+                }
+                InstructionCommand::Xchg => {
+                    vec![1, 1, 1, 0, 1, 0, 1, 1]
+                }
+                InstructionCommand::Sphl => {
+                    vec![1, 1, 1, 1, 1, 0, 0, 1]
+                }
+                InstructionCommand::Xthl => {
+                    vec![1, 1, 1, 0, 0, 0, 1, 1]
+                }
+                InstructionCommand::Hlt => {
+                    vec![0, 1, 1, 1, 0, 1, 1, 0]
+                }
+                _ => panic!("invalid instruction"),
+            },
 
             Instruction::SingleRegister(command, register) => match command {
                 InstructionCommand::Add => {
@@ -576,7 +573,7 @@ pub fn binary_to_int(intermediate: &mut [u8]) -> i8 {
 
 #[cfg(test)]
 mod tests {
-    use super::{InstructionRegister, InstructionRegisterPair, InstructionArgument};
+    use super::{InstructionArgument, InstructionRegister, InstructionRegisterPair};
 
     #[test]
     fn test_register_encoding() {
@@ -627,9 +624,9 @@ mod tests {
     }
 
     #[test]
-    fn test_register_pair_decoding(){
+    fn test_register_pair_decoding() {
         assert!(matches!(
-            InstructionRegisterPair::decode(&[0,0]),
+            InstructionRegisterPair::decode(&[0, 0]),
             InstructionRegisterPair::BC
         ));
         assert!(matches!(

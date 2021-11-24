@@ -181,7 +181,7 @@ impl Assembler {
                 && raw_instructions[index][4..] == [0, 0, 1, 0]
             {
                 let register_pair: InstructionRegisterPair;
-                if raw_instructions[index][4] == 0 {
+                if raw_instructions[index][3] == 0 {
                     register_pair = InstructionRegisterPair::BC;
                 } else {
                     register_pair = InstructionRegisterPair::DE;
@@ -194,7 +194,7 @@ impl Assembler {
                 && raw_instructions[index][4..] == [1, 0, 1, 0]
             {
                 let register_pair: InstructionRegisterPair;
-                if raw_instructions[index][4] == 0 {
+                if raw_instructions[index][3] == 0 {
                     register_pair = InstructionRegisterPair::BC;
                 } else {
                     register_pair = InstructionRegisterPair::DE;
@@ -450,7 +450,7 @@ mod tests {
     #[should_panic]
     fn test_if_corrupted_binary_file() {
         let mut file = File::create("output").unwrap();
-        file.write_all(&vec![0,0,0,0]).unwrap();
+        file.write_all(&vec![0, 0, 0, 0]).unwrap();
         let assembler = Assembler::new("test.asm".to_owned(), "output".to_owned());
         assembler.disassemble("output".to_string());
     }
@@ -459,8 +459,62 @@ mod tests {
     #[should_panic]
     fn test_if_unknown_instruction() {
         let assembler = Assembler::new("test.asm".to_owned(), "output".to_owned());
-        let instruction = vec![vec![0,0,0,0,0,0,0,1]];
+        let instruction = vec![vec![0, 0, 0, 0, 0, 0, 0, 1]];
 
         assembler.parse_binary_instructions(&instruction);
+    }
+
+    // test ldax and sdax separately since only one register pair is tested
+    // in test_disassemble()
+    #[test]
+    fn test_stax_parsing() {
+        let assembler = Assembler::new("test.asm".to_owned(), "output".to_owned());
+        let instruction = vec![vec![0, 0, 0, 0, 0, 0, 1, 0]];
+
+        let instruction = &assembler.parse_binary_instructions(&instruction)[0];
+
+        if let Instruction::PairRegister(command, register_pair) = instruction {
+            let registers = register_pair.get_registers();
+            assert!(matches!(command, InstructionCommand::Stax));
+            assert!(matches!(registers.0, InstructionRegister::B));
+            assert!(matches!(registers.1, InstructionRegister::C));
+        }
+
+        let instruction = vec![vec![0, 0, 0, 1, 0, 0, 1, 0]];
+
+        let instruction = &assembler.parse_binary_instructions(&instruction)[0];
+
+        if let Instruction::PairRegister(command, register_pair) = instruction {
+            let registers = register_pair.get_registers();
+            assert!(matches!(command, InstructionCommand::Stax));
+            assert!(matches!(registers.0, InstructionRegister::D));
+            assert!(matches!(registers.1, InstructionRegister::E));
+        }
+    }
+
+    #[test]
+    fn test_ldax_parsing() {
+        let assembler = Assembler::new("test.asm".to_owned(), "output".to_owned());
+        let instruction = vec![vec![0, 0, 0, 0, 1, 0, 1, 0]];
+
+        let instruction = &assembler.parse_binary_instructions(&instruction)[0];
+
+        if let Instruction::PairRegister(command, register_pair) = instruction {
+            let registers = register_pair.get_registers();
+            assert!(matches!(command, InstructionCommand::Ldax));
+            assert!(matches!(registers.0, InstructionRegister::B));
+            assert!(matches!(registers.1, InstructionRegister::C));
+        }
+
+        let instruction = vec![vec![0, 0, 0, 1, 1, 0, 1, 0]];
+
+        let instruction = &assembler.parse_binary_instructions(&instruction)[0];
+
+        if let Instruction::PairRegister(command, register_pair) = instruction {
+            let registers = register_pair.get_registers();
+            assert!(matches!(command, InstructionCommand::Ldax));
+            assert!(matches!(registers.0, InstructionRegister::D));
+            assert!(matches!(registers.1, InstructionRegister::E));
+        }
     }
 }
