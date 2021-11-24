@@ -13,5 +13,5 @@ fn main() {
     assembler.assemble();
     let instructions = assembler.disassemble("output".to_owned());
 
-    cpu.run(&instructions);
+    cpu.run(instructions);
 }

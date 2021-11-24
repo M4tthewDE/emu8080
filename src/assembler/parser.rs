@@ -3,15 +3,13 @@ use std::convert::TryFrom;
 use std::fs;
 use std::str::FromStr;
 use strum_macros::EnumString;
-use std::any::Any;
 
 #[derive(Parser)]
 #[grammar = "asm.pest"]
 pub struct AssemblyParser;
 
-pub fn parse(file_name: String) -> (Vec<Box<Instruction>>, Vec<Label>) {
+pub fn parse(file_name: String) -> (Vec<Instruction>, Vec<Label>) {
     let unparsed_file = fs::read_to_string(file_name).unwrap();
-
     let assembly = AssemblyParser::parse(Rule::assembly, &unparsed_file)
         .expect("unsuccessful parse")
         .next()
@@ -62,10 +60,8 @@ pub fn parse(file_name: String) -> (Vec<Box<Instruction>>, Vec<Label>) {
 
             match rule {
                 Rule::intermediate_reg_command => {
-                    let registers =
-                        vec![
-                            InstructionRegister::from_str(pairs.peek().unwrap().as_str()).unwrap(),
-                        ];
+                    let register =
+                        InstructionRegister::from_str(pairs.peek().unwrap().as_str()).unwrap();
                     pairs.next();
 
                     let mut intermediate = Vec::new();
@@ -77,62 +73,48 @@ pub fn parse(file_name: String) -> (Vec<Box<Instruction>>, Vec<Label>) {
                         }
                     }
 
-                    let instruction = Instruction {
-                        variant: InstructionType::IntermediateReg,
+                    let instruction = Instruction::IntermediateRegister(
                         command,
-                        registers,
-                        intermediate: binary_to_int(&mut intermediate),
-                    };
+                        binary_to_int(&mut intermediate),
+                        register,
+                    );
 
                     instructions.push(instruction);
                 }
                 Rule::double_reg_command => {
-                    let mut registers =
-                        vec![
-                            InstructionRegister::from_str(pairs.peek().unwrap().as_str()).unwrap(),
-                        ];
-                    pairs.next();
-                    registers.push(
-                        InstructionRegister::from_str(pairs.peek().unwrap().as_str()).unwrap(),
-                    );
+                    let register0 =
+                        InstructionRegister::from_str(pairs.peek().unwrap().as_str()).unwrap();
                     pairs.next();
 
-                    let instruction = Instruction {
-                        variant: InstructionType::DoubleReg,
-                        command,
-                        registers,
-                        intermediate: 0,
-                    };
+                    let register1 =
+                        InstructionRegister::from_str(pairs.peek().unwrap().as_str()).unwrap();
+                    pairs.next();
+
+                    let instruction = Instruction::DoubleRegister(command, (register0, register1));
                     instructions.push(instruction);
                 }
                 Rule::single_reg_command => {
-                    let registers =
-                        vec![
-                            InstructionRegister::from_str(pairs.peek().unwrap().as_str()).unwrap(),
-                        ];
+                    let register =
+                        InstructionRegister::from_str(pairs.peek().unwrap().as_str()).unwrap();
                     pairs.next();
 
-                    let instruction = Instruction {
-                        variant: InstructionType::SingleReg,
-                        command,
-                        registers,
-                        intermediate: 0,
-                    };
+                    let instruction = Instruction::SingleRegister(command, register);
                     instructions.push(instruction);
                 }
                 Rule::pair_reg_command => {
-                    let registers =
-                        vec![
-                            InstructionRegister::from_str(pairs.peek().unwrap().as_str()).unwrap(),
-                        ];
+                    let register_pair: InstructionRegisterPair;
+                    match InstructionRegister::from_str(pairs.peek().unwrap().as_str()).unwrap() {
+                        InstructionRegister::B | InstructionRegister::C => {
+                            register_pair = InstructionRegisterPair::BC
+                        }
+                        InstructionRegister::D | InstructionRegister::E => {
+                            register_pair = InstructionRegisterPair::DE
+                        }
+                        _ => panic!("invalid register"),
+                    }
                     pairs.next();
 
-                    let instruction = Instruction {
-                        variant: InstructionType::PairReg,
-                        command,
-                        registers,
-                        intermediate: 0,
-                    };
+                    let instruction = Instruction::PairRegister(command, register_pair);
                     instructions.push(instruction);
                 }
                 Rule::intermediate_command => {
@@ -145,21 +127,12 @@ pub fn parse(file_name: String) -> (Vec<Box<Instruction>>, Vec<Label>) {
                         }
                     }
 
-                    let instruction = Instruction {
-                        variant: InstructionType::IntermediateReg,
-                        command,
-                        registers: Vec::new(),
-                        intermediate: binary_to_int(&mut intermediate),
-                    };
+                    let instruction =
+                        Instruction::Intermediate(command, binary_to_int(&mut intermediate));
                     instructions.push(instruction);
                 }
                 Rule::no_reg_command => {
-                    let instruction = Instruction {
-                        variant: InstructionType::NoReg,
-                        command,
-                        registers: Vec::new(),
-                        intermediate: 0,
-                    };
+                    let instruction = Instruction::NoRegister(command);
                     instructions.push(instruction);
                 }
                 _ => panic!("invalid rule: {:?}", rule),
@@ -245,10 +218,11 @@ pub enum InstructionCommand {
 }
 
 pub trait InstructionArgument {
-    fn encode(&self) -> &[u8];
+    fn encode(&self) -> Vec<u8>;
     fn decode(raw_bits: &[u8]) -> Self;
 }
 
+// TODO rename to Register
 #[derive(Debug, Copy, Clone, EnumString)]
 pub enum InstructionRegister {
     A,
@@ -262,16 +236,16 @@ pub enum InstructionRegister {
 }
 
 impl InstructionArgument for InstructionRegister {
-    fn encode(&self) -> &[u8] {
+    fn encode(&self) -> Vec<u8> {
         match self {
-            InstructionRegister::A => &[1, 1, 1],
-            InstructionRegister::B => &[0, 0, 0],
-            InstructionRegister::C => &[0, 0, 1],
-            InstructionRegister::D => &[0, 1, 0],
-            InstructionRegister::E => &[0, 1, 1],
-            InstructionRegister::H => &[1, 0, 0],
-            InstructionRegister::L => &[1, 0, 1],
-            InstructionRegister::M => &[1, 1, 0],
+            InstructionRegister::A => vec![1, 1, 1],
+            InstructionRegister::B => vec![0, 0, 0],
+            InstructionRegister::C => vec![0, 0, 1],
+            InstructionRegister::D => vec![0, 1, 0],
+            InstructionRegister::E => vec![0, 1, 1],
+            InstructionRegister::H => vec![1, 0, 0],
+            InstructionRegister::L => vec![1, 0, 1],
+            InstructionRegister::M => vec![1, 1, 0],
         }
     }
 
@@ -319,6 +293,7 @@ impl InstructionRegister {
     }
 }
 
+#[derive(Debug)]
 pub enum InstructionRegisterPair {
     BC,
     DE,
@@ -327,233 +302,228 @@ pub enum InstructionRegisterPair {
 }
 
 impl InstructionArgument for InstructionRegisterPair {
-    fn encode(&self) -> &[u8] {
+    fn encode(&self) -> Vec<u8> {
         match self {
-            InstructionRegisterPair::BC => &[0, 0],
-            InstructionRegisterPair::DE => &[0, 1],
-            InstructionRegisterPair::HL => &[1, 0],
-            InstructionRegisterPair::SP => &[1, 1],
+            InstructionRegisterPair::BC => vec![0, 0],
+            InstructionRegisterPair::DE => vec![0, 1],
+            InstructionRegisterPair::HL => vec![1, 0],
+            InstructionRegisterPair::SP => vec![1, 1],
         }
     }
 
     fn decode(raw_bits: &[u8]) -> InstructionRegisterPair {
         match *raw_bits {
-            [0,0] => InstructionRegisterPair::BC,
-            [0,1] => InstructionRegisterPair::DE,
-            [1,0] => InstructionRegisterPair::HL,
-            [1,1] => InstructionRegisterPair::SP,
+            [0, 0] => InstructionRegisterPair::BC,
+            [0, 1] => InstructionRegisterPair::DE,
+            [1, 0] => InstructionRegisterPair::HL,
+            [1, 1] => InstructionRegisterPair::SP,
             _ => panic!("Invalid registerpair"),
         }
     }
 }
 
-pub enum InstructionType {
-    NoReg,
-    SingleReg,
-    DoubleReg,
-    Intermediate,
-    IntermediateReg,
-    PairReg,
+impl InstructionRegisterPair {
+    pub fn get_registers(&self) -> (InstructionRegister, InstructionRegister) {
+        match self {
+            InstructionRegisterPair::BC => (InstructionRegister::B, InstructionRegister::C),
+            InstructionRegisterPair::DE => (InstructionRegister::D, InstructionRegister::E),
+            InstructionRegisterPair::HL => (InstructionRegister::H, InstructionRegister::L),
+            _ => panic!("invalid register pair"),
+        }
+    }
 }
 
-#[derive(Sized)]
-pub trait Instruction {
-    fn encode(&self) -> Vec<u8>;
-    fn get_type(&self) -> InstructionType
-    fn as_any(&self) -> &dyn Any;
+#[derive(Debug)]
+pub enum Instruction {
+    NoRegister(InstructionCommand),
+    SingleRegister(InstructionCommand, InstructionRegister),
+    DoubleRegister(
+        InstructionCommand,
+        (InstructionRegister, InstructionRegister),
+    ),
+    Intermediate(InstructionCommand, i8),
+    IntermediateRegister(InstructionCommand, i8, InstructionRegister),
+    PairRegister(InstructionCommand, InstructionRegisterPair),
 }
 
-pub struct NoRegInstruction {
-    pub command: InstructionCommand
-}
-
-impl Instruction for NoRegInstruction {
-    fn encode(&self) -> Vec<u8> {
-        match self.command {
-            InstructionCommand::Stc => {
-                vec![0, 0, 1, 1, 0, 1, 1, 1]
+impl Instruction {
+    pub fn encode(&self) -> Vec<u8> {
+        match self {
+            Instruction::NoRegister(command) => {
+                println!("{:?}", command);
+                match command {
+                    InstructionCommand::Stc => {
+                        vec![0, 0, 1, 1, 0, 1, 1, 1]
+                    }
+                    InstructionCommand::Cmc => {
+                        vec![0, 0, 1, 1, 1, 1, 1, 1]
+                    }
+                    InstructionCommand::Cma => {
+                        vec![0, 0, 1, 0, 1, 1, 1, 1]
+                    }
+                    InstructionCommand::Rlc => {
+                        vec![0, 0, 0, 0, 0, 1, 1, 1]
+                    }
+                    InstructionCommand::Rrc => {
+                        vec![0, 0, 0, 0, 1, 1, 1, 1]
+                    }
+                    InstructionCommand::Ral => {
+                        vec![0, 0, 0, 1, 0, 1, 1, 1]
+                    }
+                    InstructionCommand::Rar => {
+                        vec![0, 0, 0, 1, 1, 1, 1, 1]
+                    }
+                    InstructionCommand::Daa => {
+                        vec![0, 0, 1, 0, 0, 1, 1, 1]
+                    }
+                    InstructionCommand::Xchg => {
+                        vec![1, 1, 1, 0, 1, 0, 1, 1]
+                    }
+                    InstructionCommand::Sphl => {
+                        vec![1, 1, 1, 1, 1, 0, 0, 1]
+                    }
+                    InstructionCommand::Xthl => {
+                        vec![1, 1, 1, 0, 0, 0, 1, 1]
+                    }
+                    InstructionCommand::Hlt => {
+                        vec![0, 1, 1, 1, 0, 1, 1, 0]
+                    }
+                    _ => panic!("invalid instruction"),
+                }
             }
-            InstructionCommand::Cmc => {
-                vec![0, 0, 1, 1, 1, 1, 1, 1]
-            }
-            InstructionCommand::Cma => {
-                vec![0, 0, 1, 0, 1, 1, 1, 1]
-            }
-            InstructionCommand::Rlc => {
-                vec![0, 0, 0, 0, 0, 1, 1, 1]
-            }
-            InstructionCommand::Rrc => {
-                vec![0, 0, 0, 0, 1, 1, 1, 1]
-            }
-            InstructionCommand::Ral => {
-                vec![0, 0, 0, 1, 0, 1, 1, 1]
-            }
-            InstructionCommand::Rar => {
-                vec![0, 0, 0, 1, 1, 1, 1, 1]
-            }
-        }    
-    }
 
-    fn get_type(&self) -> InstructionType {
-        InstructionType::NoReg
-    }
+            Instruction::SingleRegister(command, register) => match command {
+                InstructionCommand::Add => {
+                    let mut base_result = vec![1, 0, 0, 0, 0];
+                    base_result.append(&mut register.encode());
 
-    fn as_any(&self) -> &dyn Any {
-        self
-    }
-} 
+                    base_result
+                }
+                InstructionCommand::Adc => {
+                    let mut base_result = vec![1, 0, 0, 0, 1];
+                    base_result.append(&mut register.encode());
 
-pub struct SingleRegInstruction {
-    pub command: InstructionCommand,
-    pub register: InstructionRegister,
-}
+                    base_result
+                }
+                InstructionCommand::Sub => {
+                    let mut base_result = vec![1, 0, 0, 1, 0];
+                    base_result.append(&mut register.encode());
 
-impl Instruction for SingleRegInstruction {
-    fn encode(&self) -> Vec<u8> {
-        match self.command {
-            InstructionCommand::Add => {
-                [1, 0, 0, 0, 0].append(self.register.encode())
-            }
-            InstructionCommand::Adc => {
-                [1, 0, 0, 0, 1].append(self.register.encode())
-            }
-            InstructionCommand::Sub => {
-                [1, 0, 0, 1, 0].append(self.register.encode())
-            }
-            InstructionCommand::Inr => {
-                [0, 0].append(self.register.encode()).append([1,0,0])
-            }
-            InstructionCommand::Dcr => {
-                [0, 0].append(self.register.encode()).append([1,0,1])
-            }
-            InstructionCommand::Ana => {
-                [1, 0, 1, 0, 0].append(self.register.encode())
-            }
-        }    
-    }
+                    base_result
+                }
+                InstructionCommand::Inr => {
+                    let mut base_result = vec![0, 0];
+                    base_result.append(&mut register.encode());
+                    base_result.append(&mut vec![1, 0, 0]);
 
-    fn get_type(&self) -> InstructionType {
-        InstructionType::SingleReg
-    }
+                    base_result
+                }
+                InstructionCommand::Dcr => {
+                    let mut base_result = vec![0, 0];
+                    base_result.append(&mut register.encode());
+                    base_result.append(&mut vec![1, 0, 1]);
 
-    fn as_any(&self) -> &dyn Any {
-        self
-    }
-} 
+                    base_result
+                }
+                InstructionCommand::Ana => {
+                    let mut base_result = vec![1, 0, 1, 0, 0];
+                    base_result.append(&mut register.encode());
 
-pub struct DoubleRegInstruction {
-    pub command: InstructionCommand,
-    pub registers: (InstructionRegister, InstructionRegister),
-}
+                    base_result
+                }
+                InstructionCommand::Ora => {
+                    let mut base_result = vec![1, 0, 1, 1, 0];
+                    base_result.append(&mut register.encode());
 
-impl Instruction for DoubleRegInstruction {
-    fn encode(&self) -> Vec<u8> {
-        match self.command {
-            InstructionCommand::Mov => {
-                    &[0, 1]
-                        .append(self.registers[0].encode())
-                        .append(self.registers[1].encode())
-            }
-        }    
-    }
+                    base_result
+                }
+                InstructionCommand::Cmp => {
+                    let mut base_result = vec![1, 0, 1, 1, 1];
+                    base_result.append(&mut register.encode());
 
-    fn get_type(&self) -> InstructionType {
-        InstructionType::DoubleReg
-    }
+                    base_result
+                }
+                InstructionCommand::Xra => {
+                    let mut base_result = vec![1, 0, 1, 0, 1];
+                    base_result.append(&mut register.encode());
 
-    fn as_any(&self) -> &dyn Any {
-        self
-    }
-} 
+                    base_result
+                }
+                InstructionCommand::Sbb => {
+                    let mut base_result = vec![1, 0, 0, 1, 1];
+                    base_result.append(&mut register.encode());
 
-pub struct IntermediateInstruction {
-    pub command: InstructionCommand,
-    pub intermediate: i8,
-}
-
-impl Instruction for IntermediateInstruction {
-    fn encode(&self) -> Vec<u8> {
-        match self.command {
-            InstructionCommand::Adi => {
-                [1, 1, 0, 0, 0, 1, 1, 0]
-                .append(int_to_binary(self.intermediate))
-            }
-            InstructionCommand::Aci => {
-                [1, 1, 0, 0, 1, 1, 1, 0],
-                .append(int_to_binary(self.intermediate))
-            }
-            InstructionCommand::Sui => {
-                [1, 1, 0, 1, 0, 1, 1, 0],
-                .append(int_to_binary(self.intermediate))
-            }
-        }    
-    }
-
-    fn get_type(&self) -> InstructionType {
-        InstructionType::Intermediate
-    }
-
-    fn as_any(&self) -> &dyn Any {
-        self
-    }
-} 
-
-pub struct IntermediateRegInstruction {
-    pub command: InstructionCommand,
-    pub register: InstructionRegister,
-    pub intermediate: i8,
-}
-
-impl Instruction for IntermediateRegInstruction {
-    fn encode(&self) -> Vec<u8> {
-        match self.command {
-            InstructionCommand::Mvi => {
-                [0, 0]
-                .append(self.registers[0].encode())
-                .append([1, 1, 0])
-                .append(int_to_binary(self.intermediate))
-            }
-        }    
-    }
-
-    fn get_type(&self) -> InstructionType {
-        InstructionType::IntermediateReg
-    }
-
-    fn as_any(&self) -> &dyn Any {
-        self
-    }
-} 
-
-pub struct PairRegInstruction {
-    pub command: InstructionCommand,
-    pub register_pair: InstructionRegisterPair
-}
-
-impl Instruction for PairRegInstruction {
-    fn encode(&self) -> Vec<u8> {
-        match self.command {
-            InstructionCommand::Stax => match self.registers[0] {
-                [0,0]
-                .append(self.register_pair.encode())
-                .append([0,0,1,0])
+                    base_result
+                }
+                _ => panic!("invalid instruction"),
             },
-            InstructionCommand::Ldax => match self.registers[0] {
-                [0,0]
-                .append(self.register_pair.encode())
-                .append([1,0,1,0])
+
+            Instruction::DoubleRegister(command, registers) => match command {
+                InstructionCommand::Mov => {
+                    let mut base_result = vec![0, 1];
+                    base_result.append(&mut registers.0.encode());
+                    base_result.append(&mut registers.1.encode());
+
+                    base_result
+                }
+                _ => panic!("invalid instruction"),
             },
-        }    
-    }
 
-    fn get_type(&self) -> InstructionType {
-        InstructionType::PairReg
-    }
+            Instruction::Intermediate(command, intermediate) => match command {
+                InstructionCommand::Adi => {
+                    let mut base_result = vec![1, 1, 0, 0, 0, 1, 1, 0];
+                    base_result.append(&mut int_to_binary(*intermediate));
 
-    fn as_any(&self) -> &dyn Any {
-        self
+                    base_result
+                }
+                InstructionCommand::Aci => {
+                    let mut base_result = vec![1, 1, 0, 0, 1, 1, 1, 0];
+                    base_result.append(&mut int_to_binary(*intermediate));
+
+                    base_result
+                }
+                InstructionCommand::Sui => {
+                    let mut base_result = vec![1, 1, 0, 1, 0, 1, 1, 0];
+                    base_result.append(&mut int_to_binary(*intermediate));
+
+                    base_result
+                }
+                _ => panic!("invalid instruction"),
+            },
+
+            Instruction::IntermediateRegister(command, intermediate, register) => match command {
+                InstructionCommand::Mvi => {
+                    let mut base_result = vec![0, 0];
+                    base_result.append(&mut register.encode());
+                    base_result.append(&mut vec![1, 1, 0]);
+                    base_result.append(&mut int_to_binary(*intermediate));
+
+                    base_result
+                }
+                _ => panic!("invalid instruction"),
+            },
+
+            Instruction::PairRegister(command, register_pair) => {
+                let mut base_result = vec![0, 0];
+                match command {
+                    InstructionCommand::Stax => {
+                        base_result.append(&mut register_pair.encode());
+                        base_result.append(&mut vec![0, 0, 1, 0]);
+
+                        base_result
+                    }
+                    InstructionCommand::Ldax => {
+                        base_result.append(&mut register_pair.encode());
+                        base_result.append(&mut vec![1, 0, 1, 0]);
+
+                        base_result
+                    }
+                    _ => panic!("invalid instruction"),
+                }
+            }
+        }
     }
-} 
+}
 
 fn int_to_binary(value: i8) -> Vec<u8> {
     let binary_string = format!("{:08b}", value);
@@ -612,14 +582,14 @@ mod tests {
 
     #[test]
     fn test_register_encoding() {
-        assert_eq!(InstructionRegister::A.encode(), [1, 1, 1]);
-        assert_eq!(InstructionRegister::B.encode(), [0, 0, 0]);
-        assert_eq!(InstructionRegister::C.encode(), [0, 0, 1]);
-        assert_eq!(InstructionRegister::D.encode(), [0, 1, 0]);
-        assert_eq!(InstructionRegister::E.encode(), [0, 1, 1]);
-        assert_eq!(InstructionRegister::H.encode(), [1, 0, 0]);
-        assert_eq!(InstructionRegister::L.encode(), [1, 0, 1]);
-        assert_eq!(InstructionRegister::M.encode(), [1, 1, 0]);
+        assert_eq!(*InstructionRegister::A.encode(), vec![1, 1, 1]);
+        assert_eq!(*InstructionRegister::B.encode(), vec![0, 0, 0]);
+        assert_eq!(*InstructionRegister::C.encode(), vec![0, 0, 1]);
+        assert_eq!(*InstructionRegister::D.encode(), vec![0, 1, 0]);
+        assert_eq!(*InstructionRegister::E.encode(), vec![0, 1, 1]);
+        assert_eq!(*InstructionRegister::H.encode(), vec![1, 0, 0]);
+        assert_eq!(*InstructionRegister::L.encode(), vec![1, 0, 1]);
+        assert_eq!(*InstructionRegister::M.encode(), vec![1, 1, 0]);
     }
 
     #[test]
@@ -677,13 +647,37 @@ mod tests {
     }
     #[test]
     fn test_from_index() {
-        assert!(matches!(InstructionRegister::from_index(0), InstructionRegister::A));
-        assert!(matches!(InstructionRegister::from_index(1), InstructionRegister::B));
-        assert!(matches!(InstructionRegister::from_index(2), InstructionRegister::C));
-        assert!(matches!(InstructionRegister::from_index(3), InstructionRegister::D));
-        assert!(matches!(InstructionRegister::from_index(4), InstructionRegister::E));
-        assert!(matches!(InstructionRegister::from_index(5), InstructionRegister::H));
-        assert!(matches!(InstructionRegister::from_index(6), InstructionRegister::L));
-        assert!(matches!(InstructionRegister::from_index(7), InstructionRegister::M));
+        assert!(matches!(
+            InstructionRegister::from_index(0),
+            InstructionRegister::A
+        ));
+        assert!(matches!(
+            InstructionRegister::from_index(1),
+            InstructionRegister::B
+        ));
+        assert!(matches!(
+            InstructionRegister::from_index(2),
+            InstructionRegister::C
+        ));
+        assert!(matches!(
+            InstructionRegister::from_index(3),
+            InstructionRegister::D
+        ));
+        assert!(matches!(
+            InstructionRegister::from_index(4),
+            InstructionRegister::E
+        ));
+        assert!(matches!(
+            InstructionRegister::from_index(5),
+            InstructionRegister::H
+        ));
+        assert!(matches!(
+            InstructionRegister::from_index(6),
+            InstructionRegister::L
+        ));
+        assert!(matches!(
+            InstructionRegister::from_index(7),
+            InstructionRegister::M
+        ));
     }
 }
