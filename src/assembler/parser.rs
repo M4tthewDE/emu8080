@@ -222,7 +222,6 @@ pub trait InstructionArgument {
     fn decode(raw_bits: &[u8]) -> Self;
 }
 
-// TODO rename to Register
 #[derive(Debug, Copy, Clone, EnumString)]
 pub enum InstructionRegister {
     A,
