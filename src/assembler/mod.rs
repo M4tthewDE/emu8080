@@ -248,7 +248,7 @@ mod tests {
     use super::Assembler;
     use crate::assembler::parser::{Instruction, InstructionCommand, InstructionRegister};
     use std::fs::File;
-    use std::io::Read;
+    use std::io::{Read, Write};
 
     #[test]
     fn test_new() {
@@ -305,7 +305,6 @@ mod tests {
         assert_eq!(bytes.next().unwrap(), [0, 1, 1, 1, 0, 1, 1, 0]);
     }
 
-    // TODO rework this test
     #[test]
     fn test_disassemble() {
         let assembler = Assembler::new("test.asm".to_owned(), "output".to_owned());
@@ -445,5 +444,14 @@ mod tests {
                 },
             }
         }
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_if_corrupted_binary_file() {
+        let mut file = File::create("output").unwrap();
+        file.write_all(&vec![0,0,0,0]).unwrap();
+        let assembler = Assembler::new("test.asm".to_owned(), "output".to_owned());
+        assembler.disassemble("output".to_string());
     }
 }
