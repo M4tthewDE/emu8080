@@ -1,4 +1,6 @@
-use crate::assembler::{Instruction, InstructionCommand, InstructionRegister};
+use crate::assembler::{
+    Instruction, InstructionCommand, InstructionRegister, InstructionRegisterPair,
+};
 use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
 
@@ -67,7 +69,7 @@ impl Cpu {
         self.stack_pointer
     }
 
-    pub fn run(&mut self, instructions: &[Instruction]) {
+    pub fn run(&mut self, instructions: Vec<Instruction>) {
         println!("Initial status:");
         self.print_status();
 
@@ -75,26 +77,34 @@ impl Cpu {
             println!("-------------");
             println!("{:?}", instruction);
 
-            self.execute(instruction);
+            self.execute(&instruction);
             self.print_status();
         }
     }
 
     fn execute(&mut self, instruction: &Instruction) {
-        match instruction.command {
-            InstructionCommand::Mvi => {
-                self.execute_mvi(instruction.registers[0], instruction.intermediate)
+        match instruction {
+            Instruction::NoRegister(command) => self.execute_no_reg_instruction(command),
+            Instruction::SingleRegister(command, register) => {
+                self.execute_single_reg_instruction(command, register)
             }
-            InstructionCommand::Adi => self.execute_adi(instruction.intermediate),
-            InstructionCommand::Aci => self.execute_aci(instruction.intermediate),
-            InstructionCommand::Sui => self.execute_sui(instruction.intermediate),
-            InstructionCommand::Mov => self.execute_mov(&instruction.registers),
-            InstructionCommand::Add => self.execute_add(instruction.registers[0]),
-            InstructionCommand::Adc => self.execute_adc(instruction.registers[0]),
-            InstructionCommand::Sub => self.execute_sub(instruction.registers[0]),
-            InstructionCommand::Inr => self.execute_inr(instruction.registers[0]),
-            InstructionCommand::Dcr => self.execute_dcr(instruction.registers[0]),
-            InstructionCommand::Ana => self.execute_ana(instruction.registers[0]),
+            Instruction::DoubleRegister(command, registers) => {
+                self.execute_double_reg_instruction(command, registers)
+            }
+            Instruction::Intermediate(command, intermediate) => {
+                self.execute_intermediate_instruction(command, *intermediate)
+            }
+            Instruction::IntermediateRegister(command, intermediate, register) => {
+                self.execute_intermediate_reg_instruction(command, register, *intermediate)
+            }
+            Instruction::PairRegister(command, register_pair) => {
+                self.execute_pair_reg_instruction(command, register_pair)
+            }
+        }
+    }
+
+    fn execute_no_reg_instruction(&mut self, command: &InstructionCommand) {
+        match command {
             InstructionCommand::Stc => self.execute_stc(),
             InstructionCommand::Cmc => self.execute_cmc(),
             InstructionCommand::Cma => self.execute_cma(),
@@ -102,23 +112,81 @@ impl Cpu {
             InstructionCommand::Rrc => self.execute_rrc(),
             InstructionCommand::Ral => self.execute_ral(),
             InstructionCommand::Rar => self.execute_rar(),
-            InstructionCommand::Ora => self.execute_ora(instruction.registers[0]),
             InstructionCommand::Daa => self.execute_daa(),
-            InstructionCommand::Stax => self.execute_stax(&instruction.registers),
-            InstructionCommand::Ldax => self.execute_ldax(&instruction.registers),
-            InstructionCommand::Cmp => self.execute_cmp(instruction.registers[0]),
-            InstructionCommand::Xra => self.execute_xra(instruction.registers[0]),
-            InstructionCommand::Sbb => self.execute_sbb(instruction.registers[0]),
             InstructionCommand::Xchg => self.execute_xchg(),
             InstructionCommand::Sphl => self.execute_sphl(),
             InstructionCommand::Xthl => self.execute_xthl(),
             InstructionCommand::Hlt => self.execute_hlt(),
+            _ => panic!("invalid instruction"),
         }
     }
 
-    fn execute_mvi(&mut self, arg: InstructionRegister, intermediate: i8) {
+    fn execute_single_reg_instruction(
+        &mut self,
+        command: &InstructionCommand,
+        register: &InstructionRegister,
+    ) {
+        match command {
+            InstructionCommand::Add => self.execute_add(register),
+            InstructionCommand::Adc => self.execute_adc(register),
+            InstructionCommand::Sub => self.execute_sub(register),
+            InstructionCommand::Inr => self.execute_inr(register),
+            InstructionCommand::Dcr => self.execute_dcr(register),
+            InstructionCommand::Ana => self.execute_ana(register),
+            InstructionCommand::Ora => self.execute_ora(register),
+            InstructionCommand::Cmp => self.execute_cmp(register),
+            InstructionCommand::Xra => self.execute_xra(register),
+            InstructionCommand::Sbb => self.execute_sbb(register),
+            _ => panic!("invalid instruction"),
+        }
+    }
 
-        self.change_register(arg, intermediate);
+    fn execute_double_reg_instruction(
+        &mut self,
+        command: &InstructionCommand,
+        registers: &(InstructionRegister, InstructionRegister),
+    ) {
+        match command {
+            InstructionCommand::Mov => self.execute_mov(registers),
+            _ => panic!("invalid instruction"),
+        }
+    }
+
+    fn execute_intermediate_instruction(&mut self, command: &InstructionCommand, intermediate: i8) {
+        match command {
+            InstructionCommand::Adi => self.execute_adi(intermediate),
+            InstructionCommand::Aci => self.execute_aci(intermediate),
+            InstructionCommand::Sui => self.execute_sui(intermediate),
+            _ => panic!("invalid instruction"),
+        }
+    }
+
+    fn execute_intermediate_reg_instruction(
+        &mut self,
+        command: &InstructionCommand,
+        register: &InstructionRegister,
+        intermediate: i8,
+    ) {
+        match command {
+            InstructionCommand::Mvi => self.execute_mvi(register, intermediate),
+            _ => panic!("invalid instruction"),
+        }
+    }
+
+    fn execute_pair_reg_instruction(
+        &mut self,
+        command: &InstructionCommand,
+        register_pair: &InstructionRegisterPair,
+    ) {
+        match command {
+            InstructionCommand::Stax => self.execute_stax(register_pair),
+            InstructionCommand::Ldax => self.execute_ldax(register_pair),
+            _ => panic!("invalid instruction"),
+        }
+    }
+
+    fn execute_mvi(&mut self, arg: &InstructionRegister, intermediate: i8) {
+        self.change_register(*arg, intermediate);
     }
 
     fn execute_adi(&mut self, intermediate: i8) {
@@ -208,14 +276,14 @@ impl Cpu {
         }
     }
 
-    fn execute_mov(&mut self, args: &[InstructionRegister]) {
-        let source_value = self.get_register(args[0]);
+    fn execute_mov(&mut self, args: &(InstructionRegister, InstructionRegister)) {
+        let source_value = self.get_register(args.0);
 
-        self.change_register(args[1], source_value);
+        self.change_register(args.1, source_value);
     }
 
-    fn execute_add(&mut self, arg: InstructionRegister) {
-        let source_value = self.get_register(arg);
+    fn execute_add(&mut self, arg: &InstructionRegister) {
+        let source_value = self.get_register(*arg);
         let current_a = self.get_register(InstructionRegister::A);
         let new_a = current_a.wrapping_add(source_value);
 
@@ -245,8 +313,8 @@ impl Cpu {
         self.change_register(InstructionRegister::A, new_a);
     }
 
-    fn execute_adc(&mut self, arg: InstructionRegister) {
-        let source_value = self.get_register(arg);
+    fn execute_adc(&mut self, arg: &InstructionRegister) {
+        let source_value = self.get_register(*arg);
         let current_a = self.get_register(InstructionRegister::A);
 
         let new_a = current_a + source_value + self.get_flag(Flag::C) as i8;
@@ -277,8 +345,8 @@ impl Cpu {
         self.change_register(InstructionRegister::A, new_a);
     }
 
-    fn execute_sub(&mut self, args: InstructionRegister) {
-        let source_value = self.get_register(args);
+    fn execute_sub(&mut self, args: &InstructionRegister) {
+        let source_value = self.get_register(*args);
         let current_a = self.get_register(InstructionRegister::A);
         let new_a = current_a.wrapping_sub(source_value);
 
@@ -305,28 +373,10 @@ impl Cpu {
         }
     }
 
-    fn execute_inr(&mut self, arg: InstructionRegister) {
-        let new_value = self.get_register(arg) + 1;
+    fn execute_inr(&mut self, arg: &InstructionRegister) {
+        let new_value = self.get_register(*arg) + 1;
 
-        self.change_register(arg, new_value);
-
-        if self.get_register(InstructionRegister::A) == 0 {
-            self.set_flag(Flag::Z, true);
-        } else {
-            self.set_flag(Flag::Z, false);
-        }
-
-        if self.get_register(InstructionRegister::A) < 0 {
-            self.set_flag(Flag::S, true);
-        } else {
-            self.set_flag(Flag::S, false);
-        }
-    }
-
-    fn execute_dcr(&mut self, arg: InstructionRegister) {
-        let new_value = self.get_register(arg) - 1;
-
-        self.change_register(arg, new_value);
+        self.change_register(*arg, new_value);
 
         if self.get_register(InstructionRegister::A) == 0 {
             self.set_flag(Flag::Z, true);
@@ -341,9 +391,27 @@ impl Cpu {
         }
     }
 
-    fn execute_ana(&mut self, arg: InstructionRegister) {
+    fn execute_dcr(&mut self, arg: &InstructionRegister) {
+        let new_value = self.get_register(*arg) - 1;
+
+        self.change_register(*arg, new_value);
+
+        if self.get_register(InstructionRegister::A) == 0 {
+            self.set_flag(Flag::Z, true);
+        } else {
+            self.set_flag(Flag::Z, false);
+        }
+
+        if self.get_register(InstructionRegister::A) < 0 {
+            self.set_flag(Flag::S, true);
+        } else {
+            self.set_flag(Flag::S, false);
+        }
+    }
+
+    fn execute_ana(&mut self, arg: &InstructionRegister) {
         let acc = self.get_register(InstructionRegister::A);
-        let reg = self.get_register(arg);
+        let reg = self.get_register(*arg);
 
         self.change_register(InstructionRegister::A, acc & reg);
     }
@@ -375,7 +443,10 @@ impl Cpu {
         // complement of twos-complement is always
         // -(num+1)
 
-        self.change_register(InstructionRegister::A, !self.get_register(InstructionRegister::A));
+        self.change_register(
+            InstructionRegister::A,
+            !self.get_register(InstructionRegister::A),
+        );
     }
 
     // last bit can never be 1 after shift
@@ -454,9 +525,9 @@ impl Cpu {
         self.change_register(InstructionRegister::A, acc);
     }
 
-    fn execute_ora(&mut self, arg: InstructionRegister) {
+    fn execute_ora(&mut self, arg: &InstructionRegister) {
         let mut acc = self.get_register(InstructionRegister::A);
-        acc |= self.get_register(arg);
+        acc |= self.get_register(*arg);
 
         self.change_register(InstructionRegister::A, acc);
         self.set_flag(Flag::C, false);
@@ -496,10 +567,11 @@ impl Cpu {
         self.change_register(InstructionRegister::A, acc);
     }
 
-    fn execute_stax(&mut self, registers: &[InstructionRegister]) {
+    fn execute_stax(&mut self, register_pair: &InstructionRegisterPair) {
+        let registers = register_pair.get_registers();
+        let mut first_register = self.get_register(registers.0) as u16;
+        let mut second_register = self.get_register(registers.1) as u16;
         let acc = self.get_register(InstructionRegister::A);
-        let mut first_register = self.get_register(registers[0]) as u16;
-        let mut second_register = self.get_register(registers[1]) as u16;
 
         // make sure first 8 bits are 0 because of negative numbers
         second_register &= 255;
@@ -510,9 +582,10 @@ impl Cpu {
         self.set_memory(address, acc);
     }
 
-    fn execute_ldax(&mut self, registers: &[InstructionRegister]) {
-        let mut first_register = self.get_register(registers[0]) as u16;
-        let mut second_register = self.get_register(registers[1]) as u16;
+    fn execute_ldax(&mut self, register_pair: &InstructionRegisterPair) {
+        let registers = register_pair.get_registers();
+        let mut first_register = self.get_register(registers.0) as u16;
+        let mut second_register = self.get_register(registers.1) as u16;
 
         // make sure first 8 bits are 0 because of negative numbers
         second_register &= 255;
@@ -523,9 +596,9 @@ impl Cpu {
         self.change_register(InstructionRegister::A, self.get_memory(address));
     }
 
-    fn execute_cmp(&mut self, register: InstructionRegister) {
+    fn execute_cmp(&mut self, register: &InstructionRegister) {
         let acc = self.get_register(InstructionRegister::A);
-        let reg = self.get_register(register);
+        let reg = self.get_register(*register);
 
         let result = acc.wrapping_sub(reg);
 
@@ -552,9 +625,9 @@ impl Cpu {
         }
     }
 
-    fn execute_xra(&mut self, register: InstructionRegister) {
+    fn execute_xra(&mut self, register: &InstructionRegister) {
         let acc = self.get_register(InstructionRegister::A);
-        let reg = self.get_register(register);
+        let reg = self.get_register(*register);
 
         let result = acc ^ reg;
 
@@ -564,12 +637,12 @@ impl Cpu {
             self.set_flag(Flag::Z, false);
         }
 
-        self.change_register(register, result);
+        self.change_register(*register, result);
     }
 
-    fn execute_sbb(&mut self, register: InstructionRegister) {
+    fn execute_sbb(&mut self, register: &InstructionRegister) {
         let acc = self.get_register(InstructionRegister::A);
-        let mut reg = self.get_register(register);
+        let mut reg = self.get_register(*register);
 
         reg = reg.wrapping_add(self.get_flag(Flag::C) as i8);
 
@@ -666,13 +739,13 @@ impl Cpu {
 #[cfg(test)]
 mod tests {
     use super::initialize_cpu;
-    use crate::cpu::{Flag, InstructionRegister};
+    use crate::cpu::{Flag, InstructionRegister, InstructionRegisterPair};
 
     #[test]
     fn test_execute_mvi() {
         let mut cpu = initialize_cpu();
 
-        cpu.execute_mvi(InstructionRegister::A, 14);
+        cpu.execute_mvi(&InstructionRegister::A, 14);
         assert_eq!(cpu.get_register(InstructionRegister::A), 14);
     }
 
@@ -681,7 +754,7 @@ mod tests {
         let mut cpu = initialize_cpu();
         cpu.change_register(InstructionRegister::A, 10);
 
-        cpu.execute_mov(&[InstructionRegister::A, InstructionRegister::B]);
+        cpu.execute_mov(&(InstructionRegister::A, InstructionRegister::B));
         assert_eq!(cpu.get_register(InstructionRegister::B), 10);
     }
 
@@ -691,25 +764,25 @@ mod tests {
         cpu.change_register(InstructionRegister::A, 5);
         cpu.set_flag(Flag::Z, true);
 
-        cpu.execute_add(InstructionRegister::A);
+        cpu.execute_add(&InstructionRegister::A);
         assert_eq!(cpu.get_register(InstructionRegister::A), 10);
         assert_eq!(cpu.get_flag(Flag::Z), false);
 
         cpu.change_register(InstructionRegister::A, -5);
-        cpu.execute_add(InstructionRegister::A);
+        cpu.execute_add(&InstructionRegister::A);
         assert_eq!(cpu.get_register(InstructionRegister::A), -10);
         assert_eq!(cpu.get_flag(Flag::S), true);
 
         cpu.change_register(InstructionRegister::A, 127);
         cpu.change_register(InstructionRegister::B, 127);
         cpu.set_flag(Flag::C, true);
-        cpu.execute_add(InstructionRegister::B);
+        cpu.execute_add(&InstructionRegister::B);
         assert_eq!(cpu.get_register(InstructionRegister::A), -2);
         assert_eq!(cpu.get_flag(Flag::C), false);
 
         cpu.change_register(InstructionRegister::A, -64);
         cpu.change_register(InstructionRegister::B, 64);
-        cpu.execute_add(InstructionRegister::B);
+        cpu.execute_add(&InstructionRegister::B);
         assert_eq!(cpu.get_register(InstructionRegister::A), 0);
         assert_eq!(cpu.get_flag(Flag::C), true);
     }
@@ -722,25 +795,25 @@ mod tests {
 
         cpu.change_register(InstructionRegister::A, 10);
         cpu.set_flag(Flag::C, false);
-        cpu.execute_adc(InstructionRegister::A);
+        cpu.execute_adc(&InstructionRegister::A);
         assert_eq!(cpu.get_register(InstructionRegister::A), 20);
 
         cpu.change_register(InstructionRegister::A, 10);
         cpu.set_flag(Flag::C, true);
-        cpu.execute_adc(InstructionRegister::A);
+        cpu.execute_adc(&InstructionRegister::A);
         assert_eq!(cpu.get_register(InstructionRegister::A), 21);
 
         cpu.change_register(InstructionRegister::A, -64);
         cpu.change_register(InstructionRegister::B, 63);
         cpu.set_flag(Flag::C, true);
-        cpu.execute_adc(InstructionRegister::B);
+        cpu.execute_adc(&InstructionRegister::B);
         assert_eq!(cpu.get_register(InstructionRegister::A), 0);
         assert_eq!(cpu.get_flag(Flag::C), true);
 
         cpu.change_register(InstructionRegister::A, 15);
         cpu.change_register(InstructionRegister::B, 63);
         cpu.set_flag(Flag::C, true);
-        cpu.execute_adc(InstructionRegister::B);
+        cpu.execute_adc(&InstructionRegister::B);
         assert_eq!(cpu.get_register(InstructionRegister::A), 79);
         assert_eq!(cpu.get_flag(Flag::C), false);
     }
@@ -855,31 +928,31 @@ mod tests {
         let mut cpu = initialize_cpu();
         cpu.change_register(InstructionRegister::A, 5);
 
-        cpu.execute_sub(InstructionRegister::A);
+        cpu.execute_sub(&InstructionRegister::A);
         assert_eq!(cpu.get_register(InstructionRegister::A), 0);
         assert_eq!(cpu.get_flag(Flag::Z), true);
 
         cpu.change_register(InstructionRegister::A, -5);
-        cpu.execute_sub(InstructionRegister::A);
+        cpu.execute_sub(&InstructionRegister::A);
         assert_eq!(cpu.get_register(InstructionRegister::A), 0);
 
         cpu.change_register(InstructionRegister::A, 127);
         cpu.change_register(InstructionRegister::B, -1);
-        cpu.execute_sub(InstructionRegister::B);
+        cpu.execute_sub(&InstructionRegister::B);
         assert_eq!(cpu.get_register(InstructionRegister::A), -128);
         assert_eq!(cpu.get_flag(Flag::C), true);
 
         cpu.change_register(InstructionRegister::A, -59);
         cpu.change_register(InstructionRegister::B, -98);
         cpu.set_flag(Flag::C, true);
-        cpu.execute_sub(InstructionRegister::B);
+        cpu.execute_sub(&InstructionRegister::B);
         assert_eq!(cpu.get_register(InstructionRegister::A), 39);
         assert_eq!(cpu.get_flag(Flag::C), false);
 
         cpu.change_register(InstructionRegister::A, 12);
         cpu.change_register(InstructionRegister::B, -15);
         cpu.set_flag(Flag::C, false);
-        cpu.execute_sub(InstructionRegister::B);
+        cpu.execute_sub(&InstructionRegister::B);
         assert_eq!(cpu.get_register(InstructionRegister::A), 27);
         assert_eq!(cpu.get_flag(Flag::C), true);
     }
@@ -888,11 +961,11 @@ mod tests {
     fn test_execute_inr() {
         let mut cpu = initialize_cpu();
 
-        cpu.execute_inr(InstructionRegister::A);
+        cpu.execute_inr(&InstructionRegister::A);
         assert_eq!(cpu.get_register(InstructionRegister::A), 1);
 
         cpu.change_register(InstructionRegister::A, -2);
-        cpu.execute_inr(InstructionRegister::A);
+        cpu.execute_inr(&InstructionRegister::A);
         assert_eq!(cpu.get_register(InstructionRegister::A), -1);
         assert_eq!(cpu.get_flag(Flag::S), true);
     }
@@ -902,13 +975,13 @@ mod tests {
         let mut cpu = initialize_cpu();
         cpu.change_register(InstructionRegister::A, 1);
 
-        cpu.execute_dcr(InstructionRegister::A);
+        cpu.execute_dcr(&InstructionRegister::A);
         assert_eq!(cpu.get_register(InstructionRegister::A), 0);
         assert_eq!(cpu.get_flag(Flag::Z), true);
 
         cpu.change_register(InstructionRegister::A, -1);
 
-        cpu.execute_dcr(InstructionRegister::A);
+        cpu.execute_dcr(&InstructionRegister::A);
         assert_eq!(cpu.get_register(InstructionRegister::A), -2);
         assert_eq!(cpu.get_flag(Flag::S), true);
     }
@@ -919,7 +992,7 @@ mod tests {
         cpu.change_register(InstructionRegister::A, -10);
         cpu.change_register(InstructionRegister::B, -10);
 
-        cpu.execute_ana(InstructionRegister::B);
+        cpu.execute_ana(&InstructionRegister::B);
         assert_eq!(cpu.get_register(InstructionRegister::A), -10);
 
         // -15 11110001
@@ -927,7 +1000,7 @@ mod tests {
         // ANA 11110000
 
         cpu.change_register(InstructionRegister::A, -15);
-        cpu.execute_ana(InstructionRegister::B);
+        cpu.execute_ana(&InstructionRegister::B);
         assert_eq!(cpu.get_register(InstructionRegister::A), -16);
     }
 
@@ -1095,14 +1168,14 @@ mod tests {
         cpu.set_flag(Flag::C, true);
         cpu.change_register(InstructionRegister::A, 51);
         cpu.change_register(InstructionRegister::B, 15);
-        cpu.execute_ora(InstructionRegister::B);
+        cpu.execute_ora(&InstructionRegister::B);
         assert_eq!(cpu.get_flag(Flag::C), false);
         assert_eq!(cpu.get_register(InstructionRegister::A), 63);
 
         cpu.set_flag(Flag::C, false);
         cpu.change_register(InstructionRegister::A, -1);
         cpu.change_register(InstructionRegister::B, 0);
-        cpu.execute_ora(InstructionRegister::B);
+        cpu.execute_ora(&InstructionRegister::B);
         assert_eq!(cpu.get_flag(Flag::C), false);
         assert_eq!(cpu.get_register(InstructionRegister::A), -1);
     }
@@ -1128,7 +1201,7 @@ mod tests {
         cpu.change_register(InstructionRegister::B, 123);
         cpu.change_register(InstructionRegister::C, 17);
 
-        cpu.execute_stax(&vec![InstructionRegister::B, InstructionRegister::C]);
+        cpu.execute_stax(&InstructionRegisterPair::BC);
         assert_eq!(cpu.get_memory(31505), 42);
     }
 
@@ -1139,7 +1212,7 @@ mod tests {
         cpu.change_register(InstructionRegister::D, -109);
         cpu.change_register(InstructionRegister::E, -117);
         cpu.set_memory(37771, 42);
-        cpu.execute_ldax(&vec![InstructionRegister::D, InstructionRegister::E]);
+        cpu.execute_ldax(&InstructionRegisterPair::DE);
         assert_eq!(cpu.get_register(InstructionRegister::A), 42);
     }
 
@@ -1151,7 +1224,7 @@ mod tests {
         cpu.set_flag(Flag::Z, true);
         cpu.change_register(InstructionRegister::A, 10);
         cpu.change_register(InstructionRegister::E, -5);
-        cpu.execute_cmp(InstructionRegister::E);
+        cpu.execute_cmp(&InstructionRegister::E);
         assert_eq!(cpu.get_flag(Flag::C), false);
         assert_eq!(cpu.get_flag(Flag::Z), false);
 
@@ -1159,7 +1232,7 @@ mod tests {
         cpu.set_flag(Flag::Z, true);
         cpu.change_register(InstructionRegister::A, 2);
         cpu.change_register(InstructionRegister::E, -5);
-        cpu.execute_cmp(InstructionRegister::E);
+        cpu.execute_cmp(&InstructionRegister::E);
         assert_eq!(cpu.get_flag(Flag::C), true);
         assert_eq!(cpu.get_flag(Flag::Z), false);
 
@@ -1167,7 +1240,7 @@ mod tests {
         cpu.set_flag(Flag::Z, true);
         cpu.change_register(InstructionRegister::A, -27);
         cpu.change_register(InstructionRegister::E, -5);
-        cpu.execute_cmp(InstructionRegister::E);
+        cpu.execute_cmp(&InstructionRegister::E);
         assert_eq!(cpu.get_flag(Flag::C), false);
         assert_eq!(cpu.get_flag(Flag::Z), false);
     }
@@ -1178,14 +1251,14 @@ mod tests {
 
         cpu.set_flag(Flag::Z, false);
         cpu.change_register(InstructionRegister::A, 123);
-        cpu.execute_xra(InstructionRegister::A);
+        cpu.execute_xra(&InstructionRegister::A);
         assert_eq!(cpu.get_register(InstructionRegister::A), 0);
         assert_eq!(cpu.get_flag(Flag::Z), true);
 
         cpu.set_flag(Flag::Z, true);
         cpu.change_register(InstructionRegister::A, 92);
         cpu.change_register(InstructionRegister::B, 120);
-        cpu.execute_xra(InstructionRegister::B);
+        cpu.execute_xra(&InstructionRegister::B);
         assert_eq!(cpu.get_register(InstructionRegister::B), 36);
         assert_eq!(cpu.get_flag(Flag::Z), false);
     }
@@ -1198,7 +1271,7 @@ mod tests {
         cpu.set_flag(Flag::C, true);
         cpu.change_register(InstructionRegister::A, 4);
         cpu.change_register(InstructionRegister::L, 2);
-        cpu.execute_sbb(InstructionRegister::L);
+        cpu.execute_sbb(&InstructionRegister::L);
         assert_eq!(cpu.get_register(InstructionRegister::A), 1);
         assert_eq!(cpu.get_flag(Flag::Z), false);
         assert_eq!(cpu.get_flag(Flag::C), false);

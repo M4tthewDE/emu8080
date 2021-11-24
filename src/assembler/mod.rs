@@ -1,6 +1,6 @@
-use crate::assembler::parser::Encoding;
 pub use crate::assembler::parser::{
-    Instruction, InstructionCommand, InstructionRegister, InstructionType,
+    Instruction, InstructionArgument, InstructionCommand, InstructionRegister,
+    InstructionRegisterPair,
 };
 use std::fs::File;
 use std::io::{Read, Write};
@@ -30,9 +30,7 @@ impl Assembler {
         let mut file = File::create(&self.output_bin).unwrap();
         for instruction in instructions {
             let encoding = &instruction.encode();
-            for byte in encoding {
-                file.write_all(byte).unwrap();
-            }
+            file.write_all(encoding).unwrap();
         }
     }
 
@@ -64,339 +62,176 @@ impl Assembler {
             let instruction: Instruction;
             // instructions that take up more than one byte (intermediates)
             // MVI
-            if raw_instructions[index][0..2] == [0, 0]
-                && !matches!(
-                    InstructionRegister::decode(&raw_instructions[index][2..5]),
-                    InstructionRegister::Invalid
-                )
-                && raw_instructions[index][5..] == [1, 1, 0]
+            if raw_instructions[index][0..2] == [0, 0] && raw_instructions[index][5..] == [1, 1, 0]
             {
-                instruction = Instruction {
-                    variant: InstructionType::IntermediateReg,
-                    command: InstructionCommand::Mvi,
-                    registers: vec![InstructionRegister::decode(&raw_instructions[index][2..5])],
-                    intermediate: parser::binary_to_int(&mut raw_instructions[index + 1].to_vec()),
-                };
+                let register = InstructionRegister::decode(&raw_instructions[index][2..5]);
+                let intermediate = parser::binary_to_int(&mut raw_instructions[index + 1].to_vec());
+                instruction = Instruction::IntermediateRegister(
+                    InstructionCommand::Mvi,
+                    intermediate,
+                    register,
+                );
             // ADI
             } else if raw_instructions[index] == [1, 1, 0, 0, 0, 1, 1, 0] {
-                instruction = Instruction {
-                    variant: InstructionType::Intermediate,
-                    command: InstructionCommand::Adi,
-                    registers: vec![],
-                    intermediate: parser::binary_to_int(&mut raw_instructions[index + 1].to_vec()),
-                };
+                let intermediate = parser::binary_to_int(&mut raw_instructions[index + 1].to_vec());
+                instruction = Instruction::Intermediate(InstructionCommand::Adi, intermediate);
             // ACI
             } else if raw_instructions[index] == [1, 1, 0, 0, 1, 1, 1, 0] {
-                instruction = Instruction {
-                    variant: InstructionType::Intermediate,
-                    command: InstructionCommand::Aci,
-                    registers: vec![],
-                    intermediate: parser::binary_to_int(&mut raw_instructions[index + 1].to_vec()),
-                };
+                let intermediate = parser::binary_to_int(&mut raw_instructions[index + 1].to_vec());
+                instruction = Instruction::Intermediate(InstructionCommand::Aci, intermediate);
+            // SUI
             } else if raw_instructions[index] == [1, 1, 0, 1, 0, 1, 1, 0] {
-                instruction = Instruction {
-                    variant: InstructionType::Intermediate,
-                    command: InstructionCommand::Sui,
-                    registers: vec![],
-                    intermediate: parser::binary_to_int(&mut raw_instructions[index + 1].to_vec()),
-                };
+                let intermediate = parser::binary_to_int(&mut raw_instructions[index + 1].to_vec());
+                instruction = Instruction::Intermediate(InstructionCommand::Sui, intermediate);
+
             // instructions without registers
             // HLT
             } else if raw_instructions[index] == [0, 1, 1, 1, 0, 1, 1, 0] {
-                instruction = Instruction {
-                    variant: InstructionType::NoReg,
-                    command: InstructionCommand::Hlt,
-                    registers: Vec::new(),
-                    intermediate: 0,
-                };
+                instruction = Instruction::NoRegister(InstructionCommand::Hlt);
+
             // STC
             } else if raw_instructions[index] == [0, 0, 1, 1, 0, 1, 1, 1] {
-                instruction = Instruction {
-                    variant: InstructionType::NoReg,
-                    command: InstructionCommand::Stc,
-                    registers: Vec::new(),
-                    intermediate: 0,
-                }
+                instruction = Instruction::NoRegister(InstructionCommand::Stc);
+
             // CMC
             } else if raw_instructions[index] == [0, 0, 1, 1, 1, 1, 1, 1] {
-                instruction = Instruction {
-                    variant: InstructionType::NoReg,
-                    command: InstructionCommand::Cmc,
-                    registers: Vec::new(),
-                    intermediate: 0,
-                }
+                instruction = Instruction::NoRegister(InstructionCommand::Cmc);
+
             // CMA
             } else if raw_instructions[index] == [0, 0, 1, 0, 1, 1, 1, 1] {
-                instruction = Instruction {
-                    variant: InstructionType::NoReg,
-                    command: InstructionCommand::Cma,
-                    registers: Vec::new(),
-                    intermediate: 0,
-                }
+                instruction = Instruction::NoRegister(InstructionCommand::Cma);
+
             // RLC
             } else if raw_instructions[index] == [0, 0, 0, 0, 0, 1, 1, 1] {
-                instruction = Instruction {
-                    variant: InstructionType::NoReg,
-                    command: InstructionCommand::Rlc,
-                    registers: Vec::new(),
-                    intermediate: 0,
-                }
+                instruction = Instruction::NoRegister(InstructionCommand::Rlc);
+
             // RRC
             } else if raw_instructions[index] == [0, 0, 0, 0, 1, 1, 1, 1] {
-                instruction = Instruction {
-                    variant: InstructionType::NoReg,
-                    command: InstructionCommand::Rrc,
-                    registers: Vec::new(),
-                    intermediate: 0,
-                }
+                instruction = Instruction::NoRegister(InstructionCommand::Rrc);
+
             // RAL
             } else if raw_instructions[index] == [0, 0, 0, 1, 0, 1, 1, 1] {
-                instruction = Instruction {
-                    variant: InstructionType::NoReg,
-                    command: InstructionCommand::Ral,
-                    registers: Vec::new(),
-                    intermediate: 0,
-                }
+                instruction = Instruction::NoRegister(InstructionCommand::Ral);
+
             // RAR
             } else if raw_instructions[index] == [0, 0, 0, 1, 1, 1, 1, 1] {
-                instruction = Instruction {
-                    variant: InstructionType::NoReg,
-                    command: InstructionCommand::Rar,
-                    registers: Vec::new(),
-                    intermediate: 0,
-                }
+                instruction = Instruction::NoRegister(InstructionCommand::Rar);
+
             // DAA
             } else if raw_instructions[index] == [0, 0, 1, 0, 0, 1, 1, 1] {
-                instruction = Instruction {
-                    variant: InstructionType::NoReg,
-                    command: InstructionCommand::Daa,
-                    registers: Vec::new(),
-                    intermediate: 0,
-                }
+                instruction = Instruction::NoRegister(InstructionCommand::Daa);
+
             // XCHG
             } else if raw_instructions[index] == [1, 1, 1, 0, 1, 0, 1, 1] {
-                instruction = Instruction {
-                    variant: InstructionType::NoReg,
-                    command: InstructionCommand::Xchg,
-                    registers: Vec::new(),
-                    intermediate: 0,
-                }
+                instruction = Instruction::NoRegister(InstructionCommand::Xchg);
+
             // SPHL
             } else if raw_instructions[index] == [1, 1, 1, 1, 1, 0, 0, 1] {
-                instruction = Instruction {
-                    variant: InstructionType::NoReg,
-                    command: InstructionCommand::Sphl,
-                    registers: Vec::new(),
-                    intermediate: 0,
-                }
+                instruction = Instruction::NoRegister(InstructionCommand::Sphl);
+
             // XTHL
             } else if raw_instructions[index] == [1, 1, 1, 0, 0, 0, 1, 1] {
-                instruction = Instruction {
-                    variant: InstructionType::NoReg,
-                    command: InstructionCommand::Xthl,
-                    registers: Vec::new(),
-                    intermediate: 0,
-                }
+                instruction = Instruction::NoRegister(InstructionCommand::Xthl);
+
             // instructions with 1 argument in the end
             // ADD
-            } else if raw_instructions[index][0..5] == [1, 0, 0, 0, 0]
-                && !matches!(
-                    InstructionRegister::decode(&raw_instructions[index][5..]),
-                    InstructionRegister::Invalid
-                )
-            {
-                instruction = Instruction {
-                    variant: InstructionType::SingleReg,
-                    command: InstructionCommand::Add,
-                    registers: vec![InstructionRegister::decode(&raw_instructions[index][5..])],
-                    intermediate: 0,
-                }
+            } else if raw_instructions[index][0..5] == [1, 0, 0, 0, 0] {
+                let register = InstructionRegister::decode(&raw_instructions[index][5..]);
+                instruction = Instruction::SingleRegister(InstructionCommand::Add, register);
+
             // ADC
-            } else if raw_instructions[index][0..5] == [1, 0, 0, 0, 1]
-                && !matches!(
-                    InstructionRegister::decode(&raw_instructions[index][5..]),
-                    InstructionRegister::Invalid
-                )
-            {
-                instruction = Instruction {
-                    variant: InstructionType::SingleReg,
-                    command: InstructionCommand::Adc,
-                    registers: vec![InstructionRegister::decode(&raw_instructions[index][5..])],
-                    intermediate: 0,
-                }
+            } else if raw_instructions[index][0..5] == [1, 0, 0, 0, 1] {
+                let register = InstructionRegister::decode(&raw_instructions[index][5..]);
+                instruction = Instruction::SingleRegister(InstructionCommand::Adc, register);
+
             // SUB
-            } else if raw_instructions[index][0..5] == [1, 0, 0, 1, 0]
-                && !matches!(
-                    InstructionRegister::decode(&raw_instructions[index][5..]),
-                    InstructionRegister::Invalid
-                )
-            {
-                instruction = Instruction {
-                    variant: InstructionType::SingleReg,
-                    command: InstructionCommand::Sub,
-                    registers: vec![InstructionRegister::decode(&raw_instructions[index][5..])],
-                    intermediate: 0,
-                }
+            } else if raw_instructions[index][0..5] == [1, 0, 0, 1, 0] {
+                let register = InstructionRegister::decode(&raw_instructions[index][5..]);
+                instruction = Instruction::SingleRegister(InstructionCommand::Sub, register);
+
             // ANA
-            } else if raw_instructions[index][0..5] == [1, 0, 1, 0, 0]
-                && !matches!(
-                    InstructionRegister::decode(&raw_instructions[index][5..]),
-                    InstructionRegister::Invalid
-                )
-            {
-                instruction = Instruction {
-                    variant: InstructionType::SingleReg,
-                    command: InstructionCommand::Ana,
-                    registers: vec![InstructionRegister::decode(&raw_instructions[index][5..])],
-                    intermediate: 0,
-                }
+            } else if raw_instructions[index][0..5] == [1, 0, 1, 0, 0] {
+                let register = InstructionRegister::decode(&raw_instructions[index][5..]);
+                instruction = Instruction::SingleRegister(InstructionCommand::Ana, register);
+
             // ORA
-            } else if raw_instructions[index][0..5] == [1, 0, 1, 1, 0]
-                && !matches!(
-                    InstructionRegister::decode(&raw_instructions[index][5..]),
-                    InstructionRegister::Invalid
-                )
-            {
-                instruction = Instruction {
-                    variant: InstructionType::SingleReg,
-                    command: InstructionCommand::Ora,
-                    registers: vec![InstructionRegister::decode(&raw_instructions[index][5..])],
-                    intermediate: 0,
-                }
+            } else if raw_instructions[index][0..5] == [1, 0, 1, 1, 0] {
+                let register = InstructionRegister::decode(&raw_instructions[index][5..]);
+                instruction = Instruction::SingleRegister(InstructionCommand::Ora, register);
+
             // CMP
-            } else if raw_instructions[index][0..5] == [1, 0, 1, 1, 1]
-                && !matches!(
-                    InstructionRegister::decode(&raw_instructions[index][5..]),
-                    InstructionRegister::Invalid
-                )
-            {
-                instruction = Instruction {
-                    variant: InstructionType::SingleReg,
-                    command: InstructionCommand::Cmp,
-                    registers: vec![InstructionRegister::decode(&raw_instructions[index][5..])],
-                    intermediate: 0,
-                }
+            } else if raw_instructions[index][0..5] == [1, 0, 1, 1, 1] {
+                let register = InstructionRegister::decode(&raw_instructions[index][5..]);
+                instruction = Instruction::SingleRegister(InstructionCommand::Cmp, register);
+
             // XRA
-            } else if raw_instructions[index][0..5] == [1, 0, 1, 0, 1]
-                && !matches!(
-                    InstructionRegister::decode(&raw_instructions[index][5..]),
-                    InstructionRegister::Invalid
-                )
-            {
-                instruction = Instruction {
-                    variant: InstructionType::SingleReg,
-                    command: InstructionCommand::Xra,
-                    registers: vec![InstructionRegister::decode(&raw_instructions[index][5..])],
-                    intermediate: 0,
-                }
+            } else if raw_instructions[index][0..5] == [1, 0, 1, 0, 1] {
+                let register = InstructionRegister::decode(&raw_instructions[index][5..]);
+                instruction = Instruction::SingleRegister(InstructionCommand::Xra, register);
+
             // SBB
-            } else if raw_instructions[index][0..5] == [1, 0, 0, 1, 1]
-                && !matches!(
-                    InstructionRegister::decode(&raw_instructions[index][5..]),
-                    InstructionRegister::Invalid
-                )
-            {
-                instruction = Instruction {
-                    variant: InstructionType::SingleReg,
-                    command: InstructionCommand::Sbb,
-                    registers: vec![InstructionRegister::decode(&raw_instructions[index][5..])],
-                    intermediate: 0,
-                }
+            } else if raw_instructions[index][0..5] == [1, 0, 0, 1, 1] {
+                let register = InstructionRegister::decode(&raw_instructions[index][5..]);
+                instruction = Instruction::SingleRegister(InstructionCommand::Sbb, register);
+
             // instructions with 1 argument in the middle
             // instructions with a register pair
             // STAX
             } else if raw_instructions[index][0..3] == [0, 0, 0]
                 && raw_instructions[index][4..] == [0, 0, 1, 0]
             {
-                let registers: Vec<InstructionRegister>;
+                let register_pair: InstructionRegisterPair;
                 if raw_instructions[index][4] == 0 {
-                    registers = vec![InstructionRegister::B, InstructionRegister::C];
+                    register_pair = InstructionRegisterPair::BC;
                 } else {
-                    registers = vec![InstructionRegister::D, InstructionRegister::E];
+                    register_pair = InstructionRegisterPair::DE;
                 }
 
-                instruction = Instruction {
-                    variant: InstructionType::PairReg,
-                    command: InstructionCommand::Stax,
-                    registers,
-                    intermediate: 0,
-                }
+                instruction = Instruction::PairRegister(InstructionCommand::Stax, register_pair);
+
             // LDAX
             } else if raw_instructions[index][0..3] == [0, 0, 0]
                 && raw_instructions[index][4..] == [1, 0, 1, 0]
             {
-                let registers: Vec<InstructionRegister>;
+                let register_pair: InstructionRegisterPair;
                 if raw_instructions[index][4] == 0 {
-                    registers = vec![InstructionRegister::B, InstructionRegister::C];
+                    register_pair = InstructionRegisterPair::BC;
                 } else {
-                    registers = vec![InstructionRegister::D, InstructionRegister::E];
+                    register_pair = InstructionRegisterPair::DE;
                 }
 
-                instruction = Instruction {
-                    variant: InstructionType::PairReg,
-                    command: InstructionCommand::Ldax,
-                    registers,
-                    intermediate: 0,
-                }
+                instruction = Instruction::PairRegister(InstructionCommand::Ldax, register_pair);
+
             // instructions with 1 register in the middle
             // INR
             } else if raw_instructions[index][0..2] == [0, 0]
                 && raw_instructions[index][5..] == [1, 0, 0]
-                && !matches!(
-                    InstructionRegister::decode(&raw_instructions[index][2..5]),
-                    InstructionRegister::Invalid
-                )
             {
-                instruction = Instruction {
-                    variant: InstructionType::SingleReg,
-                    command: InstructionCommand::Inr,
-                    registers: vec![InstructionRegister::decode(&raw_instructions[index][2..5])],
-                    intermediate: 0,
-                }
+                let register = InstructionRegister::decode(&raw_instructions[index][2..5]);
+                instruction = Instruction::SingleRegister(InstructionCommand::Inr, register);
             // DCR
             } else if raw_instructions[index][0..2] == [0, 0]
                 && raw_instructions[index][5..] == [1, 0, 1]
-                && !matches!(
-                    InstructionRegister::decode(&raw_instructions[index][2..5]),
-                    InstructionRegister::Invalid
-                )
             {
-                instruction = Instruction {
-                    variant: InstructionType::SingleReg,
-                    command: InstructionCommand::Dcr,
-                    registers: vec![InstructionRegister::decode(&raw_instructions[index][2..5])],
-                    intermediate: 0,
-                }
+                let register = InstructionRegister::decode(&raw_instructions[index][2..5]);
+                instruction = Instruction::SingleRegister(InstructionCommand::Dcr, register);
+
             // instructions with 2 registers
             // MOV
-            } else if raw_instructions[index][0..2] == [0, 1]
-                && !matches!(
-                    InstructionRegister::decode(&raw_instructions[index][2..5]),
-                    InstructionRegister::Invalid
-                )
-                && !matches!(
-                    InstructionRegister::decode(&raw_instructions[index][5..]),
-                    InstructionRegister::Invalid
-                )
-            {
-                let args = vec![
+            } else if raw_instructions[index][0..2] == [0, 1] {
+                let registers = (
                     InstructionRegister::decode(&raw_instructions[index][2..5]),
                     InstructionRegister::decode(&raw_instructions[index][5..]),
-                ];
+                );
 
-                instruction = Instruction {
-                    variant: InstructionType::DoubleReg,
-                    command: InstructionCommand::Mov,
-                    registers: args,
-                    intermediate: 0,
-                }
+                instruction = Instruction::DoubleRegister(InstructionCommand::Mov, registers);
             } else {
                 panic!("Invalid instruction!");
             }
 
             // skip next byte since its the intermediate of the instruction that was just parsed
-            if matches!(instruction.variant, InstructionType::Intermediate)
-                || matches!(instruction.variant, InstructionType::IntermediateReg)
+            if matches!(instruction, Instruction::Intermediate(_, _))
+                || matches!(instruction, Instruction::IntermediateRegister(_, _, _))
             {
                 index += 2;
             } else {
@@ -410,8 +245,8 @@ impl Assembler {
 
 #[cfg(test)]
 mod tests {
-    use super::parser::{InstructionCommand, InstructionRegister, InstructionType};
     use super::Assembler;
+    use crate::assembler::parser::{Instruction, InstructionCommand, InstructionRegister};
     use std::fs::File;
     use std::io::Read;
 
@@ -470,216 +305,145 @@ mod tests {
         assert_eq!(bytes.next().unwrap(), [0, 1, 1, 1, 0, 1, 1, 0]);
     }
 
+    // TODO rework this test
     #[test]
     fn test_disassemble() {
         let assembler = Assembler::new("test.asm".to_owned(), "output".to_owned());
         assembler.assemble();
 
         let instructions = assembler.disassemble("output".to_owned());
-        assert_eq!(instructions.len(), 29);
 
-        assert!(matches!(
-            instructions[0].variant,
-            InstructionType::IntermediateReg
-        ));
-        assert!(matches!(instructions[0].command, InstructionCommand::Mvi));
-        assert!(matches!(
-            instructions[0].registers[0],
-            InstructionRegister::A
-        ));
-        assert_eq!(instructions[0].intermediate, 28);
-
-        assert!(matches!(
-            instructions[1].variant,
-            InstructionType::DoubleReg
-        ));
-        assert!(matches!(instructions[1].command, InstructionCommand::Mov));
-        assert!(matches!(
-            instructions[1].registers[0],
-            InstructionRegister::A
-        ));
-        assert!(matches!(
-            instructions[1].registers[1],
-            InstructionRegister::B
-        ));
-
-        assert!(matches!(
-            instructions[2].variant,
-            InstructionType::SingleReg
-        ));
-        assert!(matches!(instructions[2].command, InstructionCommand::Ana));
-        assert!(matches!(
-            instructions[2].registers[0],
-            InstructionRegister::B
-        ));
-
-        assert!(matches!(
-            instructions[3].variant,
-            InstructionType::SingleReg
-        ));
-        assert!(matches!(instructions[3].command, InstructionCommand::Add));
-        assert!(matches!(
-            instructions[3].registers[0],
-            InstructionRegister::A
-        ));
-
-        assert!(matches!(
-            instructions[4].variant,
-            InstructionType::SingleReg
-        ));
-        assert!(matches!(instructions[4].command, InstructionCommand::Sub));
-        assert!(matches!(
-            instructions[4].registers[0],
-            InstructionRegister::A
-        ));
-
-        assert!(matches!(
-            instructions[5].variant,
-            InstructionType::SingleReg
-        ));
-        assert!(matches!(instructions[5].command, InstructionCommand::Inr));
-        assert!(matches!(
-            instructions[5].registers[0],
-            InstructionRegister::A
-        ));
-
-        assert!(matches!(
-            instructions[6].variant,
-            InstructionType::SingleReg
-        ));
-        assert!(matches!(instructions[6].command, InstructionCommand::Dcr));
-        assert!(matches!(
-            instructions[6].registers[0],
-            InstructionRegister::A
-        ));
-
-        assert!(matches!(
-            instructions[7].variant,
-            InstructionType::Intermediate
-        ));
-        assert!(matches!(instructions[7].command, InstructionCommand::Adi));
-        assert_eq!(instructions[7].intermediate, -103);
-
-        assert!(matches!(instructions[8].variant, InstructionType::NoReg));
-        assert!(matches!(instructions[8].command, InstructionCommand::Stc));
-
-        assert!(matches!(instructions[9].variant, InstructionType::NoReg));
-        assert!(matches!(instructions[9].command, InstructionCommand::Cmc));
-
-        assert!(matches!(instructions[10].variant, InstructionType::NoReg));
-        assert!(matches!(instructions[10].command, InstructionCommand::Cma));
-
-        assert!(matches!(
-            instructions[11].variant,
-            InstructionType::SingleReg
-        ));
-        assert!(matches!(instructions[11].command, InstructionCommand::Adc));
-        assert!(matches!(
-            instructions[11].registers[0],
-            InstructionRegister::C
-        ));
-
-        assert!(matches!(
-            instructions[12].variant,
-            InstructionType::Intermediate
-        ));
-        assert!(matches!(instructions[12].command, InstructionCommand::Aci));
-        assert_eq!(instructions[12].intermediate, 12);
-
-        assert!(matches!(
-            instructions[12].variant,
-            InstructionType::Intermediate
-        ));
-        assert!(matches!(instructions[13].command, InstructionCommand::Sui));
-        assert_eq!(instructions[13].intermediate, 12);
-
-        assert!(matches!(instructions[14].variant, InstructionType::NoReg));
-        assert!(matches!(instructions[14].command, InstructionCommand::Rlc));
-
-        assert!(matches!(instructions[15].variant, InstructionType::NoReg));
-        assert!(matches!(instructions[15].command, InstructionCommand::Rrc));
-
-        assert!(matches!(instructions[16].variant, InstructionType::NoReg));
-        assert!(matches!(instructions[16].command, InstructionCommand::Ral));
-
-        assert!(matches!(instructions[17].variant, InstructionType::NoReg));
-        assert!(matches!(instructions[17].command, InstructionCommand::Rar));
-
-        assert!(matches!(
-            instructions[18].variant,
-            InstructionType::SingleReg
-        ));
-        assert!(matches!(
-            instructions[18].registers[0],
-            InstructionRegister::B
-        ));
-        assert!(matches!(instructions[18].command, InstructionCommand::Ora));
-
-        assert!(matches!(instructions[19].variant, InstructionType::NoReg));
-        assert!(matches!(instructions[19].command, InstructionCommand::Daa));
-
-        assert!(matches!(instructions[20].variant, InstructionType::PairReg));
-        assert!(matches!(instructions[20].command, InstructionCommand::Stax));
-        assert!(matches!(
-            instructions[20].registers[0],
-            InstructionRegister::B
-        ));
-        assert!(matches!(
-            instructions[20].registers[1],
-            InstructionRegister::C
-        ));
-
-        assert!(matches!(instructions[21].variant, InstructionType::PairReg));
-        assert!(matches!(instructions[21].command, InstructionCommand::Ldax));
-        assert!(matches!(
-            instructions[21].registers[0],
-            InstructionRegister::D
-        ));
-        assert!(matches!(
-            instructions[21].registers[1],
-            InstructionRegister::E
-        ));
-
-        assert!(matches!(
-            instructions[22].variant,
-            InstructionType::SingleReg
-        ));
-        assert!(matches!(
-            instructions[22].registers[0],
-            InstructionRegister::B
-        ));
-        assert!(matches!(instructions[22].command, InstructionCommand::Cmp));
-
-        assert!(matches!(
-            instructions[23].variant,
-            InstructionType::SingleReg
-        ));
-        assert!(matches!(
-            instructions[23].registers[0],
-            InstructionRegister::B
-        ));
-        assert!(matches!(instructions[23].command, InstructionCommand::Xra));
-
-        assert!(matches!(
-            instructions[24].variant,
-            InstructionType::SingleReg
-        ));
-        assert!(matches!(
-            instructions[24].registers[0],
-            InstructionRegister::B
-        ));
-        assert!(matches!(instructions[24].command, InstructionCommand::Sbb));
-
-        assert!(matches!(instructions[25].variant, InstructionType::NoReg));
-        assert!(matches!(instructions[25].command, InstructionCommand::Xchg));
-
-        assert!(matches!(instructions[26].variant, InstructionType::NoReg));
-        assert!(matches!(instructions[26].command, InstructionCommand::Sphl));
-
-        assert!(matches!(instructions[27].variant, InstructionType::NoReg));
-        assert!(matches!(instructions[27].command, InstructionCommand::Xthl));
-
-        assert!(matches!(instructions[28].variant, InstructionType::NoReg));
-        assert!(matches!(instructions[28].command, InstructionCommand::Hlt));
+        for (i, instruction) in instructions.iter().enumerate() {
+            match instruction {
+                Instruction::NoRegister(cmd) => match cmd {
+                    InstructionCommand::Stc => {
+                        assert_eq!(8, i);
+                    }
+                    InstructionCommand::Cmc => {
+                        assert_eq!(9, i);
+                    }
+                    InstructionCommand::Cma => {
+                        assert_eq!(10, i);
+                    }
+                    InstructionCommand::Rlc => {
+                        assert_eq!(14, i);
+                    }
+                    InstructionCommand::Rrc => {
+                        assert_eq!(15, i);
+                    }
+                    InstructionCommand::Ral => {
+                        assert_eq!(16, i);
+                    }
+                    InstructionCommand::Rar => {
+                        assert_eq!(17, i);
+                    }
+                    InstructionCommand::Daa => {
+                        assert_eq!(19, i);
+                    }
+                    InstructionCommand::Xchg => {
+                        assert_eq!(25, i);
+                    }
+                    InstructionCommand::Sphl => {
+                        assert_eq!(26, i);
+                    }
+                    InstructionCommand::Xthl => {
+                        assert_eq!(27, i);
+                    }
+                    InstructionCommand::Hlt => {
+                        assert_eq!(28, i);
+                    }
+                    _ => panic!("invalid instruction"),
+                },
+                Instruction::SingleRegister(cmd, register) => match cmd {
+                    InstructionCommand::Ana => {
+                        assert_eq!(2, i);
+                        assert!(matches!(register, InstructionRegister::B))
+                    }
+                    InstructionCommand::Add => {
+                        assert_eq!(3, i);
+                        assert!(matches!(register, InstructionRegister::A))
+                    }
+                    InstructionCommand::Sub => {
+                        assert_eq!(4, i);
+                        assert!(matches!(register, InstructionRegister::A))
+                    }
+                    InstructionCommand::Inr => {
+                        assert_eq!(5, i);
+                        assert!(matches!(register, InstructionRegister::A))
+                    }
+                    InstructionCommand::Dcr => {
+                        assert_eq!(6, i);
+                        assert!(matches!(register, InstructionRegister::A))
+                    }
+                    InstructionCommand::Adc => {
+                        assert_eq!(11, i);
+                        assert!(matches!(register, InstructionRegister::C))
+                    }
+                    InstructionCommand::Ora => {
+                        assert_eq!(18, i);
+                        assert!(matches!(register, InstructionRegister::B))
+                    }
+                    InstructionCommand::Cmp => {
+                        assert_eq!(22, i);
+                        assert!(matches!(register, InstructionRegister::B))
+                    }
+                    InstructionCommand::Xra => {
+                        assert_eq!(23, i);
+                        assert!(matches!(register, InstructionRegister::B))
+                    }
+                    InstructionCommand::Sbb => {
+                        assert_eq!(24, i);
+                        assert!(matches!(register, InstructionRegister::B));
+                    }
+                    _ => panic!("invalid instruction"),
+                },
+                Instruction::DoubleRegister(cmd, registers) => match cmd {
+                    InstructionCommand::Mov => {
+                        assert_eq!(1, i);
+                        assert!(matches!(registers.0, InstructionRegister::A));
+                        assert!(matches!(registers.1, InstructionRegister::B));
+                    }
+                    _ => panic!("invalid instruction"),
+                },
+                Instruction::Intermediate(cmd, intermediate) => match cmd {
+                    InstructionCommand::Adi => {
+                        assert_eq!(7, i);
+                        assert_eq!(-103, *intermediate);
+                    }
+                    InstructionCommand::Aci => {
+                        assert_eq!(12, i);
+                        assert_eq!(12, *intermediate);
+                    }
+                    InstructionCommand::Sui => {
+                        assert_eq!(13, i);
+                        assert_eq!(12, *intermediate);
+                    }
+                    _ => panic!("invalid instruction"),
+                },
+                Instruction::IntermediateRegister(cmd, intermediate, register) => match cmd {
+                    InstructionCommand::Mvi => {
+                        assert_eq!(0, i);
+                        assert!(matches!(register, InstructionRegister::A));
+                        assert_eq!(28, *intermediate);
+                    }
+                    _ => panic!("invalid instruction"),
+                },
+                Instruction::PairRegister(cmd, register_pair) => match cmd {
+                    InstructionCommand::Stax => {
+                        assert_eq!(20, i);
+                        let registers = register_pair.get_registers();
+                        assert!(matches!(registers.0, InstructionRegister::B));
+                        assert!(matches!(registers.1, InstructionRegister::C));
+                    }
+                    InstructionCommand::Ldax => {
+                        assert_eq!(21, i);
+                        let registers = register_pair.get_registers();
+                        assert!(matches!(registers.0, InstructionRegister::D));
+                        assert!(matches!(registers.1, InstructionRegister::E));
+                    }
+                    _ => panic!("invalid instruction"),
+                },
+            }
+        }
     }
 }
