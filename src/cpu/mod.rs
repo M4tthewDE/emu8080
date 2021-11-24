@@ -572,8 +572,6 @@ impl Cpu {
         let mut first_register = self.get_register(registers.0) as u16;
         let mut second_register = self.get_register(registers.1) as u16;
         let acc = self.get_register(InstructionRegister::A);
-        println!("{:?}", first_register);
-        println!("{:?}", second_register);
 
         // make sure first 8 bits are 0 because of negative numbers
         second_register &= 255;
