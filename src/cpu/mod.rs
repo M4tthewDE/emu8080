@@ -180,6 +180,7 @@ impl Cpu {
         match command {
             InstructionCommand::Stax => self.execute_stax(register_pair),
             InstructionCommand::Ldax => self.execute_ldax(register_pair),
+            InstructionCommand::Dcx => self.execute_dcx(register_pair),
             _ => panic!("invalid instruction"),
         }
     }
