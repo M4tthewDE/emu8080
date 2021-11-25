@@ -177,41 +177,26 @@ impl Assembler {
             // instructions with 1 argument in the middle
             // instructions with a register pair
             // STAX
-            } else if raw_instructions[index][0..3] == [0, 0, 0]
+            } else if raw_instructions[index][0..2] == [0, 0]
                 && raw_instructions[index][4..] == [0, 0, 1, 0]
             {
-                let register_pair: InstructionRegisterPair;
-                if raw_instructions[index][3] == 0 {
-                    register_pair = InstructionRegisterPair::BC;
-                } else {
-                    register_pair = InstructionRegisterPair::DE;
-                }
+                let register_pair = InstructionRegisterPair::decode(&raw_instructions[index][2..4]);
 
                 instruction = Instruction::PairRegister(InstructionCommand::Stax, register_pair);
 
             // LDAX
-            } else if raw_instructions[index][0..3] == [0, 0, 0]
+            } else if raw_instructions[index][0..3] == [0, 0]
                 && raw_instructions[index][4..] == [1, 0, 1, 0]
             {
-                let register_pair: InstructionRegisterPair;
-                if raw_instructions[index][3] == 0 {
-                    register_pair = InstructionRegisterPair::BC;
-                } else {
-                    register_pair = InstructionRegisterPair::DE;
-                }
+                let register_pair = InstructionRegisterPair::decode(&raw_instructions[index][2..4]);
 
                 instruction = Instruction::PairRegister(InstructionCommand::Ldax, register_pair);
 
             // DCX
-            } else if raw_instructions[index][0..3] == [0, 0, 0]
+            } else if raw_instructions[index][0..3] == [0, 0]
                 && raw_instructions[index][4..] == [1, 0, 1, 1]
             {
-                let register_pair: InstructionRegisterPair;
-                if raw_instructions[index][3] == 0 {
-                    register_pair = InstructionRegisterPair::BC;
-                } else {
-                    register_pair = InstructionRegisterPair::DE;
-                }
+                let register_pair = InstructionRegisterPair::decode(&raw_instructions[index][2..4]);
 
                 instruction = Instruction::PairRegister(InstructionCommand::Dcx, register_pair);
 
