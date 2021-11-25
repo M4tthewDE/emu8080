@@ -202,6 +202,19 @@ impl Assembler {
 
                 instruction = Instruction::PairRegister(InstructionCommand::Ldax, register_pair);
 
+            // DCX
+            } else if raw_instructions[index][0..3] == [0, 0, 0]
+                && raw_instructions[index][4..] == [1, 0, 1, 1]
+            {
+                let register_pair: InstructionRegisterPair;
+                if raw_instructions[index][3] == 0 {
+                    register_pair = InstructionRegisterPair::BC;
+                } else {
+                    register_pair = InstructionRegisterPair::DE;
+                }
+
+                instruction = Instruction::PairRegister(InstructionCommand::Dcx, register_pair);
+
             // instructions with 1 register in the middle
             // INR
             } else if raw_instructions[index][0..2] == [0, 0]
@@ -302,6 +315,7 @@ mod tests {
         assert_eq!(bytes.next().unwrap(), [1, 1, 1, 0, 1, 0, 1, 1]);
         assert_eq!(bytes.next().unwrap(), [1, 1, 1, 1, 1, 0, 0, 1]);
         assert_eq!(bytes.next().unwrap(), [1, 1, 1, 0, 0, 0, 1, 1]);
+        assert_eq!(bytes.next().unwrap(), [0, 0, 0, 0, 1, 0, 1, 1]);
         assert_eq!(bytes.next().unwrap(), [0, 1, 1, 1, 0, 1, 1, 0]);
     }
 
@@ -311,6 +325,7 @@ mod tests {
         assembler.assemble();
 
         let instructions = assembler.disassemble("output".to_owned());
+        assert_eq!(instructions.len(), 30);
 
         for (i, instruction) in instructions.iter().enumerate() {
             match instruction {
@@ -349,7 +364,7 @@ mod tests {
                         assert_eq!(27, i);
                     }
                     InstructionCommand::Hlt => {
-                        assert_eq!(28, i);
+                        assert_eq!(29, i);
                     }
                     _ => panic!("invalid instruction"),
                 },
@@ -439,6 +454,12 @@ mod tests {
                         let registers = register_pair.get_registers();
                         assert!(matches!(registers.0, InstructionRegister::D));
                         assert!(matches!(registers.1, InstructionRegister::E));
+                    }
+                    InstructionCommand::Dcx => {
+                        assert_eq!(28, i);
+                        let registers = register_pair.get_registers();
+                        assert!(matches!(registers.0, InstructionRegister::B));
+                        assert!(matches!(registers.1, InstructionRegister::C));
                     }
                     _ => panic!("invalid instruction"),
                 },

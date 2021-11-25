@@ -3,7 +3,6 @@ use crate::assembler::{
 };
 use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
-
 pub fn initialize_cpu() -> Cpu {
     Cpu {
         registers: vec![0; 8],
@@ -181,6 +180,7 @@ impl Cpu {
         match command {
             InstructionCommand::Stax => self.execute_stax(register_pair),
             InstructionCommand::Ldax => self.execute_ldax(register_pair),
+            InstructionCommand::Dcx => self.execute_dcx(register_pair),
             _ => panic!("invalid instruction"),
         }
     }
@@ -699,6 +699,24 @@ impl Cpu {
         self.change_register(InstructionRegister::H, memory_incr);
         self.set_memory(self.get_stack_pointer(), reg_l);
         self.set_memory(self.get_stack_pointer() + 1, reg_h);
+    }
+
+    fn execute_dcx(&mut self, register_pair: &InstructionRegisterPair) {
+        let registers = register_pair.get_registers();
+
+        let mut first_register = self.get_register(registers.0) as u16;
+        let mut second_register = self.get_register(registers.1) as u16;
+
+        // make sure first 8 bits are 0 because of negative numbers
+        second_register &= 255;
+
+        first_register <<= 8;
+
+        let mut value = first_register | second_register;
+        value = value.wrapping_sub(1);
+
+        self.change_register(registers.0, (value >> 8) as i8);
+        self.change_register(registers.1, (value & 255) as i8);
     }
 
     fn print_status(&self) {
@@ -1319,6 +1337,21 @@ mod tests {
         assert_eq!(cpu.get_register(InstructionRegister::L), -16);
         assert_eq!(cpu.get_memory(4269), 60);
         assert_eq!(cpu.get_memory(4270), 11);
+    }
+
+    #[test]
+    fn test_execute_dcx() {
+        let mut cpu = initialize_cpu();
+
+        cpu.execute_dcx(&InstructionRegisterPair::BC);
+        assert_eq!(cpu.get_register(InstructionRegister::B), -1);
+        assert_eq!(cpu.get_register(InstructionRegister::C), -1);
+
+        cpu.change_register(InstructionRegister::H, -104);
+        cpu.change_register(InstructionRegister::L, 0);
+        cpu.execute_dcx(&InstructionRegisterPair::HL);
+        assert_eq!(cpu.get_register(InstructionRegister::H), -105);
+        assert_eq!(cpu.get_register(InstructionRegister::L), -1);
     }
 
     #[test]

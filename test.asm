@@ -31,6 +31,8 @@ LABEL:
         XCHG
         SPHL
         XTHL
+        DCX B
 
 STOP:
         HLT
+
