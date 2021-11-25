@@ -46,13 +46,13 @@ impl Assembler {
 
         let mut raw_instructions = Vec::new();
         for chunk in binary_data.chunks(8) {
-            raw_instructions.push(chunk);
+            raw_instructions.push(chunk.to_vec());
         }
 
         self.parse_binary_instructions(&raw_instructions)
     }
 
-    fn parse_binary_instructions(&self, raw_instructions: &[&[u8]]) -> Vec<Instruction> {
+    fn parse_binary_instructions(&self, raw_instructions: &[Vec<u8>]) -> Vec<Instruction> {
         let mut instructions = Vec::new();
 
         let mut index = 0;
@@ -72,65 +72,65 @@ impl Assembler {
                     register,
                 );
             // ADI
-            } else if raw_instructions[index] == [1, 1, 0, 0, 0, 1, 1, 0] {
+            } else if raw_instructions[index] == vec![1, 1, 0, 0, 0, 1, 1, 0] {
                 let intermediate = parser::binary_to_int(&mut raw_instructions[index + 1].to_vec());
                 instruction = Instruction::Intermediate(InstructionCommand::Adi, intermediate);
             // ACI
-            } else if raw_instructions[index] == [1, 1, 0, 0, 1, 1, 1, 0] {
+            } else if raw_instructions[index] == vec![1, 1, 0, 0, 1, 1, 1, 0] {
                 let intermediate = parser::binary_to_int(&mut raw_instructions[index + 1].to_vec());
                 instruction = Instruction::Intermediate(InstructionCommand::Aci, intermediate);
             // SUI
-            } else if raw_instructions[index] == [1, 1, 0, 1, 0, 1, 1, 0] {
+            } else if raw_instructions[index] == vec![1, 1, 0, 1, 0, 1, 1, 0] {
                 let intermediate = parser::binary_to_int(&mut raw_instructions[index + 1].to_vec());
                 instruction = Instruction::Intermediate(InstructionCommand::Sui, intermediate);
 
             // instructions without registers
             // HLT
-            } else if raw_instructions[index] == [0, 1, 1, 1, 0, 1, 1, 0] {
+            } else if raw_instructions[index] == vec![0, 1, 1, 1, 0, 1, 1, 0] {
                 instruction = Instruction::NoRegister(InstructionCommand::Hlt);
 
             // STC
-            } else if raw_instructions[index] == [0, 0, 1, 1, 0, 1, 1, 1] {
+            } else if raw_instructions[index] == vec![0, 0, 1, 1, 0, 1, 1, 1] {
                 instruction = Instruction::NoRegister(InstructionCommand::Stc);
 
             // CMC
-            } else if raw_instructions[index] == [0, 0, 1, 1, 1, 1, 1, 1] {
+            } else if raw_instructions[index] == vec![0, 0, 1, 1, 1, 1, 1, 1] {
                 instruction = Instruction::NoRegister(InstructionCommand::Cmc);
 
             // CMA
-            } else if raw_instructions[index] == [0, 0, 1, 0, 1, 1, 1, 1] {
+            } else if raw_instructions[index] == vec![0, 0, 1, 0, 1, 1, 1, 1] {
                 instruction = Instruction::NoRegister(InstructionCommand::Cma);
 
             // RLC
-            } else if raw_instructions[index] == [0, 0, 0, 0, 0, 1, 1, 1] {
+            } else if raw_instructions[index] == vec![0, 0, 0, 0, 0, 1, 1, 1] {
                 instruction = Instruction::NoRegister(InstructionCommand::Rlc);
 
             // RRC
-            } else if raw_instructions[index] == [0, 0, 0, 0, 1, 1, 1, 1] {
+            } else if raw_instructions[index] == vec![0, 0, 0, 0, 1, 1, 1, 1] {
                 instruction = Instruction::NoRegister(InstructionCommand::Rrc);
 
             // RAL
-            } else if raw_instructions[index] == [0, 0, 0, 1, 0, 1, 1, 1] {
+            } else if raw_instructions[index] == vec![0, 0, 0, 1, 0, 1, 1, 1] {
                 instruction = Instruction::NoRegister(InstructionCommand::Ral);
 
             // RAR
-            } else if raw_instructions[index] == [0, 0, 0, 1, 1, 1, 1, 1] {
+            } else if raw_instructions[index] == vec![0, 0, 0, 1, 1, 1, 1, 1] {
                 instruction = Instruction::NoRegister(InstructionCommand::Rar);
 
             // DAA
-            } else if raw_instructions[index] == [0, 0, 1, 0, 0, 1, 1, 1] {
+            } else if raw_instructions[index] == vec![0, 0, 1, 0, 0, 1, 1, 1] {
                 instruction = Instruction::NoRegister(InstructionCommand::Daa);
 
             // XCHG
-            } else if raw_instructions[index] == [1, 1, 1, 0, 1, 0, 1, 1] {
+            } else if raw_instructions[index] == vec![1, 1, 1, 0, 1, 0, 1, 1] {
                 instruction = Instruction::NoRegister(InstructionCommand::Xchg);
 
             // SPHL
-            } else if raw_instructions[index] == [1, 1, 1, 1, 1, 0, 0, 1] {
+            } else if raw_instructions[index] == vec![1, 1, 1, 1, 1, 0, 0, 1] {
                 instruction = Instruction::NoRegister(InstructionCommand::Sphl);
 
             // XTHL
-            } else if raw_instructions[index] == [1, 1, 1, 0, 0, 0, 1, 1] {
+            } else if raw_instructions[index] == vec![1, 1, 1, 0, 0, 0, 1, 1] {
                 instruction = Instruction::NoRegister(InstructionCommand::Xthl);
 
             // instructions with 1 argument in the end
@@ -181,7 +181,7 @@ impl Assembler {
                 && raw_instructions[index][4..] == [0, 0, 1, 0]
             {
                 let register_pair: InstructionRegisterPair;
-                if raw_instructions[index][4] == 0 {
+                if raw_instructions[index][3] == 0 {
                     register_pair = InstructionRegisterPair::BC;
                 } else {
                     register_pair = InstructionRegisterPair::DE;
@@ -194,7 +194,7 @@ impl Assembler {
                 && raw_instructions[index][4..] == [1, 0, 1, 0]
             {
                 let register_pair: InstructionRegisterPair;
-                if raw_instructions[index][4] == 0 {
+                if raw_instructions[index][3] == 0 {
                     register_pair = InstructionRegisterPair::BC;
                 } else {
                     register_pair = InstructionRegisterPair::DE;
@@ -248,7 +248,7 @@ mod tests {
     use super::Assembler;
     use crate::assembler::parser::{Instruction, InstructionCommand, InstructionRegister};
     use std::fs::File;
-    use std::io::Read;
+    use std::io::{Read, Write};
 
     #[test]
     fn test_new() {
@@ -305,7 +305,6 @@ mod tests {
         assert_eq!(bytes.next().unwrap(), [0, 1, 1, 1, 0, 1, 1, 0]);
     }
 
-    // TODO rework this test
     #[test]
     fn test_disassemble() {
         let assembler = Assembler::new("test.asm".to_owned(), "output".to_owned());
@@ -444,6 +443,78 @@ mod tests {
                     _ => panic!("invalid instruction"),
                 },
             }
+        }
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_if_corrupted_binary_file() {
+        let mut file = File::create("output").unwrap();
+        file.write_all(&vec![0, 0, 0, 0]).unwrap();
+        let assembler = Assembler::new("test.asm".to_owned(), "output".to_owned());
+        assembler.disassemble("output".to_string());
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_if_unknown_instruction() {
+        let assembler = Assembler::new("test.asm".to_owned(), "output".to_owned());
+        let instruction = vec![vec![0, 0, 0, 0, 0, 0, 0, 1]];
+
+        assembler.parse_binary_instructions(&instruction);
+    }
+
+    // test ldax and sdax separately since only one register pair is tested
+    // in test_disassemble()
+    #[test]
+    fn test_stax_parsing() {
+        let assembler = Assembler::new("test.asm".to_owned(), "output".to_owned());
+        let instruction = vec![vec![0, 0, 0, 0, 0, 0, 1, 0]];
+
+        let instruction = &assembler.parse_binary_instructions(&instruction)[0];
+
+        if let Instruction::PairRegister(command, register_pair) = instruction {
+            let registers = register_pair.get_registers();
+            assert!(matches!(command, InstructionCommand::Stax));
+            assert!(matches!(registers.0, InstructionRegister::B));
+            assert!(matches!(registers.1, InstructionRegister::C));
+        }
+
+        let instruction = vec![vec![0, 0, 0, 1, 0, 0, 1, 0]];
+
+        let instruction = &assembler.parse_binary_instructions(&instruction)[0];
+
+        if let Instruction::PairRegister(command, register_pair) = instruction {
+            let registers = register_pair.get_registers();
+            assert!(matches!(command, InstructionCommand::Stax));
+            assert!(matches!(registers.0, InstructionRegister::D));
+            assert!(matches!(registers.1, InstructionRegister::E));
+        }
+    }
+
+    #[test]
+    fn test_ldax_parsing() {
+        let assembler = Assembler::new("test.asm".to_owned(), "output".to_owned());
+        let instruction = vec![vec![0, 0, 0, 0, 1, 0, 1, 0]];
+
+        let instruction = &assembler.parse_binary_instructions(&instruction)[0];
+
+        if let Instruction::PairRegister(command, register_pair) = instruction {
+            let registers = register_pair.get_registers();
+            assert!(matches!(command, InstructionCommand::Ldax));
+            assert!(matches!(registers.0, InstructionRegister::B));
+            assert!(matches!(registers.1, InstructionRegister::C));
+        }
+
+        let instruction = vec![vec![0, 0, 0, 1, 1, 0, 1, 0]];
+
+        let instruction = &assembler.parse_binary_instructions(&instruction)[0];
+
+        if let Instruction::PairRegister(command, register_pair) = instruction {
+            let registers = register_pair.get_registers();
+            assert!(matches!(command, InstructionCommand::Ldax));
+            assert!(matches!(registers.0, InstructionRegister::D));
+            assert!(matches!(registers.1, InstructionRegister::E));
         }
     }
 }
