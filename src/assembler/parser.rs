@@ -626,10 +626,10 @@ mod tests {
 
     #[test]
     fn test_register_pair_encoding() {
-        assert_eq!(InstructionRegisterPair::BC.encode(), &[0,0]);
-        assert_eq!(InstructionRegisterPair::DE.encode(), &[0,1]);
-        assert_eq!(InstructionRegisterPair::HL.encode(), &[1,0]);
-        assert_eq!(InstructionRegisterPair::SP.encode(), &[1,1]);
+        assert_eq!(InstructionRegisterPair::BC.encode(), &[0, 0]);
+        assert_eq!(InstructionRegisterPair::DE.encode(), &[0, 1]);
+        assert_eq!(InstructionRegisterPair::HL.encode(), &[1, 0]);
+        assert_eq!(InstructionRegisterPair::SP.encode(), &[1, 1]);
     }
 
     #[test]
