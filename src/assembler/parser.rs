@@ -634,6 +634,20 @@ mod tests {
             InstructionRegisterPair::decode(&[0, 1]),
             InstructionRegisterPair::DE
         ));
+        assert!(matches!(
+            InstructionRegisterPair::decode(&[1, 0]),
+            InstructionRegisterPair::HL
+        ));
+        assert!(matches!(
+            InstructionRegisterPair::decode(&[1, 1]),
+            InstructionRegisterPair::SP
+        ));
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_invalid_register_pair_decoding() {
+        InstructionRegisterPair::decode(&[1, 1, 1]);
     }
 
     #[test]
