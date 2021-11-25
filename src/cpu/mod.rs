@@ -702,6 +702,12 @@ impl Cpu {
     }
 
     fn execute_dcx(&mut self, register_pair: &InstructionRegisterPair) {
+        if matches!(register_pair, InstructionRegisterPair::SP) {
+            let current_value = self.get_memory(self.get_stack_pointer());
+            self.set_memory(self.get_stack_pointer(), current_value.wrapping_sub(1));
+            return
+        }
+
         let registers = register_pair.get_registers();
 
         let mut first_register = self.get_register(registers.0) as u16;
@@ -1352,6 +1358,10 @@ mod tests {
         cpu.execute_dcx(&InstructionRegisterPair::HL);
         assert_eq!(cpu.get_register(InstructionRegister::H), -105);
         assert_eq!(cpu.get_register(InstructionRegister::L), -1);
+
+        cpu.set_stack_pointer(345);
+        cpu.execute_dcx(&InstructionRegisterPair::SP);
+        assert_eq!(cpu.get_memory(cpu.get_stack_pointer()), -1);
     }
 
     #[test]
