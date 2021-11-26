@@ -78,13 +78,10 @@ impl Cpu {
 
             self.execute(&instruction);
 
-            match instruction {
-                Instruction::NoRegister(command) => {
-                    if matches!(command, InstructionCommand::Hlt) {
-                        return;
-                    }
+            if let Instruction::NoRegister(command) = instruction {
+                if matches!(command, InstructionCommand::Hlt) {
+                    return;
                 }
-                _ => (),
             }
 
             self.print_status();
