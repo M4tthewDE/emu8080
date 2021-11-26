@@ -712,8 +712,7 @@ impl Cpu {
 
     fn execute_dcx(&mut self, register_pair: &InstructionRegisterPair) {
         if matches!(register_pair, InstructionRegisterPair::SP) {
-            let current_value = self.get_memory(self.get_stack_pointer());
-            self.set_memory(self.get_stack_pointer(), current_value.wrapping_sub(1));
+            self.set_stack_pointer(self.get_stack_pointer().wrapping_sub(1));
             return
         }
 
@@ -1390,7 +1389,6 @@ mod tests {
         assert_eq!(cpu.get_memory(4270), 11);
     }
 
-    // FIXME decrement stackpointer, not memory at stackpointer location
     #[test]
     fn test_execute_dcx() {
         let mut cpu = initialize_cpu();
@@ -1405,9 +1403,8 @@ mod tests {
         assert_eq!(cpu.get_register(InstructionRegister::H), -105);
         assert_eq!(cpu.get_register(InstructionRegister::L), -1);
 
-        cpu.set_stack_pointer(345);
         cpu.execute_dcx(&InstructionRegisterPair::SP);
-        assert_eq!(cpu.get_memory(cpu.get_stack_pointer()), -1);
+        assert_eq!(cpu.get_stack_pointer(), 65535);
     }
 
     #[test]
