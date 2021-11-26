@@ -88,7 +88,6 @@ impl Cpu {
 
             self.print_status();
         }
-        panic!("test");
     }
 
     fn execute(&mut self, instruction: &Instruction) {
@@ -191,6 +190,7 @@ impl Cpu {
             InstructionCommand::Stax => self.execute_stax(register_pair),
             InstructionCommand::Ldax => self.execute_ldax(register_pair),
             InstructionCommand::Dcx => self.execute_dcx(register_pair),
+            InstructionCommand::Inx => self.execute_inx(register_pair),
             _ => panic!("invalid instruction"),
         }
     }

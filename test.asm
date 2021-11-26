@@ -32,6 +32,7 @@ LABEL:
         SPHL
         XTHL
         DCX B
+        INX SP
 
 STOP:
         HLT
