@@ -42,7 +42,7 @@ Programming Manual](http://dunfield.classiccmp.org/r/8080asm.pdf)
 - [ ] PUSH
 - [ ] POP
 - [ ] DAD
-- [ ] INX
+- [x] INX
 - [x] DCX
 - [x] XCHG
 - [x] XTHL
