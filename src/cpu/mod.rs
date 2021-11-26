@@ -808,6 +808,23 @@ mod tests {
         let instructions = assembler.disassemble("output".to_owned());
 
         cpu.run(instructions);
+
+        assert_eq!(cpu.get_register(InstructionRegister::A), -28);
+        assert_eq!(cpu.get_register(InstructionRegister::B), 27);
+        assert_eq!(cpu.get_register(InstructionRegister::C), -1);
+        assert_eq!(cpu.get_register(InstructionRegister::D), 0);
+        assert_eq!(cpu.get_register(InstructionRegister::E), 0);
+        assert_eq!(cpu.get_register(InstructionRegister::H), 0);
+        assert_eq!(cpu.get_register(InstructionRegister::L), 0);
+
+        assert_eq!(cpu.get_flag(Flag::S), false);
+        assert_eq!(cpu.get_flag(Flag::Z), false);
+        assert_eq!(cpu.get_flag(Flag::A), true);
+        assert_eq!(cpu.get_flag(Flag::P), false);
+        assert_eq!(cpu.get_flag(Flag::C), true);
+
+        assert_eq!(cpu.get_stack_pointer(), 1);
+        assert_eq!(cpu.get_memory(7168), -124);
     }
 
     #[test]
