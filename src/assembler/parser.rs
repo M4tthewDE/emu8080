@@ -103,15 +103,21 @@ pub fn parse(file_name: String) -> (Vec<Instruction>, Vec<Label>) {
                 }
                 Rule::pair_reg_command => {
                     let register_pair: InstructionRegisterPair;
-                    match InstructionRegister::from_str(pairs.peek().unwrap().as_str()).unwrap() {
-                        InstructionRegister::B | InstructionRegister::C => {
-                            register_pair = InstructionRegisterPair::BC
+
+                    let unparsed_register = pairs.peek().unwrap().as_str();
+
+                    // TODO make this prettier
+                    if unparsed_register == "SP" {
+                        register_pair = InstructionRegisterPair::SP;
+                    } else {
+                        match InstructionRegister::from_str(unparsed_register).unwrap() {
+                            InstructionRegister::B => register_pair = InstructionRegisterPair::BC,
+                            InstructionRegister::D => register_pair = InstructionRegisterPair::DE,
+                            InstructionRegister::H => register_pair = InstructionRegisterPair::DE,
+                            _ => panic!("invalid register"),
                         }
-                        InstructionRegister::D | InstructionRegister::E => {
-                            register_pair = InstructionRegisterPair::DE
-                        }
-                        _ => panic!("invalid register"),
                     }
+
                     pairs.next();
 
                     let instruction = Instruction::PairRegister(command, register_pair);
@@ -215,6 +221,8 @@ pub enum InstructionCommand {
     Xthl,
     #[strum(serialize = "DCX")]
     Dcx,
+    #[strum(serialize = "INX")]
+    Inx,
     #[strum(serialize = "HLT")]
     Hlt,
 }
@@ -519,6 +527,12 @@ impl Instruction {
                     InstructionCommand::Dcx => {
                         base_result.append(&mut register_pair.encode());
                         base_result.append(&mut vec![1, 0, 1, 1]);
+
+                        base_result
+                    }
+                    InstructionCommand::Inx => {
+                        base_result.append(&mut register_pair.encode());
+                        base_result.append(&mut vec![0, 0, 1, 1]);
 
                         base_result
                     }

@@ -77,6 +77,16 @@ impl Cpu {
             println!("{:?}", instruction);
 
             self.execute(&instruction);
+
+            match instruction {
+                Instruction::NoRegister(command) => {
+                    if matches!(command, InstructionCommand::Hlt) {
+                        return;
+                    }
+                }
+                _ => (),
+            }
+
             self.print_status();
         }
     }
@@ -181,6 +191,7 @@ impl Cpu {
             InstructionCommand::Stax => self.execute_stax(register_pair),
             InstructionCommand::Ldax => self.execute_ldax(register_pair),
             InstructionCommand::Dcx => self.execute_dcx(register_pair),
+            InstructionCommand::Inx => self.execute_inx(register_pair),
             _ => panic!("invalid instruction"),
         }
     }
@@ -428,7 +439,6 @@ impl Cpu {
         println!("Execution finished");
         println!("Final status: ");
         self.print_status();
-        std::process::exit(0);
     }
 
     fn execute_stc(&mut self) {
@@ -703,9 +713,8 @@ impl Cpu {
 
     fn execute_dcx(&mut self, register_pair: &InstructionRegisterPair) {
         if matches!(register_pair, InstructionRegisterPair::SP) {
-            let current_value = self.get_memory(self.get_stack_pointer());
-            self.set_memory(self.get_stack_pointer(), current_value.wrapping_sub(1));
-            return
+            self.set_stack_pointer(self.get_stack_pointer().wrapping_sub(1));
+            return;
         }
 
         let registers = register_pair.get_registers();
@@ -720,6 +729,29 @@ impl Cpu {
 
         let mut value = first_register | second_register;
         value = value.wrapping_sub(1);
+
+        self.change_register(registers.0, (value >> 8) as i8);
+        self.change_register(registers.1, (value & 255) as i8);
+    }
+
+    fn execute_inx(&mut self, register_pair: &InstructionRegisterPair) {
+        if matches!(register_pair, InstructionRegisterPair::SP) {
+            self.set_stack_pointer(self.get_stack_pointer().wrapping_add(1));
+            return;
+        }
+
+        let registers = register_pair.get_registers();
+
+        let mut first_register = self.get_register(registers.0) as u16;
+        let mut second_register = self.get_register(registers.1) as u16;
+
+        // make sure first 8 bits are 0 because of negative numbers
+        second_register &= 255;
+
+        first_register <<= 8;
+
+        let mut value = first_register | second_register;
+        value = value.wrapping_add(1);
 
         self.change_register(registers.0, (value >> 8) as i8);
         self.change_register(registers.1, (value & 255) as i8);
@@ -763,7 +795,20 @@ impl Cpu {
 #[cfg(test)]
 mod tests {
     use super::initialize_cpu;
+    use crate::assembler;
     use crate::cpu::{Flag, InstructionRegister, InstructionRegisterPair};
+
+    #[test]
+    fn test_execute_end_to_end() {
+        let mut cpu = initialize_cpu();
+
+        let assembler = assembler::Assembler::new("test.asm".to_owned(), "output".to_owned());
+
+        assembler.assemble();
+        let instructions = assembler.disassemble("output".to_owned());
+
+        cpu.run(instructions);
+    }
 
     #[test]
     fn test_execute_mvi() {
@@ -1359,9 +1404,27 @@ mod tests {
         assert_eq!(cpu.get_register(InstructionRegister::H), -105);
         assert_eq!(cpu.get_register(InstructionRegister::L), -1);
 
-        cpu.set_stack_pointer(345);
         cpu.execute_dcx(&InstructionRegisterPair::SP);
-        assert_eq!(cpu.get_memory(cpu.get_stack_pointer()), -1);
+        assert_eq!(cpu.get_stack_pointer(), 65535);
+    }
+
+    #[test]
+    fn test_execute_inx() {
+        let mut cpu = initialize_cpu();
+
+        cpu.execute_inx(&InstructionRegisterPair::BC);
+        assert_eq!(cpu.get_register(InstructionRegister::B), 0);
+        assert_eq!(cpu.get_register(InstructionRegister::C), 1);
+
+        cpu.change_register(InstructionRegister::D, 56);
+        cpu.change_register(InstructionRegister::E, -1);
+        cpu.execute_inx(&InstructionRegisterPair::DE);
+        assert_eq!(cpu.get_register(InstructionRegister::D), 57);
+        assert_eq!(cpu.get_register(InstructionRegister::E), 0);
+
+        cpu.set_stack_pointer(65535);
+        cpu.execute_inx(&InstructionRegisterPair::SP);
+        assert_eq!(cpu.get_stack_pointer(), 0);
     }
 
     #[test]
