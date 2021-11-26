@@ -12,7 +12,8 @@ pub fn initialize_cpu() -> Cpu {
     }
 }
 
-#[derive(Debug)] pub struct Cpu {
+#[derive(Debug)]
+pub struct Cpu {
     registers: Vec<i8>,
     memory: Vec<i8>,
     stack_pointer: u16,
@@ -80,9 +81,9 @@ impl Cpu {
             match instruction {
                 Instruction::NoRegister(command) => {
                     if matches!(command, InstructionCommand::Hlt) {
-                       return
+                        return;
                     }
-                },
+                }
                 _ => (),
             }
 
@@ -713,7 +714,7 @@ impl Cpu {
     fn execute_dcx(&mut self, register_pair: &InstructionRegisterPair) {
         if matches!(register_pair, InstructionRegisterPair::SP) {
             self.set_stack_pointer(self.get_stack_pointer().wrapping_sub(1));
-            return
+            return;
         }
 
         let registers = register_pair.get_registers();
@@ -736,7 +737,7 @@ impl Cpu {
     fn execute_inx(&mut self, register_pair: &InstructionRegisterPair) {
         if matches!(register_pair, InstructionRegisterPair::SP) {
             self.set_stack_pointer(self.get_stack_pointer().wrapping_add(1));
-            return
+            return;
         }
 
         let registers = register_pair.get_registers();
@@ -794,8 +795,8 @@ impl Cpu {
 #[cfg(test)]
 mod tests {
     use super::initialize_cpu;
-    use crate::cpu::{Flag, InstructionRegister, InstructionRegisterPair};
     use crate::assembler;
+    use crate::cpu::{Flag, InstructionRegister, InstructionRegisterPair};
 
     #[test]
     fn test_execute_end_to_end() {

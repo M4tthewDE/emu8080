@@ -15,4 +15,3 @@ fn main() {
 
     cpu.run(instructions);
 }
-

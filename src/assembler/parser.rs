@@ -103,26 +103,21 @@ pub fn parse(file_name: String) -> (Vec<Instruction>, Vec<Label>) {
                 }
                 Rule::pair_reg_command => {
                     let register_pair: InstructionRegisterPair;
-                    
+
                     let unparsed_register = pairs.peek().unwrap().as_str();
 
+                    // TODO make this prettier
                     if unparsed_register == "SP" {
                         register_pair = InstructionRegisterPair::SP;
                     } else {
                         match InstructionRegister::from_str(unparsed_register).unwrap() {
-                            InstructionRegister::B => {
-                                register_pair = InstructionRegisterPair::BC
-                            }
-                            InstructionRegister::D=> {
-                                register_pair = InstructionRegisterPair::DE
-                            },
-                            InstructionRegister::H => {
-                                register_pair = InstructionRegisterPair::DE
-                            }
+                            InstructionRegister::B => register_pair = InstructionRegisterPair::BC,
+                            InstructionRegister::D => register_pair = InstructionRegisterPair::DE,
+                            InstructionRegister::H => register_pair = InstructionRegisterPair::DE,
                             _ => panic!("invalid register"),
                         }
                     }
-                    
+
                     pairs.next();
 
                     let instruction = Instruction::PairRegister(command, register_pair);

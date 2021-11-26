@@ -181,7 +181,9 @@ impl Assembler {
                 && raw_instructions[index][4..] == [0, 0, 1, 0]
             {
                 let register_pair = InstructionRegisterPair::decode(&raw_instructions[index][2..4]);
-                if matches!(register_pair, InstructionRegisterPair::HL) | matches!(register_pair, InstructionRegisterPair::SP) {
+                if matches!(register_pair, InstructionRegisterPair::HL)
+                    | matches!(register_pair, InstructionRegisterPair::SP)
+                {
                     panic!("cannot use SP or HL in this instruction");
                 }
 
@@ -193,7 +195,9 @@ impl Assembler {
             {
                 let register_pair = InstructionRegisterPair::decode(&raw_instructions[index][2..4]);
 
-                if matches!(register_pair, InstructionRegisterPair::HL) | matches!(register_pair, InstructionRegisterPair::SP) {
+                if matches!(register_pair, InstructionRegisterPair::HL)
+                    | matches!(register_pair, InstructionRegisterPair::SP)
+                {
                     panic!("cannot use SP or HL in this instruction");
                 }
 
@@ -259,7 +263,9 @@ impl Assembler {
 #[cfg(test)]
 mod tests {
     use super::Assembler;
-    use crate::assembler::parser::{Instruction, InstructionCommand, InstructionRegister, InstructionRegisterPair};
+    use crate::assembler::parser::{
+        Instruction, InstructionCommand, InstructionRegister, InstructionRegisterPair,
+    };
     use std::fs::File;
     use std::io::{Read, Write};
 
