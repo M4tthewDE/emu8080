@@ -223,6 +223,8 @@ pub enum InstructionCommand {
     Dcx,
     #[strum(serialize = "INX")]
     Inx,
+    #[strum(serialize = "DAD")]
+    Dad,
     #[strum(serialize = "HLT")]
     Hlt,
 }
@@ -533,6 +535,12 @@ impl Instruction {
                     InstructionCommand::Inx => {
                         base_result.append(&mut register_pair.encode());
                         base_result.append(&mut vec![0, 0, 1, 1]);
+
+                        base_result
+                    }
+                    InstructionCommand::Dad => {
+                        base_result.append(&mut register_pair.encode());
+                        base_result.append(&mut vec![1, 0, 0, 1]);
 
                         base_result
                     }

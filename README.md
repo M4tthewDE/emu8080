@@ -41,7 +41,7 @@ Programming Manual](http://dunfield.classiccmp.org/r/8080asm.pdf)
 ## Register Pair Instructions
 - [ ] PUSH
 - [ ] POP
-- [ ] DAD
+- [x] DAD
 - [x] INX
 - [x] DCX
 - [x] XCHG

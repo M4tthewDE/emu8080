@@ -21,7 +21,6 @@ pub struct Cpu {
     // S Z x A x P x C
     flags: Vec<bool>,
 }
-
 #[derive(Debug, EnumIter, Clone)]
 enum Flag {
     S,
@@ -189,6 +188,7 @@ impl Cpu {
             InstructionCommand::Ldax => self.execute_ldax(register_pair),
             InstructionCommand::Dcx => self.execute_dcx(register_pair),
             InstructionCommand::Inx => self.execute_inx(register_pair),
+            InstructionCommand::Dad => self.execute_dad(register_pair),
             _ => panic!("invalid instruction"),
         }
     }
@@ -754,6 +754,45 @@ impl Cpu {
         self.change_register(registers.1, (value & 255) as i8);
     }
 
+    fn execute_dad(&mut self, register_pair: &InstructionRegisterPair) {
+        let value: u16;
+        if matches!(register_pair, InstructionRegisterPair::SP) {
+            value = self.get_stack_pointer();
+        } else {
+            let registers = register_pair.get_registers();
+
+            let mut first_register = self.get_register(registers.0) as u16;
+            let mut second_register = self.get_register(registers.1) as u16;
+
+            // make sure first 8 bits are 0 because of negative numbers
+            second_register &= 255;
+
+            first_register <<= 8;
+
+            value = first_register | second_register;
+        }
+
+        let mut h_register = self.get_register(InstructionRegister::H) as u16;
+        let mut l_register = self.get_register(InstructionRegister::L) as u16;
+
+        // make sure first 8 bits are 0 because of negative numbers
+        l_register &= 255;
+
+        h_register <<= 8;
+
+        let hl_value = h_register | l_register;
+        let result = value.wrapping_add(hl_value);
+
+        self.change_register(InstructionRegister::H, (result >> 8) as i8);
+        self.change_register(InstructionRegister::L, (result & 255) as i8);
+
+        if ((value as u32) + (hl_value as u32)) > 65535 {
+            self.set_flag(Flag::C, true);
+        } else {
+            self.set_flag(Flag::C, false);
+        }
+    }
+
     fn print_status(&self) {
         for i in 0..7 {
             println!(
@@ -811,14 +850,14 @@ mod tests {
         assert_eq!(cpu.get_register(InstructionRegister::C), -1);
         assert_eq!(cpu.get_register(InstructionRegister::D), 0);
         assert_eq!(cpu.get_register(InstructionRegister::E), 0);
-        assert_eq!(cpu.get_register(InstructionRegister::H), 0);
-        assert_eq!(cpu.get_register(InstructionRegister::L), 0);
+        assert_eq!(cpu.get_register(InstructionRegister::H), 27);
+        assert_eq!(cpu.get_register(InstructionRegister::L), -1);
 
         assert_eq!(cpu.get_flag(Flag::S), false);
         assert_eq!(cpu.get_flag(Flag::Z), false);
         assert_eq!(cpu.get_flag(Flag::A), true);
         assert_eq!(cpu.get_flag(Flag::P), false);
-        assert_eq!(cpu.get_flag(Flag::C), true);
+        assert_eq!(cpu.get_flag(Flag::C), false);
 
         assert_eq!(cpu.get_stack_pointer(), 1);
         assert_eq!(cpu.get_memory(7168), -124);
@@ -1439,6 +1478,32 @@ mod tests {
         cpu.set_stack_pointer(65535);
         cpu.execute_inx(&InstructionRegisterPair::SP);
         assert_eq!(cpu.get_stack_pointer(), 0);
+    }
+
+    #[test]
+    fn test_execute_dad() {
+        let mut cpu = initialize_cpu();
+
+        cpu.set_flag(Flag::C, true);
+        cpu.change_register(InstructionRegister::B, 51);
+        cpu.change_register(InstructionRegister::C, -97);
+        cpu.change_register(InstructionRegister::H, -95);
+        cpu.change_register(InstructionRegister::L, 123);
+        cpu.execute_dad(&InstructionRegisterPair::BC);
+
+        assert_eq!(cpu.get_register(InstructionRegister::H), -43);
+        assert_eq!(cpu.get_register(InstructionRegister::L), 26);
+        assert_eq!(cpu.get_flag(Flag::C), false);
+
+        cpu.set_flag(Flag::C, false);
+        cpu.set_stack_pointer(1);
+        cpu.change_register(InstructionRegister::H, -1);
+        cpu.change_register(InstructionRegister::L, -1);
+        cpu.execute_dad(&InstructionRegisterPair::SP);
+
+        assert_eq!(cpu.get_register(InstructionRegister::H), 0);
+        assert_eq!(cpu.get_register(InstructionRegister::L), 0);
+        assert_eq!(cpu.get_flag(Flag::C), true);
     }
 
     #[test]
