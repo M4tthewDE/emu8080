@@ -35,10 +35,11 @@ impl Assembler {
     }
 
     pub fn disassemble(&self, input_bin: String) -> Vec<Instruction> {
-        let mut file = File::open(input_bin).unwrap();
+        let mut file = File::open(input_bin.to_owned()).unwrap();
         let mut binary_data = Vec::new();
 
         file.read_to_end(&mut binary_data).unwrap();
+        std::fs::remove_file(input_bin).unwrap();
 
         if binary_data.len() % 8 != 0 {
             panic!("Data is not proper length!");
@@ -271,22 +272,25 @@ mod tests {
 
     #[test]
     fn test_new() {
-        let assembler = Assembler::new("test.asm".to_owned(), "output".to_owned());
+        let assembler = Assembler::new("test.asm".to_owned(), "test_new_binary".to_owned());
         assert_eq!("test.asm", assembler.input_asm);
-        assert_eq!("output", assembler.output_bin);
+        assert_eq!("test_new_binary", assembler.output_bin);
     }
 
     #[test]
     fn test_assemble() {
-        let assembler = Assembler::new("test.asm".to_owned(), "output".to_owned());
+        let assembler = Assembler::new("test.asm".to_owned(), "test_assemble_binary".to_owned());
         assembler.assemble();
 
-        let mut file = File::open("output").unwrap();
+        let mut file = File::open("test_assemble_binary").unwrap();
         let mut binary_data = Vec::new();
 
         file.read_to_end(&mut binary_data).unwrap();
+        std::fs::remove_file("test_assemble_binary").unwrap();
 
         assert_eq!(binary_data.len() % 8, 0);
+        assert_eq!(binary_data.len(), 280);
+        println!("{:?}", binary_data);
 
         let mut bytes = binary_data.chunks(8);
         assert_eq!(bytes.next().unwrap(), [0, 0, 1, 1, 1, 1, 1, 0]);
@@ -328,10 +332,10 @@ mod tests {
 
     #[test]
     fn test_disassemble() {
-        let assembler = Assembler::new("test.asm".to_owned(), "output".to_owned());
+        let assembler = Assembler::new("test.asm".to_owned(), "test_disassemble_binary".to_owned());
         assembler.assemble();
 
-        let instructions = assembler.disassemble("output".to_owned());
+        let instructions = assembler.disassemble("test_disassemble_binary".to_owned());
         assert_eq!(instructions.len(), 31);
 
         for (i, instruction) in instructions.iter().enumerate() {
@@ -491,7 +495,10 @@ mod tests {
     #[test]
     #[should_panic]
     fn test_if_unknown_instruction() {
-        let assembler = Assembler::new("test.asm".to_owned(), "output".to_owned());
+        let assembler = Assembler::new(
+            "test.asm".to_owned(),
+            "test_if_unknown_instruction_binary".to_owned(),
+        );
         let instruction = vec![vec![0, 0, 0, 0, 0, 0, 0, 1]];
 
         assembler.parse_binary_instructions(&instruction);
@@ -501,7 +508,8 @@ mod tests {
     // in test_disassemble()
     #[test]
     fn test_stax_parsing() {
-        let assembler = Assembler::new("test.asm".to_owned(), "output".to_owned());
+        let assembler =
+            Assembler::new("test.asm".to_owned(), "test_stax_parsing_binary".to_owned());
         let instruction = vec![vec![0, 0, 0, 0, 0, 0, 1, 0]];
 
         let instruction = &assembler.parse_binary_instructions(&instruction)[0];
@@ -527,7 +535,8 @@ mod tests {
 
     #[test]
     fn test_ldax_parsing() {
-        let assembler = Assembler::new("test.asm".to_owned(), "output".to_owned());
+        let assembler =
+            Assembler::new("test.asm".to_owned(), "test_ldax_parsing_binary".to_owned());
         let instruction = vec![vec![0, 0, 0, 0, 1, 0, 1, 0]];
 
         let instruction = &assembler.parse_binary_instructions(&instruction)[0];
