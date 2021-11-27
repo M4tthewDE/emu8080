@@ -267,7 +267,7 @@ mod tests {
         Instruction, InstructionCommand, InstructionRegister, InstructionRegisterPair,
     };
     use std::fs::File;
-    use std::io::{Read, Write};
+    use std::io::Read;
 
     #[test]
     fn test_new() {
@@ -481,10 +481,11 @@ mod tests {
     #[test]
     #[should_panic]
     fn test_if_corrupted_binary_file() {
-        let mut file = File::create("output").unwrap();
-        file.write_all(&vec![0, 0, 0, 0]).unwrap();
-        let assembler = Assembler::new("test.asm".to_owned(), "output".to_owned());
-        assembler.disassemble("output".to_string());
+        let assembler = Assembler::new(
+            "test.asm".to_owned(),
+            "data/test/corrupted_binary_file".to_owned(),
+        );
+        assembler.disassemble("data/test/corrupted_binary_file".to_string());
     }
 
     #[test]
