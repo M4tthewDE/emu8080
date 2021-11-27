@@ -26,7 +26,6 @@ impl Assembler {
         let instructions = parse_result.0;
 
         // write to file
-        // TODO maybe write hex data instead of binary
         let mut file = File::create(&self.output_bin).unwrap();
         for instruction in instructions {
             let encoding = &instruction.encode();
