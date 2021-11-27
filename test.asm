@@ -33,6 +33,7 @@ LABEL:
         XTHL
         DCX B
         INX SP
+        DAD B
 
 STOP:
         HLT

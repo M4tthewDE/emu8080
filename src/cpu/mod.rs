@@ -21,7 +21,6 @@ pub struct Cpu {
     // S Z x A x P x C
     flags: Vec<bool>,
 }
-
 #[derive(Debug, EnumIter, Clone)]
 enum Flag {
     S,
@@ -189,6 +188,7 @@ impl Cpu {
             InstructionCommand::Ldax => self.execute_ldax(register_pair),
             InstructionCommand::Dcx => self.execute_dcx(register_pair),
             InstructionCommand::Inx => self.execute_inx(register_pair),
+            InstructionCommand::Dad => self.execute_dad(register_pair),
             _ => panic!("invalid instruction"),
         }
     }
@@ -781,7 +781,7 @@ impl Cpu {
         h_register <<= 8;
 
         let hl_value = h_register | l_register;
-        let result  = value.wrapping_add(hl_value);
+        let result = value.wrapping_add(hl_value);
 
         self.change_register(InstructionRegister::H, (result >> 8) as i8);
         self.change_register(InstructionRegister::L, (result & 255) as i8);
@@ -850,14 +850,14 @@ mod tests {
         assert_eq!(cpu.get_register(InstructionRegister::C), -1);
         assert_eq!(cpu.get_register(InstructionRegister::D), 0);
         assert_eq!(cpu.get_register(InstructionRegister::E), 0);
-        assert_eq!(cpu.get_register(InstructionRegister::H), 0);
-        assert_eq!(cpu.get_register(InstructionRegister::L), 0);
+        assert_eq!(cpu.get_register(InstructionRegister::H), 27);
+        assert_eq!(cpu.get_register(InstructionRegister::L), -1);
 
         assert_eq!(cpu.get_flag(Flag::S), false);
         assert_eq!(cpu.get_flag(Flag::Z), false);
         assert_eq!(cpu.get_flag(Flag::A), true);
         assert_eq!(cpu.get_flag(Flag::P), false);
-        assert_eq!(cpu.get_flag(Flag::C), true);
+        assert_eq!(cpu.get_flag(Flag::C), false);
 
         assert_eq!(cpu.get_stack_pointer(), 1);
         assert_eq!(cpu.get_memory(7168), -124);
