@@ -109,6 +109,8 @@ pub fn parse(file_name: String) -> (Vec<Instruction>, Vec<Label>) {
                     // TODO make this prettier
                     if unparsed_register == "SP" {
                         register_pair = InstructionRegisterPair::SP;
+                    } else if unparsed_register == "PSW" {
+                        register_pair = InstructionRegisterPair::FA;
                     } else {
                         match InstructionRegister::from_str(unparsed_register).unwrap() {
                             InstructionRegister::B => register_pair = InstructionRegisterPair::BC,
@@ -225,6 +227,8 @@ pub enum InstructionCommand {
     Inx,
     #[strum(serialize = "DAD")]
     Dad,
+    #[strum(serialize = "PUSH")]
+    Push,
     #[strum(serialize = "HLT")]
     Hlt,
 }
@@ -310,6 +314,7 @@ pub enum InstructionRegisterPair {
     DE,
     HL,
     SP,
+    FA,
 }
 
 impl InstructionArgument for InstructionRegisterPair {
@@ -319,6 +324,7 @@ impl InstructionArgument for InstructionRegisterPair {
             InstructionRegisterPair::DE => vec![0, 1],
             InstructionRegisterPair::HL => vec![1, 0],
             InstructionRegisterPair::SP => vec![1, 1],
+            InstructionRegisterPair::FA => vec![1, 1],
         }
     }
 
@@ -541,6 +547,16 @@ impl Instruction {
                     InstructionCommand::Dad => {
                         base_result.append(&mut register_pair.encode());
                         base_result.append(&mut vec![1, 0, 0, 1]);
+
+                        base_result
+                    }
+                    InstructionCommand::Push => {
+                        base_result = vec![1, 1];
+                        if matches!(register_pair, InstructionRegisterPair::SP) {
+                            panic!("can not use SP in this instruction");
+                        }
+                        base_result.append(&mut register_pair.encode());
+                        base_result.append(&mut vec![0, 1, 0, 1]);
 
                         base_result
                     }

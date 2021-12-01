@@ -39,7 +39,7 @@ Programming Manual](http://dunfield.classiccmp.org/r/8080asm.pdf)
 - [x] RAR
 
 ## Register Pair Instructions
-- [ ] PUSH
+- [x] PUSH
 - [ ] POP
 - [x] DAD
 - [x] INX
