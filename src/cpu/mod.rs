@@ -793,6 +793,32 @@ impl Cpu {
         }
     }
 
+    fn execute_push(&mut self, register_pair: &InstructionRegisterPair) {
+        let first_register: i8;
+        let mut second_register: i8;
+
+        if matches!(register_pair, InstructionRegisterPair::FA) {
+            first_register = self.get_register(InstructionRegister::A);
+
+            second_register = 2;
+            second_register |= (self.get_flag(Flag::S) as i8) << 7;
+            second_register |= (self.get_flag(Flag::Z) as i8) << 6;
+            second_register |= (self.get_flag(Flag::A) as i8) << 4;
+            second_register |= (self.get_flag(Flag::P) as i8) << 2;
+            second_register |= self.get_flag(Flag::C) as i8;
+        } else {
+            let registers = register_pair.get_registers();
+            first_register = self.get_register(registers.0);
+            second_register = self.get_register(registers.1);
+        }
+
+        let stack_pointer = self.get_stack_pointer();
+
+        self.set_memory(stack_pointer-1, first_register);
+        self.set_memory(stack_pointer-2, second_register);
+        self.set_stack_pointer(stack_pointer-2);
+    }
+
     fn print_status(&self) {
         for i in 0..7 {
             println!(
@@ -1504,6 +1530,33 @@ mod tests {
         assert_eq!(cpu.get_register(InstructionRegister::H), 0);
         assert_eq!(cpu.get_register(InstructionRegister::L), 0);
         assert_eq!(cpu.get_flag(Flag::C), true);
+    }
+
+    #[test]
+    fn test_execute_push() {
+        let mut cpu = initialize_cpu();
+
+        cpu.change_register(InstructionRegister::D, -113);
+        cpu.change_register(InstructionRegister::E, -99);
+        cpu.set_stack_pointer(14892);
+        cpu.execute_push(&InstructionRegisterPair::DE);
+
+        assert_eq!(cpu.get_memory(14891), -113);
+        assert_eq!(cpu.get_memory(14890), -99);
+        assert_eq!(cpu.get_stack_pointer(), 14890);
+
+        cpu.change_register(InstructionRegister::A, 31);
+        cpu.set_flag(Flag::C, true);
+        cpu.set_flag(Flag::Z, true);
+        cpu.set_flag(Flag::P, true);
+        cpu.set_flag(Flag::S, false);
+        cpu.set_flag(Flag::A, false);
+        cpu.set_stack_pointer(20522);
+        cpu.execute_push(&InstructionRegisterPair::FA);
+
+        assert_eq!(cpu.get_memory(20521), 31);
+        assert_eq!(cpu.get_memory(20520), 71);
+        assert_eq!(cpu.get_stack_pointer(), 20520);
     }
 
     #[test]

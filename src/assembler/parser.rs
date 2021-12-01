@@ -310,6 +310,7 @@ pub enum InstructionRegisterPair {
     DE,
     HL,
     SP,
+    FA,
 }
 
 impl InstructionArgument for InstructionRegisterPair {
@@ -319,6 +320,7 @@ impl InstructionArgument for InstructionRegisterPair {
             InstructionRegisterPair::DE => vec![0, 1],
             InstructionRegisterPair::HL => vec![1, 0],
             InstructionRegisterPair::SP => vec![1, 1],
+            InstructionRegisterPair::FA => vec![1, 1],
         }
     }
 
