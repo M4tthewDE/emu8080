@@ -229,6 +229,8 @@ pub enum InstructionCommand {
     Dad,
     #[strum(serialize = "PUSH")]
     Push,
+    #[strum(serialize = "POP")]
+    Pop,
     #[strum(serialize = "HLT")]
     Hlt,
 }
@@ -557,6 +559,16 @@ impl Instruction {
                         }
                         base_result.append(&mut register_pair.encode());
                         base_result.append(&mut vec![0, 1, 0, 1]);
+
+                        base_result
+                    }
+                    InstructionCommand::Pop => {
+                        base_result = vec![1, 1];
+                        if matches!(register_pair, InstructionRegisterPair::SP) {
+                            panic!("can not use SP in this instruction");
+                        }
+                        base_result.append(&mut register_pair.encode());
+                        base_result.append(&mut vec![0, 0, 0, 1]);
 
                         base_result
                     }

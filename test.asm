@@ -35,6 +35,7 @@ LABEL:
         INX SP
         DAD B
         PUSH PSW
+        POP PSW
 
 STOP:
         HLT
