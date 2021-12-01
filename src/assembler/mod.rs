@@ -240,6 +240,19 @@ impl Assembler {
 
                 instruction = Instruction::PairRegister(InstructionCommand::Push, register_pair);
 
+            // POP
+            } else if raw_instructions[index][0..2] == [1, 1]
+                && raw_instructions[index][4..] == [0, 0, 0, 1]
+            {
+                let register_pair: InstructionRegisterPair;
+                if raw_instructions[index][2..4] == [1, 1] {
+                    register_pair = InstructionRegisterPair::FA;
+                } else {
+                    register_pair = InstructionRegisterPair::decode(&raw_instructions[index][2..4]);
+                }
+
+                instruction = Instruction::PairRegister(InstructionCommand::Pop, register_pair);
+
             // instructions with 1 register in the middle
             // INR
             } else if raw_instructions[index][0..2] == [0, 0]
@@ -309,7 +322,7 @@ mod tests {
         std::fs::remove_file("test_assemble_binary").unwrap();
 
         assert_eq!(binary_data.len() % 8, 0);
-        assert_eq!(binary_data.len(), 296);
+        assert_eq!(binary_data.len(), 304);
         println!("{:?}", binary_data);
 
         let mut bytes = binary_data.chunks(8);
@@ -349,6 +362,7 @@ mod tests {
         assert_eq!(bytes.next().unwrap(), [0, 0, 1, 1, 0, 0, 1, 1]);
         assert_eq!(bytes.next().unwrap(), [0, 0, 0, 0, 1, 0, 0, 1]);
         assert_eq!(bytes.next().unwrap(), [1, 1, 1, 1, 0, 1, 0, 1]);
+        assert_eq!(bytes.next().unwrap(), [1, 1, 1, 1, 0, 0, 0, 1]);
         assert_eq!(bytes.next().unwrap(), [0, 1, 1, 1, 0, 1, 1, 0]);
     }
 
@@ -358,7 +372,7 @@ mod tests {
         assembler.assemble();
 
         let instructions = assembler.disassemble("test_disassemble_binary".to_owned());
-        assert_eq!(instructions.len(), 33);
+        assert_eq!(instructions.len(), 34);
 
         for (i, instruction) in instructions.iter().enumerate() {
             match instruction {
@@ -397,7 +411,7 @@ mod tests {
                         assert_eq!(27, i);
                     }
                     InstructionCommand::Hlt => {
-                        assert_eq!(32, i);
+                        assert_eq!(33, i);
                     }
                     _ => panic!("invalid instruction"),
                 },
@@ -498,6 +512,10 @@ mod tests {
                     }
                     InstructionCommand::Push => {
                         assert_eq!(31, i);
+                        assert!(matches!(register_pair, InstructionRegisterPair::FA));
+                    }
+                    InstructionCommand::Pop => {
+                        assert_eq!(32, i);
                         assert!(matches!(register_pair, InstructionRegisterPair::FA));
                     }
                     _ => panic!("invalid instruction"),

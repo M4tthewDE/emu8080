@@ -190,6 +190,7 @@ impl Cpu {
             InstructionCommand::Inx => self.execute_inx(register_pair),
             InstructionCommand::Dad => self.execute_dad(register_pair),
             InstructionCommand::Push => self.execute_push(register_pair),
+            InstructionCommand::Pop => self.execute_pop(register_pair),
             _ => panic!("invalid instruction"),
         }
     }
@@ -915,7 +916,7 @@ mod tests {
         assert_eq!(cpu.get_flag(Flag::P), false);
         assert_eq!(cpu.get_flag(Flag::C), false);
 
-        assert_eq!(cpu.get_stack_pointer(), 65535);
+        assert_eq!(cpu.get_stack_pointer(), 1);
         assert_eq!(cpu.get_memory(7168), -124);
         assert_eq!(cpu.get_memory(0), -28);
         assert_eq!(cpu.get_memory(65535), 18);
