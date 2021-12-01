@@ -820,6 +820,35 @@ impl Cpu {
         self.set_stack_pointer(stack_pointer.wrapping_sub(2));
     }
 
+    fn execute_pop(&mut self, register_pair: &InstructionRegisterPair) {
+        if !matches!(register_pair, &InstructionRegisterPair::FA) {
+            let registers = register_pair.get_registers();
+
+            let stack_pointer = self.get_stack_pointer();
+            self.change_register(registers.1, self.get_memory(self.get_stack_pointer()));
+            self.change_register(
+                registers.0,
+                self.get_memory(self.get_stack_pointer().wrapping_add(1)),
+            );
+            self.set_stack_pointer(stack_pointer.wrapping_add(2));
+            return;
+        }
+
+        let stack_pointer = self.get_stack_pointer();
+        self.change_register(
+            InstructionRegister::A,
+            self.get_memory(stack_pointer.wrapping_add(1)),
+        );
+
+        let flags = self.get_memory(stack_pointer);
+        self.set_flag(Flag::S, (flags >> 7) != 0);
+        self.set_flag(Flag::Z, ((flags >> 6) & 1) != 0);
+        self.set_flag(Flag::A, ((flags >> 4) & 1) != 0);
+        self.set_flag(Flag::P, ((flags >> 2) & 1) != 0);
+        self.set_flag(Flag::C, (flags & 1) != 0);
+        self.set_stack_pointer(stack_pointer.wrapping_add(2));
+    }
+
     fn print_status(&self) {
         for i in 0..7 {
             println!(
@@ -1560,6 +1589,33 @@ mod tests {
         assert_eq!(cpu.get_memory(20521), 31);
         assert_eq!(cpu.get_memory(20520), 71);
         assert_eq!(cpu.get_stack_pointer(), 20520);
+    }
+
+    #[test]
+    fn test_execute_pop() {
+        let mut cpu = initialize_cpu();
+
+        cpu.set_memory(4665, 61);
+        cpu.set_memory(4666, -109);
+        cpu.set_stack_pointer(4665);
+        cpu.execute_pop(&InstructionRegisterPair::HL);
+
+        assert_eq!(cpu.get_register(InstructionRegister::L), 61);
+        assert_eq!(cpu.get_register(InstructionRegister::H), -109);
+        assert_eq!(cpu.get_stack_pointer(), 4667);
+
+        cpu.set_memory(11264, -61);
+        cpu.set_memory(11265, -1);
+        cpu.set_stack_pointer(11264);
+        cpu.execute_pop(&InstructionRegisterPair::FA);
+
+        assert_eq!(cpu.get_register(InstructionRegister::A), -1);
+        assert_eq!(cpu.get_flag(Flag::S), true);
+        assert_eq!(cpu.get_flag(Flag::Z), true);
+        assert_eq!(cpu.get_flag(Flag::A), false);
+        assert_eq!(cpu.get_flag(Flag::P), false);
+        assert_eq!(cpu.get_flag(Flag::C), true);
+        assert_eq!(cpu.get_stack_pointer(), 11266);
     }
 
     #[test]
