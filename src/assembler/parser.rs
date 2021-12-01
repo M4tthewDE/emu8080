@@ -551,7 +551,7 @@ impl Instruction {
                         base_result
                     }
                     InstructionCommand::Push => {
-                        base_result = vec![1,1];
+                        base_result = vec![1, 1];
                         if matches!(register_pair, InstructionRegisterPair::SP) {
                             panic!("can not use SP in this instruction");
                         }

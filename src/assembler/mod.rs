@@ -232,7 +232,7 @@ impl Assembler {
                 && raw_instructions[index][4..] == [0, 1, 0, 1]
             {
                 let register_pair: InstructionRegisterPair;
-                if &raw_instructions[index][2..4] == [1,1] {
+                if raw_instructions[index][2..4] == [1, 1] {
                     register_pair = InstructionRegisterPair::FA;
                 } else {
                     register_pair = InstructionRegisterPair::decode(&raw_instructions[index][2..4]);
