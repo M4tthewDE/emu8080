@@ -189,6 +189,7 @@ impl Cpu {
             InstructionCommand::Dcx => self.execute_dcx(register_pair),
             InstructionCommand::Inx => self.execute_inx(register_pair),
             InstructionCommand::Dad => self.execute_dad(register_pair),
+            InstructionCommand::Push => self.execute_push(register_pair),
             _ => panic!("invalid instruction"),
         }
     }
@@ -814,9 +815,9 @@ impl Cpu {
 
         let stack_pointer = self.get_stack_pointer();
 
-        self.set_memory(stack_pointer-1, first_register);
-        self.set_memory(stack_pointer-2, second_register);
-        self.set_stack_pointer(stack_pointer-2);
+        self.set_memory(stack_pointer.wrapping_sub(1), first_register);
+        self.set_memory(stack_pointer.wrapping_sub(2), second_register);
+        self.set_stack_pointer(stack_pointer.wrapping_sub(2));
     }
 
     fn print_status(&self) {
@@ -885,8 +886,10 @@ mod tests {
         assert_eq!(cpu.get_flag(Flag::P), false);
         assert_eq!(cpu.get_flag(Flag::C), false);
 
-        assert_eq!(cpu.get_stack_pointer(), 1);
+        assert_eq!(cpu.get_stack_pointer(), 65535);
         assert_eq!(cpu.get_memory(7168), -124);
+        assert_eq!(cpu.get_memory(0), -28);
+        assert_eq!(cpu.get_memory(65535), 18);
     }
 
     #[test]

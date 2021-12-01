@@ -34,6 +34,7 @@ LABEL:
         DCX B
         INX SP
         DAD B
+        PUSH PSW
 
 STOP:
         HLT
