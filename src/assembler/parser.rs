@@ -231,6 +231,8 @@ pub enum InstructionCommand {
     Push,
     #[strum(serialize = "POP")]
     Pop,
+    #[strum(serialize = "ORI")]
+    Ori,
     #[strum(serialize = "HLT")]
     Hlt,
 }
@@ -500,6 +502,12 @@ impl Instruction {
                 }
                 InstructionCommand::Sui => {
                     let mut base_result = vec![1, 1, 0, 1, 0, 1, 1, 0];
+                    base_result.append(&mut int_to_binary(*intermediate));
+
+                    base_result
+                }
+                InstructionCommand::Ori => {
+                    let mut base_result = vec![1, 1, 1, 1, 0, 1, 1, 0];
                     base_result.append(&mut int_to_binary(*intermediate));
 
                     base_result
