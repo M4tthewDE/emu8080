@@ -55,7 +55,7 @@ Programming Manual](http://dunfield.classiccmp.org/r/8080asm.pdf)
 - [x] ACI
 - [x] SUI
 - [ ] SBI
-- [ ] ANI
+- [x] ANI
 - [x] XRI
 - [x] ORI
 - [ ] CPI
