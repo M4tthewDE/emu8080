@@ -38,6 +38,7 @@ LABEL:
         POP PSW
         ORI 00001111
         XRI 00001111
+        ANI 10000000
 
 STOP:
         HLT

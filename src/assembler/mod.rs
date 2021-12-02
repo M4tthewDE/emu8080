@@ -65,7 +65,7 @@ impl Assembler {
             if raw_instructions[index][0..2] == [0, 0] && raw_instructions[index][5..] == [1, 1, 0]
             {
                 let register = InstructionRegister::decode(&raw_instructions[index][2..5]);
-                let intermediate = parser::binary_to_int(&mut raw_instructions[index + 1].to_vec());
+                let intermediate = parser::binary_to_int(&raw_instructions[index + 1].to_vec());
                 instruction = Instruction::IntermediateRegister(
                     InstructionCommand::Mvi,
                     intermediate,
@@ -73,26 +73,31 @@ impl Assembler {
                 );
             // ADI
             } else if raw_instructions[index] == vec![1, 1, 0, 0, 0, 1, 1, 0] {
-                let intermediate = parser::binary_to_int(&mut raw_instructions[index + 1].to_vec());
+                let intermediate = parser::binary_to_int(&raw_instructions[index + 1].to_vec());
                 instruction = Instruction::Intermediate(InstructionCommand::Adi, intermediate);
             // ACI
             } else if raw_instructions[index] == vec![1, 1, 0, 0, 1, 1, 1, 0] {
-                let intermediate = parser::binary_to_int(&mut raw_instructions[index + 1].to_vec());
+                let intermediate = parser::binary_to_int(&raw_instructions[index + 1].to_vec());
                 instruction = Instruction::Intermediate(InstructionCommand::Aci, intermediate);
             // SUI
             } else if raw_instructions[index] == vec![1, 1, 0, 1, 0, 1, 1, 0] {
-                let intermediate = parser::binary_to_int(&mut raw_instructions[index + 1].to_vec());
+                let intermediate = parser::binary_to_int(&raw_instructions[index + 1].to_vec());
                 instruction = Instruction::Intermediate(InstructionCommand::Sui, intermediate);
 
             // ORI
             } else if raw_instructions[index] == vec![1, 1, 1, 1, 0, 1, 1, 0] {
-                let intermediate = parser::binary_to_int(&mut raw_instructions[index + 1].to_vec());
+                let intermediate = parser::binary_to_int(&raw_instructions[index + 1].to_vec());
                 instruction = Instruction::Intermediate(InstructionCommand::Ori, intermediate);
 
             // XRI
             } else if raw_instructions[index] == vec![1, 1, 1, 0, 1, 1, 1, 0] {
-                let intermediate = parser::binary_to_int(&mut raw_instructions[index + 1].to_vec());
+                let intermediate = parser::binary_to_int(&raw_instructions[index + 1].to_vec());
                 instruction = Instruction::Intermediate(InstructionCommand::Xri, intermediate);
+
+            // ANI
+            } else if raw_instructions[index] == vec![1, 1, 1, 0, 0, 1, 1, 0] {
+                let intermediate = parser::binary_to_int(&raw_instructions[index + 1].to_vec());
+                instruction = Instruction::Intermediate(InstructionCommand::Ani, intermediate);
 
             // instructions without registers
             // HLT
@@ -332,7 +337,7 @@ mod tests {
         std::fs::remove_file("test_assemble_binary").unwrap();
 
         assert_eq!(binary_data.len() % 8, 0);
-        assert_eq!(binary_data.len(), 336);
+        assert_eq!(binary_data.len(), 352);
 
         let mut bytes = binary_data.chunks(8);
         assert_eq!(bytes.next().unwrap(), [0, 0, 1, 1, 1, 1, 1, 0]);
@@ -376,6 +381,8 @@ mod tests {
         assert_eq!(bytes.next().unwrap(), [0, 0, 0, 0, 1, 1, 1, 1]);
         assert_eq!(bytes.next().unwrap(), [1, 1, 1, 0, 1, 1, 1, 0]);
         assert_eq!(bytes.next().unwrap(), [0, 0, 0, 0, 1, 1, 1, 1]);
+        assert_eq!(bytes.next().unwrap(), [1, 1, 1, 0, 0, 1, 1, 0]);
+        assert_eq!(bytes.next().unwrap(), [1, 0, 0, 0, 0, 0, 0, 0]);
         assert_eq!(bytes.next().unwrap(), [0, 1, 1, 1, 0, 1, 1, 0]);
     }
 
@@ -385,7 +392,7 @@ mod tests {
         assembler.assemble();
 
         let instructions = assembler.disassemble("test_disassemble_binary".to_owned());
-        assert_eq!(instructions.len(), 36);
+        assert_eq!(instructions.len(), 37);
 
         for (i, instruction) in instructions.iter().enumerate() {
             match instruction {
@@ -424,7 +431,7 @@ mod tests {
                         assert_eq!(27, i);
                     }
                     InstructionCommand::Hlt => {
-                        assert_eq!(35, i);
+                        assert_eq!(36, i);
                     }
                     _ => panic!("invalid instruction"),
                 },
@@ -499,6 +506,10 @@ mod tests {
                     InstructionCommand::Xri => {
                         assert_eq!(34, i);
                         assert_eq!(15, *intermediate);
+                    }
+                    InstructionCommand::Ani => {
+                        assert_eq!(35, i);
+                        assert_eq!(-128, *intermediate);
                     }
                     _ => panic!("invalid instruction"),
                 },
