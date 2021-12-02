@@ -36,6 +36,8 @@ LABEL:
         DAD B
         PUSH PSW
         POP PSW
+        ORI 00001111
+        XRI 00001111
 
 STOP:
         HLT

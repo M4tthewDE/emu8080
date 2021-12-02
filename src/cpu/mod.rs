@@ -162,6 +162,8 @@ impl Cpu {
             InstructionCommand::Adi => self.execute_adi(intermediate),
             InstructionCommand::Aci => self.execute_aci(intermediate),
             InstructionCommand::Sui => self.execute_sui(intermediate),
+            InstructionCommand::Ori => self.execute_ori(intermediate),
+            InstructionCommand::Xri => self.execute_xri(intermediate),
             _ => panic!("invalid instruction"),
         }
     }
@@ -850,6 +852,34 @@ impl Cpu {
         self.set_stack_pointer(stack_pointer.wrapping_add(2));
     }
 
+    fn execute_ori(&mut self, intermediate: i8) {
+        let mut acc = self.get_register(InstructionRegister::A);
+        acc |= intermediate;
+
+        self.change_register(InstructionRegister::A, acc);
+        self.set_flag(Flag::C, false);
+
+        if acc == 0 {
+            self.set_flag(Flag::Z, true);
+        } else {
+            self.set_flag(Flag::Z, false);
+        }
+    }
+
+    fn execute_xri(&mut self, intermediate: i8) {
+        let mut acc = self.get_register(InstructionRegister::A);
+        acc ^= intermediate;
+
+        self.change_register(InstructionRegister::A, acc);
+        self.set_flag(Flag::C, false);
+
+        if acc == 0 {
+            self.set_flag(Flag::Z, true);
+        } else {
+            self.set_flag(Flag::Z, false);
+        }
+    }
+
     fn print_status(&self) {
         for i in 0..7 {
             println!(
@@ -902,7 +932,7 @@ mod tests {
 
         cpu.run(instructions);
 
-        assert_eq!(cpu.get_register(InstructionRegister::A), -28);
+        assert_eq!(cpu.get_register(InstructionRegister::A), -32);
         assert_eq!(cpu.get_register(InstructionRegister::B), 27);
         assert_eq!(cpu.get_register(InstructionRegister::C), -1);
         assert_eq!(cpu.get_register(InstructionRegister::D), 0);
@@ -1617,6 +1647,38 @@ mod tests {
         assert_eq!(cpu.get_flag(Flag::P), false);
         assert_eq!(cpu.get_flag(Flag::C), true);
         assert_eq!(cpu.get_stack_pointer(), 11266);
+    }
+
+    #[test]
+    fn test_execute_ori() {
+        let mut cpu = initialize_cpu();
+
+        cpu.change_register(InstructionRegister::A, -75);
+        cpu.execute_ori(15);
+        assert_eq!(cpu.get_register(InstructionRegister::A), -65);
+
+        cpu.change_register(InstructionRegister::A, 0);
+        cpu.set_flag(Flag::C, true);
+        cpu.execute_ori(0);
+        assert_eq!(cpu.get_register(InstructionRegister::A), 0);
+        assert_eq!(cpu.get_flag(Flag::Z), true);
+        assert_eq!(cpu.get_flag(Flag::C), false);
+    }
+
+    #[test]
+    fn test_execute_xri() {
+        let mut cpu = initialize_cpu();
+
+        cpu.change_register(InstructionRegister::A, 59);
+        cpu.execute_xri(-127);
+        assert_eq!(cpu.get_register(InstructionRegister::A), -70);
+
+        cpu.change_register(InstructionRegister::A, 1);
+        cpu.set_flag(Flag::C, true);
+        cpu.execute_xri(1);
+        assert_eq!(cpu.get_register(InstructionRegister::A), 0);
+        assert_eq!(cpu.get_flag(Flag::Z), true);
+        assert_eq!(cpu.get_flag(Flag::C), false);
     }
 
     #[test]
