@@ -880,6 +880,20 @@ impl Cpu {
         }
     }
 
+    fn execute_ani(&mut self, intermediate: i8) {
+        let acc = self.get_register(InstructionRegister::A);
+        let result = acc & intermediate;
+
+        self.change_register(InstructionRegister::A, result);
+        self.set_flag(Flag::C, false);
+
+        if result == 0 {
+            self.set_flag(Flag::Z, true);
+        } else {
+            self.set_flag(Flag::Z, false);
+        }
+    }
+
     fn print_status(&self) {
         for i in 0..7 {
             println!(
@@ -1676,6 +1690,22 @@ mod tests {
         cpu.change_register(InstructionRegister::A, 1);
         cpu.set_flag(Flag::C, true);
         cpu.execute_xri(1);
+        assert_eq!(cpu.get_register(InstructionRegister::A), 0);
+        assert_eq!(cpu.get_flag(Flag::Z), true);
+        assert_eq!(cpu.get_flag(Flag::C), false);
+    }
+
+    #[test]
+    fn test_execute_ani() {
+        let mut cpu = initialize_cpu();
+
+        cpu.change_register(InstructionRegister::A, 58);
+        cpu.execute_ani(15);
+        assert_eq!(cpu.get_register(InstructionRegister::A), 10);
+
+        cpu.change_register(InstructionRegister::A, -1);
+        cpu.set_flag(Flag::C, true);
+        cpu.execute_ani(0);
         assert_eq!(cpu.get_register(InstructionRegister::A), 0);
         assert_eq!(cpu.get_flag(Flag::Z), true);
         assert_eq!(cpu.get_flag(Flag::C), false);
