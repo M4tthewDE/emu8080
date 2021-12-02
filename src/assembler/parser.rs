@@ -1,5 +1,4 @@
 use pest::Parser;
-use std::convert::TryFrom;
 use std::fs;
 use std::str::FromStr;
 use strum_macros::EnumString;
@@ -75,7 +74,7 @@ pub fn parse(file_name: String) -> (Vec<Instruction>, Vec<Label>) {
 
                     let instruction = Instruction::IntermediateRegister(
                         command,
-                        binary_to_int(&mut intermediate),
+                        binary_to_int(&intermediate),
                         register,
                     );
 
@@ -134,9 +133,10 @@ pub fn parse(file_name: String) -> (Vec<Instruction>, Vec<Label>) {
                             intermediate.push(1);
                         }
                     }
+                    println!("Intermediate: {:?}", binary_to_int(&intermediate));
 
                     let instruction =
-                        Instruction::Intermediate(command, binary_to_int(&mut intermediate));
+                        Instruction::Intermediate(command, binary_to_int(&intermediate));
                     instructions.push(instruction);
                 }
                 Rule::no_reg_command => {
@@ -235,6 +235,8 @@ pub enum InstructionCommand {
     Ori,
     #[strum(serialize = "XRI")]
     Xri,
+    #[strum(serialize = "ANI")]
+    Ani,
     #[strum(serialize = "HLT")]
     Hlt,
 }
@@ -520,6 +522,12 @@ impl Instruction {
 
                     base_result
                 }
+                InstructionCommand::Ani => {
+                    let mut base_result = vec![1, 1, 1, 0, 0, 1, 1, 0];
+                    base_result.append(&mut int_to_binary(*intermediate));
+
+                    base_result
+                }
                 _ => panic!("invalid instruction"),
             },
 
@@ -605,48 +613,24 @@ fn int_to_binary(value: i8) -> Vec<u8> {
     result
 }
 
-pub fn binary_to_int(intermediate: &mut [u8]) -> i8 {
-    if intermediate[0] == 1 {
-        // subtract 1 from intermediate
-        let mut index = intermediate.len() - 1;
-        while index > 0 {
-            if intermediate[index] == 1 {
-                intermediate[index] = 0;
-                break;
-            } else {
-                intermediate[index] = 1;
-            }
-            index -= 1;
-        }
+pub fn binary_to_int(intermediate: &[u8]) -> i8 {
+    let mut result = 0;
 
-        // build complement
-        index = 0;
-        while index < intermediate.len() {
-            if intermediate[index] == 0 {
-                intermediate[index] = 1;
-            } else {
-                intermediate[index] = 0;
-            }
-            index += 1;
-        }
+    for (i, num) in intermediate.iter().enumerate() {
+        result |= num;
 
-        // calculate binary to decimal
-        let mut value = 0;
-        for (index, digit) in intermediate.iter().rev().enumerate() {
-            value += digit * u8::pow(2, u32::try_from(index).unwrap());
+        if i != 7 {
+            result <<= 1;
         }
-        -(value as i8)
-    } else {
-        let mut value = 0;
-        for (index, digit) in intermediate.iter().rev().enumerate() {
-            value += digit * u8::pow(2, u32::try_from(index).unwrap());
-        }
-        value as i8
     }
+
+    result as i8
 }
 
 #[cfg(test)]
 mod tests {
+    use crate::assembler::parser::binary_to_int;
+
     use super::parse;
     use super::{InstructionArgument, InstructionRegister, InstructionRegisterPair};
 
@@ -783,6 +767,12 @@ mod tests {
             InstructionRegister::from_index(7),
             InstructionRegister::M
         ));
+    }
+
+    #[test]
+    fn test_binary_to_int() {
+        assert_eq!(binary_to_int(&mut vec![0, 0, 0, 0, 1, 1, 1, 1]), 15);
+        assert_eq!(binary_to_int(&mut vec![1, 0, 0, 0, 0, 0, 0, 0]), -128);
     }
 
     #[test]
