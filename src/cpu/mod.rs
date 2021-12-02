@@ -865,6 +865,20 @@ impl Cpu {
         }
     }
 
+    fn execute_xri(&mut self, intermediate: i8) {
+        let mut acc = self.get_register(InstructionRegister::A);
+        acc ^= intermediate;
+
+        self.change_register(InstructionRegister::A, acc);
+        self.set_flag(Flag::C, false);
+
+        if acc == 0 {
+            self.set_flag(Flag::Z, true);
+        } else {
+            self.set_flag(Flag::Z, false);
+        }
+    }
+
     fn print_status(&self) {
         for i in 0..7 {
             println!(
@@ -1645,6 +1659,22 @@ mod tests {
         cpu.change_register(InstructionRegister::A, 0);
         cpu.set_flag(Flag::C, true);
         cpu.execute_ori(0);
+        assert_eq!(cpu.get_register(InstructionRegister::A), 0);
+        assert_eq!(cpu.get_flag(Flag::Z), true);
+        assert_eq!(cpu.get_flag(Flag::C), false);
+    }
+
+    #[test]
+    fn test_execute_xri() {
+        let mut cpu = initialize_cpu();
+
+        cpu.change_register(InstructionRegister::A, 59);
+        cpu.execute_xri(-127);
+        assert_eq!(cpu.get_register(InstructionRegister::A), -70);
+
+        cpu.change_register(InstructionRegister::A, 1);
+        cpu.set_flag(Flag::C, true);
+        cpu.execute_xri(1);
         assert_eq!(cpu.get_register(InstructionRegister::A), 0);
         assert_eq!(cpu.get_flag(Flag::Z), true);
         assert_eq!(cpu.get_flag(Flag::C), false);
