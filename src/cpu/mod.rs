@@ -163,6 +163,7 @@ impl Cpu {
             InstructionCommand::Aci => self.execute_aci(intermediate),
             InstructionCommand::Sui => self.execute_sui(intermediate),
             InstructionCommand::Ori => self.execute_ori(intermediate),
+            InstructionCommand::Xri => self.execute_xri(intermediate),
             _ => panic!("invalid instruction"),
         }
     }
@@ -931,7 +932,7 @@ mod tests {
 
         cpu.run(instructions);
 
-        assert_eq!(cpu.get_register(InstructionRegister::A), -17);
+        assert_eq!(cpu.get_register(InstructionRegister::A), -32);
         assert_eq!(cpu.get_register(InstructionRegister::B), 27);
         assert_eq!(cpu.get_register(InstructionRegister::C), -1);
         assert_eq!(cpu.get_register(InstructionRegister::D), 0);
