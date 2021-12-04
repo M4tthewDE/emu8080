@@ -165,6 +165,7 @@ impl Cpu {
             InstructionCommand::Ori => self.execute_ori(intermediate),
             InstructionCommand::Xri => self.execute_xri(intermediate),
             InstructionCommand::Ani => self.execute_ani(intermediate),
+            InstructionCommand::Cpi => self.execute_cpi(intermediate),
             _ => panic!("invalid instruction"),
         }
     }
@@ -987,7 +988,7 @@ mod tests {
         assert_eq!(cpu.get_flag(Flag::Z), false);
         assert_eq!(cpu.get_flag(Flag::A), true);
         assert_eq!(cpu.get_flag(Flag::P), false);
-        assert_eq!(cpu.get_flag(Flag::C), false);
+        assert_eq!(cpu.get_flag(Flag::C), true);
 
         assert_eq!(cpu.get_stack_pointer(), 1);
         assert_eq!(cpu.get_memory(7168), -124);

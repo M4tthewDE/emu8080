@@ -39,6 +39,7 @@ LABEL:
         ORI 00001111
         XRI 00001111
         ANI 10000000
+        CPI 00001111
 
 STOP:
         HLT
