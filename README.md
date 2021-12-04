@@ -58,7 +58,7 @@ Programming Manual](http://dunfield.classiccmp.org/r/8080asm.pdf)
 - [x] ANI
 - [x] XRI
 - [x] ORI
-- [ ] CPI
+- [x] CPI
 
 ## Direct Addressing Instructions
 - [ ] STA
