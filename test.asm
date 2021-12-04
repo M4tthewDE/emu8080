@@ -41,6 +41,7 @@ LABEL:
         ANI 10000000
         CPI 00001111
         SBI 00000000
+        LXI SP,0011000000111001
 
 STOP:
         HLT

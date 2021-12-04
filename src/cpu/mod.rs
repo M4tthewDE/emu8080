@@ -99,6 +99,9 @@ impl Cpu {
             Instruction::Intermediate(command, intermediate) => {
                 self.execute_intermediate_instruction(command, *intermediate)
             }
+            Instruction::Intermediate16Bit(command, register_pair, intermediate) => {
+                self.execute_intermediate_16_bit_instruction(command, register_pair, *intermediate)
+            }
             Instruction::IntermediateRegister(command, intermediate, register) => {
                 self.execute_intermediate_reg_instruction(command, register, *intermediate)
             }
@@ -167,6 +170,18 @@ impl Cpu {
             InstructionCommand::Ani => self.execute_ani(intermediate),
             InstructionCommand::Cpi => self.execute_cpi(intermediate),
             InstructionCommand::Sbi => self.execute_sbi(intermediate),
+            _ => panic!("invalid instruction"),
+        }
+    }
+
+    fn execute_intermediate_16_bit_instruction(
+        &mut self,
+        command: &InstructionCommand,
+        register_pair: &InstructionRegisterPair,
+        intermediate: i16,
+    ) {
+        match command {
+            InstructionCommand::Lxi => self.execute_lxi(register_pair, intermediate),
             _ => panic!("invalid instruction"),
         }
     }
@@ -947,6 +962,17 @@ impl Cpu {
         self.change_register(InstructionRegister::A, result);
     }
 
+    fn execute_lxi(&mut self, register_pair: &InstructionRegisterPair, intermediate: i16) {
+        if matches!(register_pair, &InstructionRegisterPair::SP) {
+            self.set_stack_pointer(intermediate as u16);
+            return;
+        }
+        let registers = register_pair.get_registers();
+
+        self.change_register(registers.0, (intermediate >> 8) as i8);
+        self.change_register(registers.1, (intermediate & 255) as i8);
+    }
+
     fn print_status(&self) {
         for i in 0..7 {
             println!(
@@ -1013,7 +1039,7 @@ mod tests {
         assert_eq!(cpu.get_flag(Flag::P), false);
         assert_eq!(cpu.get_flag(Flag::C), false);
 
-        assert_eq!(cpu.get_stack_pointer(), 1);
+        assert_eq!(cpu.get_stack_pointer(), 12345);
         assert_eq!(cpu.get_memory(7168), -124);
         assert_eq!(cpu.get_memory(0), -28);
         assert_eq!(cpu.get_memory(65535), 18);
@@ -1802,6 +1828,17 @@ mod tests {
         assert_eq!(cpu.get_register(InstructionRegister::A), -2);
         assert_eq!(cpu.get_flag(Flag::C), true);
         assert_eq!(cpu.get_flag(Flag::Z), false);
+    }
+    #[test]
+    fn test_execute_lxi() {
+        let mut cpu = initialize_cpu();
+
+        cpu.execute_lxi(&InstructionRegisterPair::BC, 4080);
+        assert_eq!(cpu.get_register(InstructionRegister::B), 15);
+        assert_eq!(cpu.get_register(InstructionRegister::C), -16);
+
+        cpu.execute_lxi(&InstructionRegisterPair::SP, 4080);
+        assert_eq!(cpu.get_stack_pointer(), 4080);
     }
 
     #[test]
