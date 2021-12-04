@@ -80,6 +80,46 @@ pub fn parse(file_name: String) -> (Vec<Instruction>, Vec<Label>) {
 
                     instructions.push(instruction);
                 }
+                Rule::intermediate_16_bit_command => {
+                    let register_pair: InstructionRegisterPair;
+
+                    let unparsed_register = pairs.peek().unwrap().as_str();
+
+                    // TODO make this prettier
+                    if unparsed_register == "SP" {
+                        register_pair = InstructionRegisterPair::SP;
+                    } else if unparsed_register == "PSW" {
+                        register_pair = InstructionRegisterPair::FA;
+                    } else {
+                        match InstructionRegister::from_str(unparsed_register).unwrap() {
+                            InstructionRegister::B => register_pair = InstructionRegisterPair::BC,
+                            InstructionRegister::D => register_pair = InstructionRegisterPair::DE,
+                            InstructionRegister::H => register_pair = InstructionRegisterPair::DE,
+                            _ => panic!("invalid register"),
+                        }
+                    }
+
+                    pairs.next();
+
+                    let mut raw_intermediate = Vec::new();
+                    for char in pairs.as_str().chars() {
+                        if char == '0' {
+                            raw_intermediate.push(0);
+                        } else {
+                            raw_intermediate.push(1);
+                        }
+                    }
+
+                    let high_bits = (binary_to_int(&raw_intermediate[0..8]) as i16) << 8;
+                    let low_bits = binary_to_int(&raw_intermediate[8..16]) as i16;
+
+                    let instruction = Instruction::Intermediate16Bit(
+                        command,
+                        register_pair,
+                        high_bits + low_bits,
+                    );
+                    instructions.push(instruction);
+                }
                 Rule::double_reg_command => {
                     let register0 =
                         InstructionRegister::from_str(pairs.peek().unwrap().as_str()).unwrap();
@@ -133,7 +173,6 @@ pub fn parse(file_name: String) -> (Vec<Instruction>, Vec<Label>) {
                             intermediate.push(1);
                         }
                     }
-                    println!("Intermediate: {:?}", binary_to_int(&intermediate));
 
                     let instruction =
                         Instruction::Intermediate(command, binary_to_int(&intermediate));
@@ -241,6 +280,8 @@ pub enum InstructionCommand {
     Cpi,
     #[strum(serialize = "SBI")]
     Sbi,
+    #[strum(serialize = "LXI")]
+    Lxi,
     #[strum(serialize = "HLT")]
     Hlt,
 }
@@ -371,6 +412,7 @@ pub enum Instruction {
         (InstructionRegister, InstructionRegister),
     ),
     Intermediate(InstructionCommand, i8),
+    Intermediate16Bit(InstructionCommand, InstructionRegisterPair, i16),
     IntermediateRegister(InstructionCommand, i8, InstructionRegister),
     PairRegister(InstructionCommand, InstructionRegisterPair),
 }
@@ -547,6 +589,18 @@ impl Instruction {
                 _ => panic!("invalid instruction"),
             },
 
+            Instruction::Intermediate16Bit(command, register_pair, intermediate) => match command {
+                InstructionCommand::Lxi => {
+                    let mut base_result = vec![0, 0];
+                    base_result.append(&mut register_pair.encode());
+                    base_result.append(&mut vec![0, 0, 0, 1]);
+                    base_result.append(&mut int_to_binary_16_bit(*intermediate));
+
+                    base_result
+                }
+                _ => panic!("invalid instruction"),
+            },
+
             Instruction::IntermediateRegister(command, intermediate, register) => match command {
                 InstructionCommand::Mvi => {
                     let mut base_result = vec![0, 0];
@@ -621,6 +675,16 @@ impl Instruction {
 
 fn int_to_binary(value: i8) -> Vec<u8> {
     let binary_string = format!("{:08b}", value);
+
+    let mut result = Vec::new();
+    for c in binary_string.chars() {
+        result.push((c as u8) - 48);
+    }
+    result
+}
+
+fn int_to_binary_16_bit(value: i16) -> Vec<u8> {
+    let binary_string = format!("{:016b}", value);
 
     let mut result = Vec::new();
     for c in binary_string.chars() {

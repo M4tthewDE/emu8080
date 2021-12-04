@@ -99,6 +99,9 @@ impl Cpu {
             Instruction::Intermediate(command, intermediate) => {
                 self.execute_intermediate_instruction(command, *intermediate)
             }
+            Instruction::Intermediate16Bit(command, register_pair, intermediate) => {
+                self.execute_intermediate_16_bit_instruction(command, register_pair, *intermediate)
+            }
             Instruction::IntermediateRegister(command, intermediate, register) => {
                 self.execute_intermediate_reg_instruction(command, register, *intermediate)
             }
@@ -167,6 +170,18 @@ impl Cpu {
             InstructionCommand::Ani => self.execute_ani(intermediate),
             InstructionCommand::Cpi => self.execute_cpi(intermediate),
             InstructionCommand::Sbi => self.execute_sbi(intermediate),
+            _ => panic!("invalid instruction"),
+        }
+    }
+
+    fn execute_intermediate_16_bit_instruction(
+        &mut self,
+        command: &InstructionCommand,
+        register_pair: &InstructionRegisterPair,
+        intermediate: i16,
+    ) {
+        match command {
+            InstructionCommand::Lxi => self.execute_lxi(register_pair, intermediate),
             _ => panic!("invalid instruction"),
         }
     }
@@ -1024,7 +1039,7 @@ mod tests {
         assert_eq!(cpu.get_flag(Flag::P), false);
         assert_eq!(cpu.get_flag(Flag::C), false);
 
-        assert_eq!(cpu.get_stack_pointer(), 1);
+        assert_eq!(cpu.get_stack_pointer(), 12345);
         assert_eq!(cpu.get_memory(7168), -124);
         assert_eq!(cpu.get_memory(0), -28);
         assert_eq!(cpu.get_memory(65535), 18);
