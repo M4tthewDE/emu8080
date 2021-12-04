@@ -924,6 +924,28 @@ impl Cpu {
         }
     }
 
+    fn execute_sbi(&mut self, mut intermediate: i8) {
+        let acc = self.get_register(InstructionRegister::A);
+
+        intermediate = intermediate.wrapping_add(self.get_flag(Flag::C) as i8);
+
+        let result = acc.wrapping_sub(intermediate);
+
+        if result == 0 {
+            self.set_flag(Flag::Z, true);
+        } else {
+            self.set_flag(Flag::Z, false);
+        }
+
+        if (acc as u8).checked_add(-intermediate as u8) == None {
+            self.set_flag(Flag::C, false);
+        } else {
+            self.set_flag(Flag::C, true);
+        }
+
+        self.change_register(InstructionRegister::A, result);
+    }
+
     fn print_status(&self) {
         for i in 0..7 {
             println!(
@@ -1757,6 +1779,27 @@ mod tests {
         cpu.change_register(InstructionRegister::A, 74);
         cpu.execute_cpi(-64);
         assert_eq!(cpu.get_flag(Flag::C), false);
+        assert_eq!(cpu.get_flag(Flag::Z), false);
+    }
+
+    #[test]
+    fn test_execute_sbi() {
+        let mut cpu = initialize_cpu();
+
+        cpu.change_register(InstructionRegister::A, 0);
+        cpu.set_flag(Flag::C, false);
+        cpu.set_flag(Flag::Z, true);
+        cpu.execute_sbi(1);
+        assert_eq!(cpu.get_register(InstructionRegister::A), -1);
+        assert_eq!(cpu.get_flag(Flag::C), true);
+        assert_eq!(cpu.get_flag(Flag::Z), false);
+
+        cpu.change_register(InstructionRegister::A, 0);
+        cpu.set_flag(Flag::C, true);
+        cpu.set_flag(Flag::Z, true);
+        cpu.execute_sbi(1);
+        assert_eq!(cpu.get_register(InstructionRegister::A), -2);
+        assert_eq!(cpu.get_flag(Flag::C), true);
         assert_eq!(cpu.get_flag(Flag::Z), false);
     }
 
