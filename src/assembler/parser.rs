@@ -540,49 +540,49 @@ impl Instruction {
             Instruction::Intermediate(command, intermediate) => match command {
                 InstructionCommand::Adi => {
                     let mut base_result = vec![1, 1, 0, 0, 0, 1, 1, 0];
-                    base_result.append(&mut int_to_binary(*intermediate));
+                    base_result.append(&mut int_to_binary(*intermediate as i16, 8));
 
                     base_result
                 }
                 InstructionCommand::Aci => {
                     let mut base_result = vec![1, 1, 0, 0, 1, 1, 1, 0];
-                    base_result.append(&mut int_to_binary(*intermediate));
+                    base_result.append(&mut int_to_binary(*intermediate as i16, 8));
 
                     base_result
                 }
                 InstructionCommand::Sui => {
                     let mut base_result = vec![1, 1, 0, 1, 0, 1, 1, 0];
-                    base_result.append(&mut int_to_binary(*intermediate));
+                    base_result.append(&mut int_to_binary(*intermediate as i16, 8));
 
                     base_result
                 }
                 InstructionCommand::Ori => {
                     let mut base_result = vec![1, 1, 1, 1, 0, 1, 1, 0];
-                    base_result.append(&mut int_to_binary(*intermediate));
+                    base_result.append(&mut int_to_binary(*intermediate as i16, 8));
 
                     base_result
                 }
                 InstructionCommand::Xri => {
                     let mut base_result = vec![1, 1, 1, 0, 1, 1, 1, 0];
-                    base_result.append(&mut int_to_binary(*intermediate));
+                    base_result.append(&mut int_to_binary(*intermediate as i16, 8));
 
                     base_result
                 }
                 InstructionCommand::Ani => {
                     let mut base_result = vec![1, 1, 1, 0, 0, 1, 1, 0];
-                    base_result.append(&mut int_to_binary(*intermediate));
+                    base_result.append(&mut int_to_binary(*intermediate as i16, 8));
 
                     base_result
                 }
                 InstructionCommand::Cpi => {
                     let mut base_result = vec![1, 1, 1, 1, 1, 1, 1, 0];
-                    base_result.append(&mut int_to_binary(*intermediate));
+                    base_result.append(&mut int_to_binary(*intermediate as i16, 8));
 
                     base_result
                 }
                 InstructionCommand::Sbi => {
                     let mut base_result = vec![1, 1, 0, 1, 1, 1, 1, 0];
-                    base_result.append(&mut int_to_binary(*intermediate));
+                    base_result.append(&mut int_to_binary(*intermediate as i16, 8));
 
                     base_result
                 }
@@ -594,7 +594,7 @@ impl Instruction {
                     let mut base_result = vec![0, 0];
                     base_result.append(&mut register_pair.encode());
                     base_result.append(&mut vec![0, 0, 0, 1]);
-                    base_result.append(&mut int_to_binary_16_bit(*intermediate));
+                    base_result.append(&mut int_to_binary(*intermediate, 16));
 
                     base_result
                 }
@@ -606,7 +606,7 @@ impl Instruction {
                     let mut base_result = vec![0, 0];
                     base_result.append(&mut register.encode());
                     base_result.append(&mut vec![1, 1, 0]);
-                    base_result.append(&mut int_to_binary(*intermediate));
+                    base_result.append(&mut int_to_binary(*intermediate as i16, 8));
 
                     base_result
                 }
@@ -673,23 +673,15 @@ impl Instruction {
     }
 }
 
-fn int_to_binary(value: i8) -> Vec<u8> {
-    let binary_string = format!("{:08b}", value);
-
+pub fn int_to_binary(value: i16, mut size: i8) -> Vec<u8> {
     let mut result = Vec::new();
-    for c in binary_string.chars() {
-        result.push((c as u8) - 48);
+    size -= 1;
+    while size >= 0 {
+        let bit = (value >> size) & 1;
+        result.push(bit as u8);
+        size -= 1;
     }
-    result
-}
 
-fn int_to_binary_16_bit(value: i16) -> Vec<u8> {
-    let binary_string = format!("{:016b}", value);
-
-    let mut result = Vec::new();
-    for c in binary_string.chars() {
-        result.push((c as u8) - 48);
-    }
     result
 }
 
@@ -710,6 +702,7 @@ pub fn binary_to_int(intermediate: &[u8]) -> i8 {
 #[cfg(test)]
 mod tests {
     use crate::assembler::parser::binary_to_int;
+    use crate::assembler::parser::int_to_binary;
 
     use super::parse;
     use super::{InstructionArgument, InstructionRegister, InstructionRegisterPair};
@@ -853,6 +846,12 @@ mod tests {
     fn test_binary_to_int() {
         assert_eq!(binary_to_int(&mut vec![0, 0, 0, 0, 1, 1, 1, 1]), 15);
         assert_eq!(binary_to_int(&mut vec![1, 0, 0, 0, 0, 0, 0, 0]), -128);
+    }
+
+    #[test]
+    fn test_int_to_binary() {
+        assert_eq!(int_to_binary(15, 8), vec![0, 0, 0, 0, 1, 1, 1, 1]);
+        assert_eq!(int_to_binary(-128, 8), vec![1, 0, 0, 0, 0, 0, 0, 0]);
     }
 
     #[test]
