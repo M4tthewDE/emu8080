@@ -895,6 +895,34 @@ impl Cpu {
         }
     }
 
+    fn execute_cpi(&mut self, intermediate: i8) {
+        let acc = self.get_register(InstructionRegister::A);
+
+        let result = acc.wrapping_sub(intermediate);
+
+        if result == 0 {
+            self.set_flag(Flag::Z, true);
+        } else {
+            self.set_flag(Flag::Z, false);
+        }
+
+        if (intermediate < 0 && acc >= 0) || (intermediate >= 0 && acc < 0) {
+            if self.get_flag(Flag::C) {
+                self.set_flag(Flag::C, false);
+            } else {
+                self.set_flag(Flag::C, true);
+            }
+
+            return;
+        }
+
+        if intermediate > acc {
+            self.set_flag(Flag::C, true);
+        } else {
+            self.set_flag(Flag::C, false);
+        }
+    }
+
     fn print_status(&self) {
         for i in 0..7 {
             println!(
@@ -1710,6 +1738,25 @@ mod tests {
         assert_eq!(cpu.get_register(InstructionRegister::A), 0);
         assert_eq!(cpu.get_flag(Flag::Z), true);
         assert_eq!(cpu.get_flag(Flag::C), false);
+    }
+
+    #[test]
+    fn test_execute_cpi() {
+        let mut cpu = initialize_cpu();
+
+        cpu.set_flag(Flag::C, true);
+        cpu.set_flag(Flag::Z, true);
+        cpu.change_register(InstructionRegister::A, 74);
+        cpu.execute_cpi(64);
+        assert_eq!(cpu.get_flag(Flag::C), false);
+        assert_eq!(cpu.get_flag(Flag::Z), false);
+
+        cpu.set_flag(Flag::C, true);
+        cpu.set_flag(Flag::Z, true);
+        cpu.change_register(InstructionRegister::A, 74);
+        cpu.execute_cpi(-64);
+        assert_eq!(cpu.get_flag(Flag::C), false);
+        assert_eq!(cpu.get_flag(Flag::Z), false);
     }
 
     #[test]
