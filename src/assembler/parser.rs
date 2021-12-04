@@ -239,6 +239,8 @@ pub enum InstructionCommand {
     Ani,
     #[strum(serialize = "CPI")]
     Cpi,
+    #[strum(serialize = "SBI")]
+    Sbi,
     #[strum(serialize = "HLT")]
     Hlt,
 }
@@ -532,6 +534,12 @@ impl Instruction {
                 }
                 InstructionCommand::Cpi => {
                     let mut base_result = vec![1, 1, 1, 1, 1, 1, 1, 0];
+                    base_result.append(&mut int_to_binary(*intermediate));
+
+                    base_result
+                }
+                InstructionCommand::Sbi => {
+                    let mut base_result = vec![1, 1, 0, 1, 1, 1, 1, 0];
                     base_result.append(&mut int_to_binary(*intermediate));
 
                     base_result

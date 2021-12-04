@@ -40,6 +40,7 @@ LABEL:
         XRI 00001111
         ANI 10000000
         CPI 00001111
+        SBI 00000000
 
 STOP:
         HLT
