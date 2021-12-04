@@ -49,7 +49,7 @@ Programming Manual](http://dunfield.classiccmp.org/r/8080asm.pdf)
 - [x] SPHL
 
 ## Immediate Instructions
-- [ ] LXI
+- [x] LXI
 - [x] MVI
 - [x] ADI
 - [x] ACI
