@@ -102,6 +102,9 @@ impl Cpu {
             Instruction::Intermediate16Bit(command, register_pair, intermediate) => {
                 self.execute_intermediate_16_bit_instruction(command, register_pair, *intermediate)
             }
+            Instruction::Intermediate16BitNoReg(command, intermediate) => {
+                self.execute_intermediate_16_bit_instruction_no_reg(command, *intermediate)
+            }
             Instruction::IntermediateRegister(command, intermediate, register) => {
                 self.execute_intermediate_reg_instruction(command, register, *intermediate)
             }
@@ -182,6 +185,17 @@ impl Cpu {
     ) {
         match command {
             InstructionCommand::Lxi => self.execute_lxi(register_pair, intermediate),
+            _ => panic!("invalid instruction"),
+        }
+    }
+
+    fn execute_intermediate_16_bit_instruction_no_reg(
+        &mut self,
+        command: &InstructionCommand,
+        intermediate: i16,
+    ) {
+        match command {
+            InstructionCommand::Sta => self.execute_sta(intermediate),
             _ => panic!("invalid instruction"),
         }
     }
@@ -973,6 +987,10 @@ impl Cpu {
         self.change_register(registers.1, (intermediate & 255) as i8);
     }
 
+    fn execute_sta(&mut self, intermediate: i16) {
+        self.set_memory(intermediate as u16, self.get_register(InstructionRegister::A));
+    }
+
     fn print_status(&self) {
         for i in 0..7 {
             println!(
@@ -1043,6 +1061,7 @@ mod tests {
         assert_eq!(cpu.get_memory(7168), -124);
         assert_eq!(cpu.get_memory(0), -28);
         assert_eq!(cpu.get_memory(65535), 18);
+        assert_eq!(cpu.get_memory(42), 127);
     }
 
     #[test]
@@ -1839,6 +1858,16 @@ mod tests {
 
         cpu.execute_lxi(&InstructionRegisterPair::SP, 4080);
         assert_eq!(cpu.get_stack_pointer(), 4080);
+    }
+
+    #[test]
+    fn test_execute_sta() {
+        let mut cpu = initialize_cpu();
+
+        cpu.change_register(InstructionRegister::A, 15);
+        cpu.execute_sta(123);
+
+        assert_eq!(cpu.get_memory(123), 15);
     }
 
     #[test]
