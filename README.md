@@ -61,7 +61,7 @@ Programming Manual](http://dunfield.classiccmp.org/r/8080asm.pdf)
 - [x] CPI
 
 ## Direct Addressing Instructions
-- [ ] STA
+- [x] STA
 - [ ] LDA
 - [ ] SHLD
 - [ ] LHLD
