@@ -173,6 +173,14 @@ impl Assembler {
             } else if raw_instructions[index] == vec![1, 1, 1, 0, 0, 0, 1, 1] {
                 instruction = Instruction::NoRegister(InstructionCommand::Xthl);
 
+            // STA
+            } else if raw_instructions[index] == vec![0, 0, 1, 1, 0, 0, 1, 0] {
+                let intermediate0 =
+                    (parser::binary_to_int(&raw_instructions[index + 1].to_vec()) as i16) << 8;
+                let intermediate1 =
+                    parser::binary_to_int(&raw_instructions[index + 2].to_vec()) as i16;
+                instruction = Instruction::Intermediate16BitNoReg(InstructionCommand::Sta, intermediate0+intermediate1)
+
             // instructions with 1 argument in the end
             // ADD
             } else if raw_instructions[index][0..5] == [1, 0, 0, 0, 0] {
@@ -325,7 +333,7 @@ impl Assembler {
                 || matches!(instruction, Instruction::IntermediateRegister(_, _, _))
             {
                 index += 2;
-            } else if matches!(instruction, Instruction::Intermediate16Bit(_, _, _)) {
+            } else if matches!(instruction, Instruction::Intermediate16Bit(_, _, _)) || matches!(instruction, Instruction::Intermediate16BitNoReg(_, _)) {
                 index += 3;
             } else {
                 index += 1;
@@ -364,7 +372,7 @@ mod tests {
         std::fs::remove_file("test_assemble_binary").unwrap();
 
         assert_eq!(binary_data.len() % 8, 0);
-        assert_eq!(binary_data.len(), 408);
+        assert_eq!(binary_data.len(), 432);
 
         let mut bytes = binary_data.chunks(8);
         assert_eq!(bytes.next().unwrap(), [0, 0, 1, 1, 1, 1, 1, 0]);
@@ -417,6 +425,9 @@ mod tests {
         assert_eq!(bytes.next().unwrap(), [0, 0, 1, 1, 0, 0, 0, 1]);
         assert_eq!(bytes.next().unwrap(), [0, 0, 1, 1, 0, 0, 0, 0]);
         assert_eq!(bytes.next().unwrap(), [0, 0, 1, 1, 1, 0, 0, 1]);
+        assert_eq!(bytes.next().unwrap(), [0, 0, 1, 1, 0, 0, 1, 0]);
+        assert_eq!(bytes.next().unwrap(), [0, 0, 0, 0, 0, 0, 0, 0]);
+        assert_eq!(bytes.next().unwrap(), [0, 0, 1, 0, 1, 0, 1, 0]);
         assert_eq!(bytes.next().unwrap(), [0, 1, 1, 1, 0, 1, 1, 0]);
     }
 
@@ -426,7 +437,7 @@ mod tests {
         assembler.assemble();
 
         let instructions = assembler.disassemble("test_disassemble_binary".to_owned());
-        assert_eq!(instructions.len(), 40);
+        assert_eq!(instructions.len(), 41);
 
         for (i, instruction) in instructions.iter().enumerate() {
             match instruction {
@@ -465,7 +476,7 @@ mod tests {
                         assert_eq!(27, i);
                     }
                     InstructionCommand::Hlt => {
-                        assert_eq!(39, i);
+                        assert_eq!(40, i);
                     }
                     _ => panic!("invalid instruction"),
                 },
@@ -571,6 +582,13 @@ mod tests {
                     }
                     _ => panic!("invalid instruction"),
                 },
+                Instruction::Intermediate16BitNoReg(cmd, intermediate) => match cmd {
+                    InstructionCommand::Sta => {
+                        assert_eq!(39, i);
+                        assert_eq!(42, *intermediate);
+                    }
+                    _ => panic!("invalid instruction"),
+                }
                 Instruction::PairRegister(cmd, register_pair) => match cmd {
                     InstructionCommand::Stax => {
                         assert_eq!(20, i);

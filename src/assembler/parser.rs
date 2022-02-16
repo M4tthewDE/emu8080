@@ -164,6 +164,23 @@ pub fn parse(file_name: String) -> (Vec<Instruction>, Vec<Label>) {
                     let instruction = Instruction::PairRegister(command, register_pair);
                     instructions.push(instruction);
                 }
+                Rule::intermediate_16_bit_command_no_reg => {
+                    let mut raw_intermediate = Vec::new();
+                    for char in pairs.as_str().chars() {
+                        if char == '0' {
+                            raw_intermediate.push(0);
+                        } else {
+                            raw_intermediate.push(1);
+                        }
+                    }
+
+                    let high_bits = (binary_to_int(&raw_intermediate[0..8]) as i16) << 8;
+                    let low_bits = binary_to_int(&raw_intermediate[8..16]) as i16;
+
+                    let instruction =
+                        Instruction::Intermediate16BitNoReg(command, high_bits+low_bits);
+                    instructions.push(instruction);
+                }
                 Rule::intermediate_command => {
                     let mut intermediate = Vec::new();
                     for char in pairs.as_str().chars() {
@@ -282,6 +299,8 @@ pub enum InstructionCommand {
     Sbi,
     #[strum(serialize = "LXI")]
     Lxi,
+    #[strum(serialize = "STA")]
+    Sta,
     #[strum(serialize = "HLT")]
     Hlt,
 }
@@ -413,6 +432,7 @@ pub enum Instruction {
     ),
     Intermediate(InstructionCommand, i8),
     Intermediate16Bit(InstructionCommand, InstructionRegisterPair, i16),
+    Intermediate16BitNoReg(InstructionCommand, i16),
     IntermediateRegister(InstructionCommand, i8, InstructionRegister),
     PairRegister(InstructionCommand, InstructionRegisterPair),
 }
@@ -600,6 +620,16 @@ impl Instruction {
                 }
                 _ => panic!("invalid instruction"),
             },
+
+            Instruction::Intermediate16BitNoReg(command, intermediate) => match command {
+                InstructionCommand::Sta => {
+                    let mut base_result = vec![0, 0, 1, 1, 0, 0, 1, 0];
+                    base_result.append(&mut int_to_binary(*intermediate, 16));
+
+                    base_result
+                }
+                _ => panic!("invalid instruction")
+            }
 
             Instruction::IntermediateRegister(command, intermediate, register) => match command {
                 InstructionCommand::Mvi => {
