@@ -301,6 +301,8 @@ pub enum InstructionCommand {
     Lxi,
     #[strum(serialize = "STA")]
     Sta,
+    #[strum(serialize = "LDA")]
+    Lda,
     #[strum(serialize = "HLT")]
     Hlt,
 }
@@ -624,6 +626,12 @@ impl Instruction {
             Instruction::Intermediate16BitNoReg(command, intermediate) => match command {
                 InstructionCommand::Sta => {
                     let mut base_result = vec![0, 0, 1, 1, 0, 0, 1, 0];
+                    base_result.append(&mut int_to_binary(*intermediate, 16));
+
+                    base_result
+                }
+                InstructionCommand::Lda => {
+                    let mut base_result = vec![0, 0, 1, 1, 1, 0, 1, 0];
                     base_result.append(&mut int_to_binary(*intermediate, 16));
 
                     base_result
