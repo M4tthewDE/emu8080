@@ -303,6 +303,8 @@ pub enum InstructionCommand {
     Sta,
     #[strum(serialize = "LDA")]
     Lda,
+    #[strum(serialize = "SHLD")]
+    Shld,
     #[strum(serialize = "HLT")]
     Hlt,
 }
@@ -632,6 +634,12 @@ impl Instruction {
                 }
                 InstructionCommand::Lda => {
                     let mut base_result = vec![0, 0, 1, 1, 1, 0, 1, 0];
+                    base_result.append(&mut int_to_binary(*intermediate, 16));
+
+                    base_result
+                }
+                InstructionCommand::Shld => {
+                    let mut base_result = vec![0, 0, 1, 0, 0, 0, 1, 0];
                     base_result.append(&mut int_to_binary(*intermediate, 16));
 
                     base_result

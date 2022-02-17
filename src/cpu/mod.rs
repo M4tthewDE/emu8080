@@ -197,6 +197,7 @@ impl Cpu {
         match command {
             InstructionCommand::Sta => self.execute_sta(intermediate),
             InstructionCommand::Lda => self.execute_lda(intermediate),
+            InstructionCommand::Shld => self.execute_shld(intermediate),
             _ => panic!("invalid instruction"),
         }
     }
@@ -996,6 +997,11 @@ impl Cpu {
         self.change_register(InstructionRegister::A, self.get_memory(intermediate as u16))
     }
 
+    fn execute_shld(&mut self, intermediate: i16) {
+        self.set_memory(intermediate as u16, self.get_register(InstructionRegister::L));
+        self.set_memory(intermediate as u16 + 1, self.get_register(InstructionRegister::H));
+    }
+
     fn print_status(&self) {
         for i in 0..7 {
             println!(
@@ -1067,6 +1073,8 @@ mod tests {
         assert_eq!(cpu.get_memory(0), -28);
         assert_eq!(cpu.get_memory(65535), 18);
         assert_eq!(cpu.get_memory(42), 127);
+        assert_eq!(cpu.get_memory(12345), -1);
+        assert_eq!(cpu.get_memory(12346), 27);
     }
 
     #[test]
@@ -1884,6 +1892,19 @@ mod tests {
 
         assert_eq!(cpu.get_memory(42), 123);
     }
+
+    #[test]
+    fn test_execute_shld() {
+        let mut cpu = initialize_cpu();
+
+        cpu.change_register(InstructionRegister::H, 70);
+        cpu.change_register(InstructionRegister::L, 7);
+        cpu.execute_shld(123);
+
+        assert_eq!(cpu.get_memory(123), 7);
+        assert_eq!(cpu.get_memory(124), 70);
+    }
+
 
     #[test]
     fn test_memory() {
