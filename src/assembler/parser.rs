@@ -175,10 +175,10 @@ pub fn parse(file_name: String) -> (Vec<Instruction>, Vec<Label>) {
                     }
 
                     let high_bits = (binary_to_int(&raw_intermediate[0..8]) as i16) << 8;
-                    let low_bits = binary_to_int(&raw_intermediate[8..16]) as i16;
+                    let low_bits = (binary_to_int(&raw_intermediate[8..16]) as i16) & 255;
 
                     let instruction =
-                        Instruction::Intermediate16BitNoReg(command, high_bits+low_bits);
+                        Instruction::Intermediate16BitNoReg(command, high_bits + low_bits);
                     instructions.push(instruction);
                 }
                 Rule::intermediate_command => {
@@ -305,6 +305,8 @@ pub enum InstructionCommand {
     Lda,
     #[strum(serialize = "SHLD")]
     Shld,
+    #[strum(serialize = "LHLD")]
+    Lhld,
     #[strum(serialize = "HLT")]
     Hlt,
 }
@@ -644,8 +646,14 @@ impl Instruction {
 
                     base_result
                 }
-                _ => panic!("invalid instruction")
-            }
+                InstructionCommand::Lhld => {
+                    let mut base_result = vec![0, 0, 1, 0, 1, 0, 1, 0];
+                    base_result.append(&mut int_to_binary(*intermediate, 16));
+
+                    base_result
+                }
+                _ => panic!("invalid instruction"),
+            },
 
             Instruction::IntermediateRegister(command, intermediate, register) => match command {
                 InstructionCommand::Mvi => {
@@ -898,6 +906,10 @@ mod tests {
     fn test_int_to_binary() {
         assert_eq!(int_to_binary(15, 8), vec![0, 0, 0, 0, 1, 1, 1, 1]);
         assert_eq!(int_to_binary(-128, 8), vec![1, 0, 0, 0, 0, 0, 0, 0]);
+        assert_eq!(
+            int_to_binary(4000, 16),
+            vec![0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 1, 0, 0, 0, 0, 0]
+        );
     }
 
     #[test]
