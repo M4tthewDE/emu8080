@@ -64,7 +64,7 @@ Programming Manual](http://dunfield.classiccmp.org/r/8080asm.pdf)
 - [x] STA
 - [x] LDA
 - [x] SHLD
-- [ ] LHLD
+- [x] LHLD
 
 ## Jump Instructions
 - [ ] PCHL

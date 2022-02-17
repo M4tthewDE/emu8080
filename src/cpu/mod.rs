@@ -198,6 +198,7 @@ impl Cpu {
             InstructionCommand::Sta => self.execute_sta(intermediate),
             InstructionCommand::Lda => self.execute_lda(intermediate),
             InstructionCommand::Shld => self.execute_shld(intermediate),
+            InstructionCommand::Lhld => self.execute_lhld(intermediate),
             _ => panic!("invalid instruction"),
         }
     }
@@ -990,7 +991,10 @@ impl Cpu {
     }
 
     fn execute_sta(&mut self, intermediate: i16) {
-        self.set_memory(intermediate as u16, self.get_register(InstructionRegister::A));
+        self.set_memory(
+            intermediate as u16,
+            self.get_register(InstructionRegister::A),
+        );
     }
 
     fn execute_lda(&mut self, intermediate: i16) {
@@ -998,8 +1002,22 @@ impl Cpu {
     }
 
     fn execute_shld(&mut self, intermediate: i16) {
-        self.set_memory(intermediate as u16, self.get_register(InstructionRegister::L));
-        self.set_memory(intermediate as u16 + 1, self.get_register(InstructionRegister::H));
+        self.set_memory(
+            intermediate as u16,
+            self.get_register(InstructionRegister::L),
+        );
+        self.set_memory(
+            intermediate as u16 + 1,
+            self.get_register(InstructionRegister::H),
+        );
+    }
+
+    fn execute_lhld(&mut self, intermediate: i16) {
+        self.change_register(InstructionRegister::L, self.get_memory(intermediate as u16));
+        self.change_register(
+            InstructionRegister::H,
+            self.get_memory(intermediate as u16 + 1),
+        );
     }
 
     fn print_status(&self) {
@@ -1059,8 +1077,8 @@ mod tests {
         assert_eq!(cpu.get_register(InstructionRegister::C), -1);
         assert_eq!(cpu.get_register(InstructionRegister::D), 0);
         assert_eq!(cpu.get_register(InstructionRegister::E), 0);
-        assert_eq!(cpu.get_register(InstructionRegister::H), 27);
-        assert_eq!(cpu.get_register(InstructionRegister::L), -1);
+        assert_eq!(cpu.get_register(InstructionRegister::H), 0);
+        assert_eq!(cpu.get_register(InstructionRegister::L), 0);
 
         assert_eq!(cpu.get_flag(Flag::S), false);
         assert_eq!(cpu.get_flag(Flag::Z), false);
@@ -1905,6 +1923,17 @@ mod tests {
         assert_eq!(cpu.get_memory(124), 70);
     }
 
+    #[test]
+    fn test_execute_lhld() {
+        let mut cpu = initialize_cpu();
+
+        cpu.set_memory(300, 15);
+        cpu.set_memory(301, 1);
+        cpu.execute_lhld(300);
+
+        assert_eq!(cpu.get_register(InstructionRegister::H), 1);
+        assert_eq!(cpu.get_register(InstructionRegister::L), 15);
+    }
 
     #[test]
     fn test_memory() {
