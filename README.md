@@ -62,7 +62,7 @@ Programming Manual](http://dunfield.classiccmp.org/r/8080asm.pdf)
 
 ## Direct Addressing Instructions
 - [x] STA
-- [ ] LDA
+- [x] LDA
 - [ ] SHLD
 - [ ] LHLD
 
