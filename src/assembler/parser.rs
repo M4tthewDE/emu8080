@@ -307,6 +307,8 @@ pub enum InstructionCommand {
     Shld,
     #[strum(serialize = "LHLD")]
     Lhld,
+    #[strum(serialize = "PCHL")]
+    Pchl,
     #[strum(serialize = "HLT")]
     Hlt,
 }
@@ -479,6 +481,9 @@ impl Instruction {
                 }
                 InstructionCommand::Xthl => {
                     vec![1, 1, 1, 0, 0, 0, 1, 1]
+                }
+                InstructionCommand::Pchl => {
+                    vec![1, 1, 1, 0, 1, 0, 0, 1]
                 }
                 InstructionCommand::Hlt => {
                     vec![0, 1, 1, 1, 0, 1, 1, 0]

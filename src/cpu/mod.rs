@@ -9,6 +9,7 @@ pub fn initialize_cpu() -> Cpu {
         memory: vec![0; 65536],
         stack_pointer: 0,
         flags: vec![false; 8],
+        program_counter: 0,
     }
 }
 
@@ -20,6 +21,7 @@ pub struct Cpu {
 
     // S Z x A x P x C
     flags: Vec<bool>,
+    program_counter: u16,
 }
 #[derive(Debug, EnumIter, Clone)]
 enum Flag {
@@ -67,7 +69,32 @@ impl Cpu {
         self.stack_pointer
     }
 
-    pub fn run(&mut self, instructions: Vec<Instruction>) {
+    fn get_program_counter(&self) -> u16 {
+        self.program_counter
+    }
+
+    fn set_program_counter(&mut self, value: u16) {
+        self.program_counter = value;
+    }
+
+    pub fn run(&mut self, instructions: Vec<Instruction>, printing: bool) {
+        if printing {
+            self.print_run(instructions);
+            return
+        }
+
+        for instruction in instructions {
+            self.execute(&instruction);
+
+            if let Instruction::NoRegister(command) = instruction {
+                if matches!(command, InstructionCommand::Hlt) {
+                    return;
+                }
+            }
+        }
+    }
+
+    pub fn print_run(&mut self, instructions: Vec<Instruction>) {
         println!("Initial status:");
         self.print_status();
 
@@ -127,6 +154,7 @@ impl Cpu {
             InstructionCommand::Xchg => self.execute_xchg(),
             InstructionCommand::Sphl => self.execute_sphl(),
             InstructionCommand::Xthl => self.execute_xthl(),
+            InstructionCommand::Pchl => self.execute_pchl(),
             InstructionCommand::Hlt => self.execute_hlt(),
             _ => panic!("invalid instruction"),
         }
@@ -1020,6 +1048,14 @@ impl Cpu {
         );
     }
 
+    fn execute_pchl(&mut self) {
+        let reg_h = self.get_register(InstructionRegister::H) as i16;
+        let reg_l = self.get_register(InstructionRegister::L) as i16;
+        let counter = (reg_h << 8) + (reg_l & 255); 
+
+        self.set_program_counter(counter as u16);
+    }
+
     fn print_status(&self) {
         for i in 0..7 {
             println!(
@@ -1031,6 +1067,7 @@ impl Cpu {
         }
         self.print_flags();
         self.print_stack_pointer();
+        self.print_program_counter();
         self.print_memory();
     }
 
@@ -1053,6 +1090,10 @@ impl Cpu {
     fn print_stack_pointer(&self) {
         println!("Stack Pointer: {}", self.get_stack_pointer());
     }
+
+    fn print_program_counter(&self) {
+        println!("Program counter: {}", self.get_program_counter());
+    }
 }
 
 #[cfg(test)]
@@ -1070,7 +1111,7 @@ mod tests {
         assembler.assemble();
         let instructions = assembler.disassemble("output".to_owned());
 
-        cpu.run(instructions);
+        cpu.run(instructions, false);
 
         assert_eq!(cpu.get_register(InstructionRegister::A), -28);
         assert_eq!(cpu.get_register(InstructionRegister::B), 27);
@@ -1093,6 +1134,7 @@ mod tests {
         assert_eq!(cpu.get_memory(42), 127);
         assert_eq!(cpu.get_memory(12345), -1);
         assert_eq!(cpu.get_memory(12346), 27);
+        assert_eq!(cpu.get_program_counter(), 0);
     }
 
     #[test]
@@ -1933,6 +1975,17 @@ mod tests {
 
         assert_eq!(cpu.get_register(InstructionRegister::H), 1);
         assert_eq!(cpu.get_register(InstructionRegister::L), 15);
+    }
+
+    #[test]
+    fn test_execute_pchl() {
+        let mut cpu = initialize_cpu();
+
+        cpu.change_register(InstructionRegister::H, 65);
+        cpu.change_register(InstructionRegister::L, 62);
+        cpu.execute_pchl();
+
+        assert_eq!(cpu.get_program_counter(), 16702);
     }
 
     #[test]
