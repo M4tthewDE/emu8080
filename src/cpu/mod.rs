@@ -77,7 +77,24 @@ impl Cpu {
         self.program_counter = value;
     }
 
-    pub fn run(&mut self, instructions: Vec<Instruction>) {
+    pub fn run(&mut self, instructions: Vec<Instruction>, printing: bool) {
+        if printing {
+            self.print_run(instructions);
+            return
+        }
+
+        for instruction in instructions {
+            self.execute(&instruction);
+
+            if let Instruction::NoRegister(command) = instruction {
+                if matches!(command, InstructionCommand::Hlt) {
+                    return;
+                }
+            }
+        }
+    }
+
+    pub fn print_run(&mut self, instructions: Vec<Instruction>) {
         println!("Initial status:");
         self.print_status();
 
@@ -1050,6 +1067,7 @@ impl Cpu {
         }
         self.print_flags();
         self.print_stack_pointer();
+        self.print_program_counter();
         self.print_memory();
     }
 
@@ -1072,6 +1090,10 @@ impl Cpu {
     fn print_stack_pointer(&self) {
         println!("Stack Pointer: {}", self.get_stack_pointer());
     }
+
+    fn print_program_counter(&self) {
+        println!("Program counter: {}", self.get_program_counter());
+    }
 }
 
 #[cfg(test)]
@@ -1089,7 +1111,7 @@ mod tests {
         assembler.assemble();
         let instructions = assembler.disassemble("output".to_owned());
 
-        cpu.run(instructions);
+        cpu.run(instructions, false);
 
         assert_eq!(cpu.get_register(InstructionRegister::A), -28);
         assert_eq!(cpu.get_register(InstructionRegister::B), 27);
