@@ -67,7 +67,7 @@ Programming Manual](http://dunfield.classiccmp.org/r/8080asm.pdf)
 - [x] LHLD
 
 ## Jump Instructions
-- [ ] PCHL
+- [x] PCHL
 - [ ] JMP
 - [ ] JC
 - [ ] JNC
