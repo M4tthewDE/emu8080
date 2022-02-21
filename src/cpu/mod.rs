@@ -1,8 +1,10 @@
 use crate::assembler::{
     Instruction, InstructionCommand, InstructionRegister, InstructionRegisterPair,
 };
+use std::collections::HashMap;
 use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
+
 pub fn initialize_cpu() -> Cpu {
     Cpu {
         registers: vec![0; 8],
@@ -77,35 +79,56 @@ impl Cpu {
         self.program_counter = value;
     }
 
-    pub fn run(&mut self, instructions: Vec<Instruction>, printing: bool) {
+    fn incr_program_counter(&mut self, instruction: &Instruction) {
+        self.set_program_counter(self.get_program_counter() + instruction.get_size() as u16);
+    }
+
+    pub fn run(&mut self, instructions: HashMap<u16, Instruction>, printing: bool) {
         if printing {
             self.print_run(instructions);
-            return
+            return;
         }
 
-        for instruction in instructions {
-            self.execute(&instruction);
+        let mut instruction: &Instruction;
+
+        loop {
+            instruction = instructions.get(&self.get_program_counter()).unwrap();
 
             if let Instruction::NoRegister(command) = instruction {
                 if matches!(command, InstructionCommand::Hlt) {
+                    self.incr_program_counter(instruction);
+                    println!("Execution finished");
+
+                    println!("Final status: ");
+                    self.print_status();
                     return;
                 }
             }
+
+            self.execute(instruction);
+            self.incr_program_counter(instruction);
         }
     }
 
-    pub fn print_run(&mut self, instructions: Vec<Instruction>) {
+    pub fn print_run(&mut self, instructions: HashMap<u16, Instruction>) {
         println!("Initial status:");
         self.print_status();
 
-        for instruction in instructions {
+        let mut instruction: &Instruction;
+        loop {
+            instruction = instructions.get(&self.get_program_counter()).unwrap();
+
             println!("-------------");
             println!("{:?}", instruction);
 
-            self.execute(&instruction);
+            self.execute(instruction);
+            self.incr_program_counter(instruction);
 
             if let Instruction::NoRegister(command) = instruction {
                 if matches!(command, InstructionCommand::Hlt) {
+                    println!("Execution finished");
+                    println!("Final status: ");
+                    self.print_status();
                     return;
                 }
             }
@@ -155,7 +178,6 @@ impl Cpu {
             InstructionCommand::Sphl => self.execute_sphl(),
             InstructionCommand::Xthl => self.execute_xthl(),
             InstructionCommand::Pchl => self.execute_pchl(),
-            InstructionCommand::Hlt => self.execute_hlt(),
             _ => panic!("invalid instruction"),
         }
     }
@@ -497,12 +519,6 @@ impl Cpu {
 
     fn get_flag(&self, flag: Flag) -> bool {
         self.flags[flag.get_index()]
-    }
-
-    fn execute_hlt(&mut self) {
-        println!("Execution finished");
-        println!("Final status: ");
-        self.print_status();
     }
 
     fn execute_stc(&mut self) {
@@ -1051,7 +1067,7 @@ impl Cpu {
     fn execute_pchl(&mut self) {
         let reg_h = self.get_register(InstructionRegister::H) as i16;
         let reg_l = self.get_register(InstructionRegister::L) as i16;
-        let counter = (reg_h << 8) + (reg_l & 255); 
+        let counter = (reg_h << 8) + (reg_l & 255);
 
         self.set_program_counter(counter as u16);
     }
@@ -1134,7 +1150,7 @@ mod tests {
         assert_eq!(cpu.get_memory(42), 127);
         assert_eq!(cpu.get_memory(12345), -1);
         assert_eq!(cpu.get_memory(12346), 27);
-        assert_eq!(cpu.get_program_counter(), 0);
+        assert_eq!(cpu.get_program_counter(), 63);
     }
 
     #[test]

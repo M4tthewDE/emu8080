@@ -2,6 +2,7 @@ pub use crate::assembler::parser::{
     Instruction, InstructionArgument, InstructionCommand, InstructionRegister,
     InstructionRegisterPair,
 };
+use std::collections::HashMap;
 use std::fs::File;
 use std::io::{Read, Write};
 
@@ -33,7 +34,7 @@ impl Assembler {
         }
     }
 
-    pub fn disassemble(&self, input_bin: String) -> Vec<Instruction> {
+    pub fn disassemble(&self, input_bin: String) -> HashMap<u16, Instruction> {
         let mut file = File::open(input_bin.to_owned()).unwrap();
         let mut binary_data = Vec::new();
 
@@ -52,14 +53,15 @@ impl Assembler {
         self.parse_binary_instructions(&raw_instructions)
     }
 
-    fn parse_binary_instructions(&self, raw_instructions: &[Vec<u8>]) -> Vec<Instruction> {
-        let mut instructions = Vec::new();
+    fn parse_binary_instructions(&self, raw_instructions: &[Vec<u8>]) -> HashMap<u16, Instruction> {
+        let mut instructions = HashMap::new();
 
         let mut index = 0;
         while index < raw_instructions.len() {
             // pretty ugly, maybe there is a better solution with match or something
 
-            let instruction: Instruction;
+            let instruction: Instruction; 
+
             // instructions that take up more than one byte (intermediates)
             // MVI
             if raw_instructions[index][0..2] == [0, 0] && raw_instructions[index][5..] == [1, 1, 0]
@@ -368,6 +370,8 @@ impl Assembler {
                 panic!("Invalid instruction!");
             }
 
+            instructions.insert(index as u16, instruction.clone());
+
             // skip next byte since its the intermediate of the instruction that was just parsed
             if matches!(instruction, Instruction::Intermediate(_, _))
                 || matches!(instruction, Instruction::IntermediateRegister(_, _, _))
@@ -380,7 +384,6 @@ impl Assembler {
             } else {
                 index += 1;
             }
-            instructions.push(instruction);
         }
         instructions
     }
@@ -414,7 +417,7 @@ mod tests {
         std::fs::remove_file("test_assemble_binary").unwrap();
 
         assert_eq!(binary_data.len() % 8, 0);
-        assert_eq!(binary_data.len(), 512);
+        assert_eq!(binary_data.len(), 504);
 
         let mut bytes = binary_data.chunks(8);
         assert_eq!(bytes.next().unwrap(), [0, 0, 1, 1, 1, 1, 1, 0]);
@@ -479,7 +482,6 @@ mod tests {
         assert_eq!(bytes.next().unwrap(), [0, 0, 1, 0, 1, 0, 1, 0]);
         assert_eq!(bytes.next().unwrap(), [0, 0, 0, 0, 1, 1, 1, 1]);
         assert_eq!(bytes.next().unwrap(), [1, 0, 1, 0, 0, 0, 0, 0]);
-        assert_eq!(bytes.next().unwrap(), [1, 1, 1, 0, 1, 0, 0, 1]);
         assert_eq!(bytes.next().unwrap(), [0, 1, 1, 1, 0, 1, 1, 0]);
     }
 
@@ -489,206 +491,280 @@ mod tests {
         assembler.assemble();
 
         let instructions = assembler.disassemble("test_disassemble_binary".to_owned());
-        assert_eq!(instructions.len(), 45);
+        assert_eq!(instructions.len(), 44);
 
-        for (i, instruction) in instructions.iter().enumerate() {
-            match instruction {
-                Instruction::NoRegister(cmd) => match cmd {
-                    InstructionCommand::Stc => {
-                        assert_eq!(8, i);
-                    }
-                    InstructionCommand::Cmc => {
-                        assert_eq!(9, i);
-                    }
-                    InstructionCommand::Cma => {
-                        assert_eq!(10, i);
-                    }
-                    InstructionCommand::Rlc => {
-                        assert_eq!(14, i);
-                    }
-                    InstructionCommand::Rrc => {
-                        assert_eq!(15, i);
-                    }
-                    InstructionCommand::Ral => {
-                        assert_eq!(16, i);
-                    }
-                    InstructionCommand::Rar => {
-                        assert_eq!(17, i);
-                    }
-                    InstructionCommand::Daa => {
-                        assert_eq!(19, i);
-                    }
-                    InstructionCommand::Xchg => {
-                        assert_eq!(25, i);
-                    }
-                    InstructionCommand::Sphl => {
-                        assert_eq!(26, i);
-                    }
-                    InstructionCommand::Xthl => {
-                        assert_eq!(27, i);
-                    }
-                    InstructionCommand::Hlt => {
-                        assert_eq!(44, i);
-                    }
-                    InstructionCommand::Pchl => {
-                        assert_eq!(43, i);
-                    }
-                    _ => panic!("invalid instruction"),
-                },
-                Instruction::SingleRegister(cmd, register) => match cmd {
-                    InstructionCommand::Ana => {
-                        assert_eq!(2, i);
-                        assert!(matches!(register, InstructionRegister::B))
-                    }
-                    InstructionCommand::Add => {
-                        assert_eq!(3, i);
-                        assert!(matches!(register, InstructionRegister::A))
-                    }
-                    InstructionCommand::Sub => {
-                        assert_eq!(4, i);
-                        assert!(matches!(register, InstructionRegister::A))
-                    }
-                    InstructionCommand::Inr => {
-                        assert_eq!(5, i);
-                        assert!(matches!(register, InstructionRegister::A))
-                    }
-                    InstructionCommand::Dcr => {
-                        assert_eq!(6, i);
-                        assert!(matches!(register, InstructionRegister::A))
-                    }
-                    InstructionCommand::Adc => {
-                        assert_eq!(11, i);
-                        assert!(matches!(register, InstructionRegister::C))
-                    }
-                    InstructionCommand::Ora => {
-                        assert_eq!(18, i);
-                        assert!(matches!(register, InstructionRegister::B))
-                    }
-                    InstructionCommand::Cmp => {
-                        assert_eq!(22, i);
-                        assert!(matches!(register, InstructionRegister::B))
-                    }
-                    InstructionCommand::Xra => {
-                        assert_eq!(23, i);
-                        assert!(matches!(register, InstructionRegister::B))
-                    }
-                    InstructionCommand::Sbb => {
-                        assert_eq!(24, i);
-                        assert!(matches!(register, InstructionRegister::B));
-                    }
-                    _ => panic!("invalid instruction"),
-                },
-                Instruction::DoubleRegister(cmd, registers) => match cmd {
-                    InstructionCommand::Mov => {
-                        assert_eq!(1, i);
-                        assert!(matches!(registers.0, InstructionRegister::A));
-                        assert!(matches!(registers.1, InstructionRegister::B));
-                    }
-                    _ => panic!("invalid instruction"),
-                },
-                Instruction::Intermediate(cmd, intermediate) => match cmd {
-                    InstructionCommand::Adi => {
-                        assert_eq!(7, i);
-                        assert_eq!(-103, *intermediate);
-                    }
-                    InstructionCommand::Aci => {
-                        assert_eq!(12, i);
-                        assert_eq!(12, *intermediate);
-                    }
-                    InstructionCommand::Sui => {
-                        assert_eq!(13, i);
-                        assert_eq!(12, *intermediate);
-                    }
-                    InstructionCommand::Ori => {
-                        assert_eq!(33, i);
-                        assert_eq!(15, *intermediate);
-                    }
-                    InstructionCommand::Xri => {
-                        assert_eq!(34, i);
-                        assert_eq!(15, *intermediate);
-                    }
-                    InstructionCommand::Ani => {
-                        assert_eq!(35, i);
-                        assert_eq!(-128, *intermediate);
-                    }
-                    InstructionCommand::Cpi => {
-                        assert_eq!(36, i);
-                        assert_eq!(15, *intermediate);
-                    }
-                    InstructionCommand::Sbi => {
-                        assert_eq!(37, i);
-                        assert_eq!(0, *intermediate);
-                    }
-                    _ => panic!("invalid instruction"),
-                },
-                Instruction::IntermediateRegister(cmd, intermediate, register) => match cmd {
-                    InstructionCommand::Mvi => {
-                        assert_eq!(0, i);
-                        assert!(matches!(register, InstructionRegister::A));
-                        assert_eq!(28, *intermediate);
-                    }
-                    _ => panic!("invalid instruction"),
-                },
-                Instruction::Intermediate16Bit(cmd, register_pair, intermediate) => match cmd {
-                    InstructionCommand::Lxi => {
-                        assert_eq!(38, i);
-                        assert!(matches!(register_pair, InstructionRegisterPair::SP));
-                        assert_eq!(12345, *intermediate);
-                    }
-                    _ => panic!("invalid instruction"),
-                },
-                Instruction::Intermediate16BitNoReg(cmd, intermediate) => match cmd {
-                    InstructionCommand::Sta => {
-                        assert_eq!(39, i);
-                        assert_eq!(42, *intermediate);
-                    }
-                    InstructionCommand::Lda => {
-                        assert_eq!(40, i);
-                        assert_eq!(0, *intermediate);
-                    }
-                    InstructionCommand::Shld => {
-                        assert_eq!(41, i);
-                        assert_eq!(12345, *intermediate);
-                    }
-                    InstructionCommand::Lhld => {
-                        assert_eq!(42, i);
-                        assert_eq!(4000, *intermediate);
-                    }
-                    _ => panic!("invalid instruction"),
-                },
-                Instruction::PairRegister(cmd, register_pair) => match cmd {
-                    InstructionCommand::Stax => {
-                        assert_eq!(20, i);
-                        assert!(matches!(register_pair, InstructionRegisterPair::BC));
-                    }
-                    InstructionCommand::Ldax => {
-                        assert_eq!(21, i);
-                        assert!(matches!(register_pair, InstructionRegisterPair::DE));
-                    }
-                    InstructionCommand::Dcx => {
-                        assert_eq!(28, i);
-                        assert!(matches!(register_pair, InstructionRegisterPair::BC));
-                    }
-                    InstructionCommand::Inx => {
-                        assert_eq!(29, i);
-                        assert!(matches!(register_pair, InstructionRegisterPair::SP));
-                    }
-                    InstructionCommand::Dad => {
-                        assert_eq!(30, i);
-                        assert!(matches!(register_pair, InstructionRegisterPair::BC));
-                    }
-                    InstructionCommand::Push => {
-                        assert_eq!(31, i);
-                        assert!(matches!(register_pair, InstructionRegisterPair::FA));
-                    }
-                    InstructionCommand::Pop => {
-                        assert_eq!(32, i);
-                        assert!(matches!(register_pair, InstructionRegisterPair::FA));
-                    }
-                    _ => panic!("invalid instruction"),
-                },
-            }
-        }
+        //println!("{:?}", instructions);
+
+        let mut instruction = instructions.get(&0).unwrap();
+        assert_eq!(
+            *instruction,
+            Instruction::IntermediateRegister(InstructionCommand::Mvi, 28, InstructionRegister::A)
+        );
+
+        instruction = instructions.get(&2).unwrap();
+        assert_eq!(
+            *instruction,
+            Instruction::DoubleRegister(
+                InstructionCommand::Mov,
+                (InstructionRegister::A, InstructionRegister::B)
+            )
+        );
+
+        instruction = instructions.get(&3).unwrap();
+        assert_eq!(
+            *instruction,
+            Instruction::SingleRegister(InstructionCommand::Ana, InstructionRegister::B)
+        );
+
+        instruction = instructions.get(&4).unwrap();
+        assert_eq!(
+            *instruction,
+            Instruction::SingleRegister(InstructionCommand::Add, InstructionRegister::A)
+        );
+
+        instruction = instructions.get(&5).unwrap();
+        assert_eq!(
+            *instruction,
+            Instruction::SingleRegister(InstructionCommand::Sub, InstructionRegister::A)
+        );
+
+        instruction = instructions.get(&6).unwrap();
+        assert_eq!(
+            *instruction,
+            Instruction::SingleRegister(InstructionCommand::Inr, InstructionRegister::A)
+        );
+
+        instruction = instructions.get(&7).unwrap();
+        assert_eq!(
+            *instruction,
+            Instruction::SingleRegister(InstructionCommand::Dcr, InstructionRegister::A)
+        );
+
+        instruction = instructions.get(&8).unwrap();
+        assert_eq!(
+            *instruction,
+            Instruction::Intermediate(InstructionCommand::Adi, -103)
+        );
+
+        instruction = instructions.get(&10).unwrap();
+        assert_eq!(
+            *instruction,
+            Instruction::NoRegister(InstructionCommand::Stc)
+        );
+
+        instruction = instructions.get(&11).unwrap();
+        assert_eq!(
+            *instruction,
+            Instruction::NoRegister(InstructionCommand::Cmc)
+        );
+
+        instruction = instructions.get(&12).unwrap();
+        assert_eq!(
+            *instruction,
+            Instruction::NoRegister(InstructionCommand::Cma)
+        );
+
+        instruction = instructions.get(&13).unwrap();
+        assert_eq!(
+            *instruction,
+            Instruction::SingleRegister(InstructionCommand::Adc, InstructionRegister::C)
+        );
+
+        instruction = instructions.get(&14).unwrap();
+        assert_eq!(
+            *instruction,
+            Instruction::Intermediate(InstructionCommand::Aci, 12)
+        );
+
+        instruction = instructions.get(&16).unwrap();
+        assert_eq!(
+            *instruction,
+            Instruction::Intermediate(InstructionCommand::Sui, 12)
+        );
+
+        instruction = instructions.get(&18).unwrap();
+        assert_eq!(
+            *instruction,
+            Instruction::NoRegister(InstructionCommand::Rlc)
+        );
+
+        instruction = instructions.get(&19).unwrap();
+        assert_eq!(
+            *instruction,
+            Instruction::NoRegister(InstructionCommand::Rrc)
+        );
+
+        instruction = instructions.get(&20).unwrap();
+        assert_eq!(
+            *instruction,
+            Instruction::NoRegister(InstructionCommand::Ral)
+        );
+
+        instruction = instructions.get(&21).unwrap();
+        assert_eq!(
+            *instruction,
+            Instruction::NoRegister(InstructionCommand::Rar)
+        );
+
+        instruction = instructions.get(&22).unwrap();
+        assert_eq!(
+            *instruction,
+            Instruction::SingleRegister(InstructionCommand::Ora, InstructionRegister::B)
+        );
+
+        instruction = instructions.get(&23).unwrap();
+        assert_eq!(
+            *instruction,
+            Instruction::NoRegister(InstructionCommand::Daa)
+        );
+
+        instruction = instructions.get(&24).unwrap();
+        assert_eq!(
+            *instruction,
+            Instruction::PairRegister(InstructionCommand::Stax, InstructionRegisterPair::BC)
+        );
+
+        instruction = instructions.get(&25).unwrap();
+        assert_eq!(
+            *instruction,
+            Instruction::PairRegister(InstructionCommand::Ldax, InstructionRegisterPair::DE)
+        );
+
+        instruction = instructions.get(&26).unwrap();
+        assert_eq!(
+            *instruction,
+            Instruction::SingleRegister(InstructionCommand::Cmp, InstructionRegister::B)
+        );
+
+        instruction = instructions.get(&27).unwrap();
+        assert_eq!(
+            *instruction,
+            Instruction::SingleRegister(InstructionCommand::Xra, InstructionRegister::B)
+        );
+
+        instruction = instructions.get(&28).unwrap();
+        assert_eq!(
+            *instruction,
+            Instruction::SingleRegister(InstructionCommand::Sbb, InstructionRegister::B)
+        );
+
+        instruction = instructions.get(&29).unwrap();
+        assert_eq!(
+            *instruction,
+            Instruction::NoRegister(InstructionCommand::Xchg)
+        );
+
+        instruction = instructions.get(&30).unwrap();
+        assert_eq!(
+            *instruction,
+            Instruction::NoRegister(InstructionCommand::Sphl)
+        );
+
+        instruction = instructions.get(&31).unwrap();
+        assert_eq!(
+            *instruction,
+            Instruction::NoRegister(InstructionCommand::Xthl)
+        );
+
+        instruction = instructions.get(&32).unwrap();
+        assert_eq!(
+            *instruction,
+            Instruction::PairRegister(InstructionCommand::Dcx, InstructionRegisterPair::BC)
+        );
+
+        instruction = instructions.get(&33).unwrap();
+        assert_eq!(
+            *instruction,
+            Instruction::PairRegister(InstructionCommand::Inx, InstructionRegisterPair::SP)
+        );
+
+        instruction = instructions.get(&34).unwrap();
+        assert_eq!(
+            *instruction,
+            Instruction::PairRegister(InstructionCommand::Dad, InstructionRegisterPair::BC)
+        );
+
+        instruction = instructions.get(&35).unwrap();
+        assert_eq!(
+            *instruction,
+            Instruction::PairRegister(InstructionCommand::Push, InstructionRegisterPair::FA)
+        );
+
+        instruction = instructions.get(&36).unwrap();
+        assert_eq!(
+            *instruction,
+            Instruction::PairRegister(InstructionCommand::Pop, InstructionRegisterPair::FA)
+        );
+
+        instruction = instructions.get(&37).unwrap();
+        assert_eq!(
+            *instruction,
+            Instruction::Intermediate(InstructionCommand::Ori, 15)
+        );
+
+        instruction = instructions.get(&39).unwrap();
+        assert_eq!(
+            *instruction,
+            Instruction::Intermediate(InstructionCommand::Xri, 15)
+        );
+
+        instruction = instructions.get(&41).unwrap();
+        assert_eq!(
+            *instruction,
+            Instruction::Intermediate(InstructionCommand::Ani, -128)
+        );
+
+        instruction = instructions.get(&43).unwrap();
+        assert_eq!(
+            *instruction,
+            Instruction::Intermediate(InstructionCommand::Cpi, 15)
+        );
+
+        instruction = instructions.get(&45).unwrap();
+        assert_eq!(
+            *instruction,
+            Instruction::Intermediate(InstructionCommand::Sbi, 0)
+        );
+
+        instruction = instructions.get(&47).unwrap();
+        assert_eq!(
+            *instruction,
+            Instruction::Intermediate16Bit(
+                InstructionCommand::Lxi,
+                InstructionRegisterPair::SP,
+                12345
+            )
+        );
+
+        instruction = instructions.get(&50).unwrap();
+        assert_eq!(
+            *instruction,
+            Instruction::Intermediate16BitNoReg(InstructionCommand::Sta, 42)
+        );
+
+        instruction = instructions.get(&53).unwrap();
+        assert_eq!(
+            *instruction,
+            Instruction::Intermediate16BitNoReg(InstructionCommand::Lda, 0)
+        );
+
+        instruction = instructions.get(&56).unwrap();
+        assert_eq!(
+            *instruction,
+            Instruction::Intermediate16BitNoReg(InstructionCommand::Shld, 12345)
+        );
+
+        instruction = instructions.get(&59).unwrap();
+        assert_eq!(
+            *instruction,
+            Instruction::Intermediate16BitNoReg(InstructionCommand::Lhld, 4000)
+        );
+
+        instruction = instructions.get(&62).unwrap();
+        assert_eq!(
+            *instruction,
+            Instruction::NoRegister(InstructionCommand::Hlt)
+        );
     }
 
     #[test]
@@ -721,25 +797,23 @@ mod tests {
             Assembler::new("test.asm".to_owned(), "test_stax_parsing_binary".to_owned());
         let instruction = vec![vec![0, 0, 0, 0, 0, 0, 1, 0]];
 
-        let instruction = &assembler.parse_binary_instructions(&instruction)[0];
+        let instructions = &assembler.parse_binary_instructions(&instruction);
+        let instruction = instructions.get(&0).unwrap();
 
-        if let Instruction::PairRegister(command, register_pair) = instruction {
-            let registers = register_pair.get_registers();
-            assert!(matches!(command, InstructionCommand::Stax));
-            assert!(matches!(registers.0, InstructionRegister::B));
-            assert!(matches!(registers.1, InstructionRegister::C));
-        }
+        assert_eq!(
+            *instruction,
+            Instruction::PairRegister(InstructionCommand::Stax, InstructionRegisterPair::BC)
+        );
 
         let instruction = vec![vec![0, 0, 0, 1, 0, 0, 1, 0]];
 
-        let instruction = &assembler.parse_binary_instructions(&instruction)[0];
+        let instructions = &assembler.parse_binary_instructions(&instruction);
+        let instruction = instructions.get(&0).unwrap();
 
-        if let Instruction::PairRegister(command, register_pair) = instruction {
-            let registers = register_pair.get_registers();
-            assert!(matches!(command, InstructionCommand::Stax));
-            assert!(matches!(registers.0, InstructionRegister::D));
-            assert!(matches!(registers.1, InstructionRegister::E));
-        }
+        assert_eq!(
+            *instruction,
+            Instruction::PairRegister(InstructionCommand::Stax, InstructionRegisterPair::DE)
+        );
     }
 
     #[test]
@@ -748,24 +822,22 @@ mod tests {
             Assembler::new("test.asm".to_owned(), "test_ldax_parsing_binary".to_owned());
         let instruction = vec![vec![0, 0, 0, 0, 1, 0, 1, 0]];
 
-        let instruction = &assembler.parse_binary_instructions(&instruction)[0];
+        let instructions = &assembler.parse_binary_instructions(&instruction);
+        let instruction = instructions.get(&0).unwrap();
 
-        if let Instruction::PairRegister(command, register_pair) = instruction {
-            let registers = register_pair.get_registers();
-            assert!(matches!(command, InstructionCommand::Ldax));
-            assert!(matches!(registers.0, InstructionRegister::B));
-            assert!(matches!(registers.1, InstructionRegister::C));
-        }
+        assert_eq!(
+            *instruction,
+            Instruction::PairRegister(InstructionCommand::Ldax, InstructionRegisterPair::BC)
+        );
 
         let instruction = vec![vec![0, 0, 0, 1, 1, 0, 1, 0]];
 
-        let instruction = &assembler.parse_binary_instructions(&instruction)[0];
+        let instructions = &assembler.parse_binary_instructions(&instruction);
+        let instruction = instructions.get(&0).unwrap();
 
-        if let Instruction::PairRegister(command, register_pair) = instruction {
-            let registers = register_pair.get_registers();
-            assert!(matches!(command, InstructionCommand::Ldax));
-            assert!(matches!(registers.0, InstructionRegister::D));
-            assert!(matches!(registers.1, InstructionRegister::E));
-        }
+        assert_eq!(
+            *instruction,
+            Instruction::PairRegister(InstructionCommand::Ldax, InstructionRegisterPair::DE)
+        );
     }
 }
