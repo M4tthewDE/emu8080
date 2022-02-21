@@ -219,7 +219,7 @@ impl PartialEq for Label {
     }
 }
 
-#[derive(Debug, EnumString)]
+#[derive(Debug, EnumString, Clone, PartialEq)]
 pub enum InstructionCommand {
     #[strum(serialize = "MVI")]
     Mvi,
@@ -318,7 +318,7 @@ pub trait InstructionArgument {
     fn decode(raw_bits: &[u8]) -> Self;
 }
 
-#[derive(Debug, Copy, Clone, EnumString)]
+#[derive(Debug, Copy, Clone, EnumString, PartialEq)]
 pub enum InstructionRegister {
     A,
     B,
@@ -388,7 +388,7 @@ impl InstructionRegister {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum InstructionRegisterPair {
     BC,
     DE,
@@ -430,7 +430,7 @@ impl InstructionRegisterPair {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Instruction {
     NoRegister(InstructionCommand),
     SingleRegister(InstructionCommand, InstructionRegister),
@@ -446,6 +446,19 @@ pub enum Instruction {
 }
 
 impl Instruction {
+    pub fn get_size(&self) -> u8 {
+        match self {
+            Instruction::NoRegister(_) => 1,
+            Instruction::SingleRegister(_, _) => 1,
+            Instruction::DoubleRegister(_, _) => 1,
+            Instruction::Intermediate(_, _) => 2,
+            Instruction::Intermediate16Bit(_, _, _) => 3,
+            Instruction::Intermediate16BitNoReg(_, _) => 3,
+            Instruction::IntermediateRegister(_, _, _) => 2,
+            Instruction::PairRegister(_, _) => 1,
+        }
+    }
+
     pub fn encode(&self) -> Vec<u8> {
         match self {
             Instruction::NoRegister(command) => match command {
