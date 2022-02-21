@@ -59,7 +59,7 @@ impl Assembler {
         let mut index = 0;
         while index < raw_instructions.len() {
             // pretty ugly, maybe there is a better solution with match or something
-            
+
             let instruction: Instruction; 
 
             // instructions that take up more than one byte (intermediates)

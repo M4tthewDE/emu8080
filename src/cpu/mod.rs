@@ -94,17 +94,19 @@ impl Cpu {
         loop {
             instruction = instructions.get(&self.get_program_counter()).unwrap();
 
-            self.execute(instruction);
-            self.incr_program_counter(instruction);
-
             if let Instruction::NoRegister(command) = instruction {
                 if matches!(command, InstructionCommand::Hlt) {
+                    self.incr_program_counter(instruction);
                     println!("Execution finished");
+
                     println!("Final status: ");
                     self.print_status();
                     return;
                 }
             }
+
+            self.execute(instruction);
+            self.incr_program_counter(instruction);
         }
     }
 
@@ -176,7 +178,6 @@ impl Cpu {
             InstructionCommand::Sphl => self.execute_sphl(),
             InstructionCommand::Xthl => self.execute_xthl(),
             InstructionCommand::Pchl => self.execute_pchl(),
-            InstructionCommand::Hlt => self.execute_hlt(),
             _ => panic!("invalid instruction"),
         }
     }
@@ -519,8 +520,6 @@ impl Cpu {
     fn get_flag(&self, flag: Flag) -> bool {
         self.flags[flag.get_index()]
     }
-
-    fn execute_hlt(&mut self) {}
 
     fn execute_stc(&mut self) {
         self.set_flag(Flag::C, true);
