@@ -1072,6 +1072,10 @@ impl Cpu {
         self.set_program_counter(counter as u16);
     }
 
+    fn execute_jmp(&mut self, address: u16) {
+        self.set_program_counter(address);
+    }
+
     fn print_status(&self) {
         for i in 0..7 {
             println!(
@@ -2003,6 +2007,17 @@ mod tests {
 
         assert_eq!(cpu.get_program_counter(), 16702);
     }
+
+    #[test]
+    fn test_execute_jmp() {
+        let mut cpu = initialize_cpu();
+
+        cpu.set_program_counter(10);
+        cpu.execute_jmp(1234);
+
+        assert_eq!(cpu.get_program_counter(), 1234);
+    }
+
 
     #[test]
     fn test_memory() {
