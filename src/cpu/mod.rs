@@ -107,6 +107,8 @@ impl Cpu {
 
             self.execute(instruction);
 
+            // jump instructions already adjust the program counter,
+            // no incrementing is needed
             if !matches!(instruction, Instruction::Label(_, _)) {
                 self.incr_program_counter(instruction);
             }
