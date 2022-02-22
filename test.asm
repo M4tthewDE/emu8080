@@ -1,7 +1,6 @@
 ; example assembly programm for tests 
 
-TEST:   
-        MVI A,00011100 ; 28
+TEST:   MVI A,00011100 ; 28
         MOV A,B
         ANA B
         ADD A
@@ -10,8 +9,7 @@ TEST:
         DCR A 
         ADI 10011001 ; -103
 
-LABEL:
-        STC
+LABEL:  STC
         CMC
         CMA
         ADC C
@@ -47,6 +45,5 @@ LABEL:
         SHLD 0011000000111001
         LHLD 0000111110100000
 
-STOP:
-        HLT
+STOP:   HLT
 
