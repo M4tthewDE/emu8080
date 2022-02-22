@@ -8,10 +8,12 @@ intermediate_16_bit_command = { "LXI" }
 intermediate_16_bit_command_no_reg = { "STA" | "LDA" | "SHLD" | "LHLD" }
 pair_reg_command = { "STAX" | "LDAX" | "DCX" | "INX" | "DAD" | "PUSH" | "POP" }
 no_reg_command = { "HLT" | "STC" | "DAA" | "CMC" | "CMA" | "RLC" | "RRC" | "RAL" | "RAR" | "XCHG" | "SPHL" | "XTHL" | "PCHL" }
+label_command = { "JMP" }
 intermediate  = { ("0"|"1"){8}}
 intermediate_16_bit  = { ("0"|"1"){16}}
 comment = { ";" ~ (LETTER | NUMBER | PUNCTUATION)* }
 label = @{ ("@" | "?" | ASCII_ALPHA) ~ (ASCII_ALPHANUMERIC){, 4} ~ ":" }
+label_parameter = @{ ("@" | "?" | ASCII_ALPHA) ~ (ASCII_ALPHANUMERIC){, 4} }
 
 intermediate_reg_instruction = { intermediate_reg_command ~ register ~ "," ~ intermediate }
 intermediate_instruction = { intermediate_command ~ intermediate }
@@ -21,7 +23,8 @@ single_reg_instruction = { single_reg_command ~ register }
 double_reg_instruction = { double_reg_command ~ register ~ "," ~ register }
 no_reg_instruction = { no_reg_command }
 pair_reg_instruction = { pair_reg_command ~ pair_reg_register }
-instruction = { (label ~ NEWLINE*)? ~ (intermediate_reg_instruction | intermediate_16_bit_instruction_no_reg | intermediate_instruction | intermediate_16_bit_instruction | single_reg_instruction | double_reg_instruction | no_reg_instruction | pair_reg_instruction) ~ comment? }
+label_instruction = { label_command ~ label_parameter }
+instruction = { (label)? ~ ( intermediate_reg_instruction | intermediate_16_bit_instruction_no_reg | intermediate_instruction | intermediate_16_bit_instruction | single_reg_instruction | double_reg_instruction | no_reg_instruction | pair_reg_instruction | label_instruction ) ~ comment? }
 assembly = { ((instruction | comment) ~ (EOI | NEWLINE+))+ }
 
 WHITESPACE = _{ " " }

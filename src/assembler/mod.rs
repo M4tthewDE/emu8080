@@ -23,8 +23,7 @@ impl Assembler {
     }
 
     pub fn assemble(&self) {
-        let parse_result = parser::parse(self.input_asm.to_owned());
-        let instructions = parse_result.0;
+        let instructions = parser::parse(self.input_asm.to_owned());
 
         // write to file
         let mut file = File::create(&self.output_bin).unwrap();
@@ -60,7 +59,7 @@ impl Assembler {
         while index < raw_instructions.len() {
             // pretty ugly, maybe there is a better solution with match or something
 
-            let instruction: Instruction; 
+            let instruction: Instruction;
 
             // instructions that take up more than one byte (intermediates)
             // MVI
@@ -223,6 +222,14 @@ impl Assembler {
                     intermediate0 + intermediate1,
                 )
 
+            // JMP
+            } else if raw_instructions[index] == vec![1, 1, 0, 0, 0, 0, 1, 1] {
+                let address0 =
+                    (parser::binary_to_int(&raw_instructions[index + 1].to_vec()) as u16) << 8;
+                let address1 =
+                    (parser::binary_to_int(&raw_instructions[index + 2].to_vec()) as u16) & 255;
+                instruction = Instruction::Label(InstructionCommand::Jmp, address0 + address1)
+
             // instructions with 1 argument in the end
             // ADD
             } else if raw_instructions[index][0..5] == [1, 0, 0, 0, 0] {
@@ -379,6 +386,7 @@ impl Assembler {
                 index += 2;
             } else if matches!(instruction, Instruction::Intermediate16Bit(_, _, _))
                 || matches!(instruction, Instruction::Intermediate16BitNoReg(_, _))
+                || matches!(instruction, Instruction::Label(_, _))
             {
                 index += 3;
             } else {
@@ -417,71 +425,145 @@ mod tests {
         std::fs::remove_file("test_assemble_binary").unwrap();
 
         assert_eq!(binary_data.len() % 8, 0);
-        assert_eq!(binary_data.len(), 504);
+        assert_eq!(binary_data.len(), 544);
 
         let mut bytes = binary_data.chunks(8);
+
+        // MVI
         assert_eq!(bytes.next().unwrap(), [0, 0, 1, 1, 1, 1, 1, 0]);
+        // MVI intermediate
         assert_eq!(bytes.next().unwrap(), [0, 0, 0, 1, 1, 1, 0, 0]);
+        // MOV
         assert_eq!(bytes.next().unwrap(), [0, 1, 1, 1, 1, 0, 0, 0]);
+        // ANA
         assert_eq!(bytes.next().unwrap(), [1, 0, 1, 0, 0, 0, 0, 0]);
+        // ADD
         assert_eq!(bytes.next().unwrap(), [1, 0, 0, 0, 0, 1, 1, 1]);
+        // SUB
         assert_eq!(bytes.next().unwrap(), [1, 0, 0, 1, 0, 1, 1, 1]);
+        // INR
         assert_eq!(bytes.next().unwrap(), [0, 0, 1, 1, 1, 1, 0, 0]);
+        // DCR
         assert_eq!(bytes.next().unwrap(), [0, 0, 1, 1, 1, 1, 0, 1]);
+        // ADI
         assert_eq!(bytes.next().unwrap(), [1, 1, 0, 0, 0, 1, 1, 0]);
+        // ADI intermediate
         assert_eq!(bytes.next().unwrap(), [1, 0, 0, 1, 1, 0, 0, 1]);
+        // STC
         assert_eq!(bytes.next().unwrap(), [0, 0, 1, 1, 0, 1, 1, 1]);
+        // CMC
         assert_eq!(bytes.next().unwrap(), [0, 0, 1, 1, 1, 1, 1, 1]);
+        // CMA
         assert_eq!(bytes.next().unwrap(), [0, 0, 1, 0, 1, 1, 1, 1]);
+        // ADC
         assert_eq!(bytes.next().unwrap(), [1, 0, 0, 0, 1, 0, 0, 1]);
+        // ACI
         assert_eq!(bytes.next().unwrap(), [1, 1, 0, 0, 1, 1, 1, 0]);
+        // ACI intermediate
         assert_eq!(bytes.next().unwrap(), [0, 0, 0, 0, 1, 1, 0, 0]);
+        // SUI
         assert_eq!(bytes.next().unwrap(), [1, 1, 0, 1, 0, 1, 1, 0]);
+        // SUI intermediate
         assert_eq!(bytes.next().unwrap(), [0, 0, 0, 0, 1, 1, 0, 0]);
+        // RLC
         assert_eq!(bytes.next().unwrap(), [0, 0, 0, 0, 0, 1, 1, 1]);
+        // RRC
         assert_eq!(bytes.next().unwrap(), [0, 0, 0, 0, 1, 1, 1, 1]);
+        // RAL
         assert_eq!(bytes.next().unwrap(), [0, 0, 0, 1, 0, 1, 1, 1]);
+        // RAR
         assert_eq!(bytes.next().unwrap(), [0, 0, 0, 1, 1, 1, 1, 1]);
+        // ORA
         assert_eq!(bytes.next().unwrap(), [1, 0, 1, 1, 0, 0, 0, 0]);
+        // DAA
         assert_eq!(bytes.next().unwrap(), [0, 0, 1, 0, 0, 1, 1, 1]);
+        // STAX
         assert_eq!(bytes.next().unwrap(), [0, 0, 0, 0, 0, 0, 1, 0]);
+        // LDAX
         assert_eq!(bytes.next().unwrap(), [0, 0, 0, 1, 1, 0, 1, 0]);
+        // CMP
         assert_eq!(bytes.next().unwrap(), [1, 0, 1, 1, 1, 0, 0, 0]);
+        // XRA
         assert_eq!(bytes.next().unwrap(), [1, 0, 1, 0, 1, 0, 0, 0]);
+        // SBB
         assert_eq!(bytes.next().unwrap(), [1, 0, 0, 1, 1, 0, 0, 0]);
+        // XCHG
         assert_eq!(bytes.next().unwrap(), [1, 1, 1, 0, 1, 0, 1, 1]);
+        // SPHL
         assert_eq!(bytes.next().unwrap(), [1, 1, 1, 1, 1, 0, 0, 1]);
+        // XTHL
         assert_eq!(bytes.next().unwrap(), [1, 1, 1, 0, 0, 0, 1, 1]);
+        // DCX
         assert_eq!(bytes.next().unwrap(), [0, 0, 0, 0, 1, 0, 1, 1]);
+        // INX
         assert_eq!(bytes.next().unwrap(), [0, 0, 1, 1, 0, 0, 1, 1]);
+        // DAD
         assert_eq!(bytes.next().unwrap(), [0, 0, 0, 0, 1, 0, 0, 1]);
+        // PUSH
         assert_eq!(bytes.next().unwrap(), [1, 1, 1, 1, 0, 1, 0, 1]);
+        // POP
         assert_eq!(bytes.next().unwrap(), [1, 1, 1, 1, 0, 0, 0, 1]);
+        // ORI
         assert_eq!(bytes.next().unwrap(), [1, 1, 1, 1, 0, 1, 1, 0]);
+        // ORI intermediate
         assert_eq!(bytes.next().unwrap(), [0, 0, 0, 0, 1, 1, 1, 1]);
+        // XRI
         assert_eq!(bytes.next().unwrap(), [1, 1, 1, 0, 1, 1, 1, 0]);
+        // XRI intermediate
         assert_eq!(bytes.next().unwrap(), [0, 0, 0, 0, 1, 1, 1, 1]);
+        // ANI
         assert_eq!(bytes.next().unwrap(), [1, 1, 1, 0, 0, 1, 1, 0]);
+        // ANI intermediate
         assert_eq!(bytes.next().unwrap(), [1, 0, 0, 0, 0, 0, 0, 0]);
+        // CPI
         assert_eq!(bytes.next().unwrap(), [1, 1, 1, 1, 1, 1, 1, 0]);
+        // CPI intermediate
         assert_eq!(bytes.next().unwrap(), [0, 0, 0, 0, 1, 1, 1, 1]);
+        // SBI
         assert_eq!(bytes.next().unwrap(), [1, 1, 0, 1, 1, 1, 1, 0]);
+        // SBI intermediate
         assert_eq!(bytes.next().unwrap(), [0, 0, 0, 0, 0, 0, 0, 0]);
+        // LXI
         assert_eq!(bytes.next().unwrap(), [0, 0, 1, 1, 0, 0, 0, 1]);
+        // LXI intermediate one
         assert_eq!(bytes.next().unwrap(), [0, 0, 1, 1, 0, 0, 0, 0]);
+        // LXI intermediate two
         assert_eq!(bytes.next().unwrap(), [0, 0, 1, 1, 1, 0, 0, 1]);
+        // STA
         assert_eq!(bytes.next().unwrap(), [0, 0, 1, 1, 0, 0, 1, 0]);
+        // STA intermediate one
         assert_eq!(bytes.next().unwrap(), [0, 0, 0, 0, 0, 0, 0, 0]);
+        // STA intermediate two
         assert_eq!(bytes.next().unwrap(), [0, 0, 1, 0, 1, 0, 1, 0]);
+        // LDA
         assert_eq!(bytes.next().unwrap(), [0, 0, 1, 1, 1, 0, 1, 0]);
+        // LDA intermediate one
         assert_eq!(bytes.next().unwrap(), [0, 0, 0, 0, 0, 0, 0, 0]);
+        // LDA intermediate two
         assert_eq!(bytes.next().unwrap(), [0, 0, 0, 0, 0, 0, 0, 0]);
+        // SHLD
         assert_eq!(bytes.next().unwrap(), [0, 0, 1, 0, 0, 0, 1, 0]);
+        // SHLD intermediate one
         assert_eq!(bytes.next().unwrap(), [0, 0, 1, 1, 0, 0, 0, 0]);
+        // SHLD intermediate two
         assert_eq!(bytes.next().unwrap(), [0, 0, 1, 1, 1, 0, 0, 1]);
+        // LHLD
         assert_eq!(bytes.next().unwrap(), [0, 0, 1, 0, 1, 0, 1, 0]);
+        // LHLD intemediate one
         assert_eq!(bytes.next().unwrap(), [0, 0, 0, 0, 1, 1, 1, 1]);
+        // LHLD intemediate two
         assert_eq!(bytes.next().unwrap(), [1, 0, 1, 0, 0, 0, 0, 0]);
+        // JMP
+        assert_eq!(bytes.next().unwrap(), [1, 1, 0, 0, 0, 0, 1, 1]);
+        // JMP address one
+        assert_eq!(bytes.next().unwrap(), [0, 0, 0, 0, 0, 0, 0, 0]);
+        // JMP address two
+        assert_eq!(bytes.next().unwrap(), [0, 1, 0, 0, 0, 0, 1, 0]);
+        // ADD
+        assert_eq!(bytes.next().unwrap(), [1, 0, 0, 0, 0, 0, 0, 0]);
+        // ADD
+        assert_eq!(bytes.next().unwrap(), [1, 0, 0, 0, 0, 1, 1, 1]);
+        // HLT
         assert_eq!(bytes.next().unwrap(), [0, 1, 1, 1, 0, 1, 1, 0]);
     }
 
@@ -491,9 +573,7 @@ mod tests {
         assembler.assemble();
 
         let instructions = assembler.disassemble("test_disassemble_binary".to_owned());
-        assert_eq!(instructions.len(), 44);
-
-        //println!("{:?}", instructions);
+        assert_eq!(instructions.len(), 47);
 
         let mut instruction = instructions.get(&0).unwrap();
         assert_eq!(
@@ -761,6 +841,24 @@ mod tests {
         );
 
         instruction = instructions.get(&62).unwrap();
+        assert_eq!(
+            *instruction,
+            Instruction::Label(InstructionCommand::Jmp, 66)
+        );
+
+        instruction = instructions.get(&65).unwrap();
+        assert_eq!(
+            *instruction,
+            Instruction::SingleRegister(InstructionCommand::Add, InstructionRegister::B)
+        );
+
+        instruction = instructions.get(&66).unwrap();
+        assert_eq!(
+            *instruction,
+            Instruction::SingleRegister(InstructionCommand::Add, InstructionRegister::A)
+        );
+
+        instruction = instructions.get(&67).unwrap();
         assert_eq!(
             *instruction,
             Instruction::NoRegister(InstructionCommand::Hlt)
