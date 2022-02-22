@@ -106,7 +106,10 @@ impl Cpu {
             }
 
             self.execute(instruction);
-            self.incr_program_counter(instruction);
+
+            if !matches!(instruction, Instruction::Label(_, _)) {
+                self.incr_program_counter(instruction);
+            }
         }
     }
 
@@ -160,6 +163,9 @@ impl Cpu {
             }
             Instruction::PairRegister(command, register_pair) => {
                 self.execute_pair_reg_instruction(command, register_pair)
+            }
+            Instruction::Label(command, address) => {
+                self.execute_label_instruction(command, *address)
             }
         }
     }
@@ -278,6 +284,13 @@ impl Cpu {
             InstructionCommand::Dad => self.execute_dad(register_pair),
             InstructionCommand::Push => self.execute_push(register_pair),
             InstructionCommand::Pop => self.execute_pop(register_pair),
+            _ => panic!("invalid instruction"),
+        }
+    }
+
+    fn execute_label_instruction(&mut self, command: &InstructionCommand, address: u16) {
+        match command {
+            InstructionCommand::Jmp => self.execute_jmp(address),
             _ => panic!("invalid instruction"),
         }
     }
@@ -1133,7 +1146,7 @@ mod tests {
 
         cpu.run(instructions, false);
 
-        assert_eq!(cpu.get_register(InstructionRegister::A), -28);
+        assert_eq!(cpu.get_register(InstructionRegister::A), -56);
         assert_eq!(cpu.get_register(InstructionRegister::B), 27);
         assert_eq!(cpu.get_register(InstructionRegister::C), -1);
         assert_eq!(cpu.get_register(InstructionRegister::D), 0);
@@ -1141,11 +1154,11 @@ mod tests {
         assert_eq!(cpu.get_register(InstructionRegister::H), 0);
         assert_eq!(cpu.get_register(InstructionRegister::L), 0);
 
-        assert_eq!(cpu.get_flag(Flag::S), false);
+        assert_eq!(cpu.get_flag(Flag::S), true);
         assert_eq!(cpu.get_flag(Flag::Z), false);
         assert_eq!(cpu.get_flag(Flag::A), true);
         assert_eq!(cpu.get_flag(Flag::P), false);
-        assert_eq!(cpu.get_flag(Flag::C), false);
+        assert_eq!(cpu.get_flag(Flag::C), true);
 
         assert_eq!(cpu.get_stack_pointer(), 12345);
         assert_eq!(cpu.get_memory(7168), -124);
@@ -1154,7 +1167,7 @@ mod tests {
         assert_eq!(cpu.get_memory(42), 127);
         assert_eq!(cpu.get_memory(12345), -1);
         assert_eq!(cpu.get_memory(12346), 27);
-        assert_eq!(cpu.get_program_counter(), 63);
+        assert_eq!(cpu.get_program_counter(), 68);
     }
 
     #[test]
@@ -1462,7 +1475,6 @@ mod tests {
         cpu.execute_rlc();
         assert_eq!(cpu.get_flag(Flag::C), true);
         assert_eq!(cpu.get_register(InstructionRegister::A), -27);
-
         // negative without carry
         cpu.set_flag(Flag::C, false);
         cpu.change_register(InstructionRegister::A, -128);
@@ -2017,7 +2029,6 @@ mod tests {
 
         assert_eq!(cpu.get_program_counter(), 1234);
     }
-
 
     #[test]
     fn test_memory() {

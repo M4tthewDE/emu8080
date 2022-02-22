@@ -1,4 +1,6 @@
+use pest::iterators::Pairs;
 use pest::Parser;
+use std::collections::HashMap;
 use std::fs;
 use std::str::FromStr;
 use strum_macros::EnumString;
@@ -7,7 +9,7 @@ use strum_macros::EnumString;
 #[grammar = "asm.pest"]
 pub struct AssemblyParser;
 
-pub fn parse(file_name: String) -> (Vec<Instruction>, Vec<Label>) {
+pub fn parse(file_name: String) -> Vec<Instruction> {
     let unparsed_file = fs::read_to_string(file_name).unwrap();
     let assembly = AssemblyParser::parse(Rule::assembly, &unparsed_file)
         .expect("unsuccessful parse")
@@ -16,9 +18,9 @@ pub fn parse(file_name: String) -> (Vec<Instruction>, Vec<Label>) {
 
     let raw_instructions = assembly.into_inner();
 
+    let labels = parse_labels(raw_instructions.clone());
+
     let mut instructions = Vec::new();
-    let mut labels = Vec::new();
-    let mut label_position = 0;
 
     for instruction in raw_instructions {
         let rule = instruction.as_rule();
@@ -31,23 +33,6 @@ pub fn parse(file_name: String) -> (Vec<Instruction>, Vec<Label>) {
             let mut rule = inner_instruction.as_rule();
 
             if matches!(rule, Rule::label) {
-                let name = inner_instruction.as_str().to_string();
-
-                let label = Label {
-                    name: name[0..name.len() - 1].to_string(),
-                    position: label_position,
-                };
-
-                if labels.contains(&label) {
-                    panic!("can't have duplicate labels: {:?}", label);
-                } else if InstructionCommand::from_str(&label.name).is_ok()
-                    || InstructionRegister::from_str(&label.name).is_ok()
-                {
-                    panic!("label can't occupy reserved names: {:?}", label);
-                }
-
-                labels.push(label);
-
                 inner_instruction_pairs.next();
             }
 
@@ -199,18 +184,101 @@ pub fn parse(file_name: String) -> (Vec<Instruction>, Vec<Label>) {
                     let instruction = Instruction::NoRegister(command);
                     instructions.push(instruction);
                 }
+                Rule::label_command => {
+                    let label = pairs.peek().unwrap().as_span().as_str();
+                    let instruction = Instruction::Label(command, *labels.get(label).unwrap());
+                    instructions.push(instruction);
+                }
                 _ => panic!("invalid rule: {:?}", rule),
             }
-            label_position += 1;
         }
     }
-    (instructions, labels)
+    instructions
+}
+
+fn parse_labels(raw_instructions: Pairs<Rule>) -> HashMap<String, u16> {
+    let mut labels = HashMap::new();
+    let mut label_address = 0;
+
+    let mut label = "".to_owned();
+    for instruction in raw_instructions {
+        let rule = instruction.as_rule();
+
+        // ignore comments and end of input
+        if !matches!(rule, Rule::comment | Rule::EOI) {
+            let mut inner_instruction_pairs = instruction.into_inner();
+            let inner_instruction = inner_instruction_pairs.peek().unwrap();
+
+            let mut rule = inner_instruction.as_rule();
+
+            if matches!(rule, Rule::label) {
+                label = inner_instruction.as_str().to_string();
+
+                for value in labels.keys() {
+                    if label == *value {
+                        panic!("can't have duplicate labels: {:?}", label);
+                    }
+                }
+
+                if InstructionCommand::from_str(&label).is_ok()
+                    || InstructionRegister::from_str(&label).is_ok()
+                {
+                    panic!("label can't occupy reserved names: {:?}", label);
+                }
+
+                inner_instruction_pairs.next();
+            }
+
+            let mut pairs = inner_instruction_pairs.peek().unwrap().into_inner();
+            let inner_instruction = pairs.peek().unwrap();
+            rule = inner_instruction.as_rule();
+            pairs.next();
+
+            if !label.is_empty() {
+                labels.insert(label.trim_end_matches(':').to_owned(), label_address);
+                label = "".to_owned();
+            }
+
+            match rule {
+                Rule::intermediate_reg_command => {
+                    label_address += 2;
+                }
+                Rule::intermediate_16_bit_command => {
+                    label_address += 3;
+                }
+                Rule::double_reg_command => {
+                    label_address += 1;
+                }
+                Rule::single_reg_command => {
+                    label_address += 1;
+                }
+                Rule::pair_reg_command => {
+                    label_address += 1;
+                }
+                Rule::intermediate_16_bit_command_no_reg => {
+                    label_address += 3;
+                }
+                Rule::intermediate_command => {
+                    label_address += 2;
+                }
+                Rule::no_reg_command => {
+                    label_address += 1;
+                }
+                Rule::label_command => {
+                    label_address += 3;
+                }
+                _ => panic!("invalid rule: {:?}", rule),
+            }
+        }
+    }
+
+    labels
 }
 
 #[derive(Debug)]
 pub struct Label {
     pub name: String,
-    pub position: usize,
+    pub address: u16,
 }
 
 impl PartialEq for Label {
@@ -309,6 +377,8 @@ pub enum InstructionCommand {
     Lhld,
     #[strum(serialize = "PCHL")]
     Pchl,
+    #[strum(serialize = "JMP")]
+    Jmp,
     #[strum(serialize = "HLT")]
     Hlt,
 }
@@ -443,6 +513,7 @@ pub enum Instruction {
     Intermediate16BitNoReg(InstructionCommand, i16),
     IntermediateRegister(InstructionCommand, i8, InstructionRegister),
     PairRegister(InstructionCommand, InstructionRegisterPair),
+    Label(InstructionCommand, u16),
 }
 
 impl Instruction {
@@ -456,6 +527,7 @@ impl Instruction {
             Instruction::Intermediate16BitNoReg(_, _) => 3,
             Instruction::IntermediateRegister(_, _, _) => 2,
             Instruction::PairRegister(_, _) => 1,
+            Instruction::Label(_, _) => 3,
         }
     }
 
@@ -684,6 +756,19 @@ impl Instruction {
                 }
                 _ => panic!("invalid instruction"),
             },
+
+            Instruction::Label(command, address) => {
+                let mut base_result = vec![];
+                match command {
+                    InstructionCommand::Jmp => {
+                        base_result.append(&mut vec![1, 1, 0, 0, 0, 0, 1, 1]);
+                        base_result.append(&mut int_to_binary(*address as i16, 16));
+
+                        base_result
+                    }
+                    _ => panic!("invalid instruction"),
+                }
+            }
 
             Instruction::PairRegister(command, register_pair) => {
                 let mut base_result = vec![0, 0];
