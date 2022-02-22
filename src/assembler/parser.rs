@@ -275,18 +275,6 @@ fn parse_labels(raw_instructions: Pairs<Rule>) -> HashMap<String, u16> {
     labels
 }
 
-#[derive(Debug)]
-pub struct Label {
-    pub name: String,
-    pub address: u16,
-}
-
-impl PartialEq for Label {
-    fn eq(&self, other: &Self) -> bool {
-        self.name == other.name
-    }
-}
-
 #[derive(Debug, EnumString, Clone, PartialEq)]
 pub enum InstructionCommand {
     #[strum(serialize = "MVI")]
