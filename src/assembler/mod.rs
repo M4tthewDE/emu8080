@@ -431,7 +431,7 @@ mod tests {
 
     #[test]
     fn test_assemble() {
-        let assembler = Assembler::new("test.asm".to_owned(), "test_assemble_binary".to_owned());
+        let assembler = Assembler::new("data/test/end_to_end.asm".to_owned(), "test_assemble_binary".to_owned());
         assembler.assemble();
 
         let mut file = File::open("test_assemble_binary").unwrap();
@@ -597,7 +597,7 @@ mod tests {
 
     #[test]
     fn test_disassemble() {
-        let assembler = Assembler::new("test.asm".to_owned(), "test_disassemble_binary".to_owned());
+        let assembler = Assembler::new("data/test/end_to_end.asm".to_owned(), "test_disassemble_binary".to_owned());
         assembler.assemble();
 
         let instructions = assembler.disassemble("test_disassemble_binary".to_owned());
