@@ -293,6 +293,7 @@ impl Cpu {
     fn execute_label_instruction(&mut self, command: &InstructionCommand, address: u16) {
         match command {
             InstructionCommand::Jmp => self.execute_jmp(address),
+            InstructionCommand::Jc => self.execute_jmp(address),
             _ => panic!("invalid instruction"),
         }
     }
@@ -1175,7 +1176,7 @@ mod tests {
         assert_eq!(cpu.get_memory(42), 127);
         assert_eq!(cpu.get_memory(12345), -1);
         assert_eq!(cpu.get_memory(12346), 27);
-        assert_eq!(cpu.get_program_counter(), 68);
+        assert_eq!(cpu.get_program_counter(), 71);
     }
 
     #[test]

@@ -367,6 +367,8 @@ pub enum InstructionCommand {
     Pchl,
     #[strum(serialize = "JMP")]
     Jmp,
+    #[strum(serialize = "JC")]
+    Jc,
     #[strum(serialize = "HLT")]
     Hlt,
 }
@@ -750,6 +752,12 @@ impl Instruction {
                 match command {
                     InstructionCommand::Jmp => {
                         base_result.append(&mut vec![1, 1, 0, 0, 0, 0, 1, 1]);
+                        base_result.append(&mut int_to_binary(*address as i16, 16));
+
+                        base_result
+                    }
+                    InstructionCommand::Jc => {
+                        base_result.append(&mut vec![1, 1, 0, 1, 1, 0, 1, 0]);
                         base_result.append(&mut int_to_binary(*address as i16, 16));
 
                         base_result
