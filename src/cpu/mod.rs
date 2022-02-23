@@ -294,6 +294,7 @@ impl Cpu {
         match command {
             InstructionCommand::Jmp => self.execute_jmp(address),
             InstructionCommand::Jc => self.execute_jc(address),
+            InstructionCommand::Jnc => self.execute_jnc(address),
             _ => panic!("invalid instruction"),
         }
     }
