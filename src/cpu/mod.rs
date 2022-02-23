@@ -293,7 +293,7 @@ impl Cpu {
     fn execute_label_instruction(&mut self, command: &InstructionCommand, address: u16) {
         match command {
             InstructionCommand::Jmp => self.execute_jmp(address),
-            InstructionCommand::Jc => self.execute_jmp(address),
+            InstructionCommand::Jc => self.execute_jc(address),
             _ => panic!("invalid instruction"),
         }
     }
