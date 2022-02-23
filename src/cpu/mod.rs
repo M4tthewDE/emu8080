@@ -1182,7 +1182,7 @@ mod tests {
         assert_eq!(cpu.get_memory(42), 127);
         assert_eq!(cpu.get_memory(12345), -1);
         assert_eq!(cpu.get_memory(12346), 27);
-        assert_eq!(cpu.get_program_counter(), 71);
+        assert_eq!(cpu.get_program_counter(), 74);
     }
 
     #[test]
