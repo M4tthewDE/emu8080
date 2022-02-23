@@ -294,6 +294,7 @@ impl Cpu {
         match command {
             InstructionCommand::Jmp => self.execute_jmp(address),
             InstructionCommand::Jc => self.execute_jc(address),
+            InstructionCommand::Jnc => self.execute_jnc(address),
             _ => panic!("invalid instruction"),
         }
     }
@@ -1098,6 +1099,12 @@ impl Cpu {
         }
     }
 
+    fn execute_jnc(&mut self, address: u16) {
+        if !self.get_flag(Flag::C) {
+            self.set_program_counter(address);
+        }
+    }
+
     fn print_status(&self) {
         for i in 0..7 {
             println!(
@@ -1176,7 +1183,7 @@ mod tests {
         assert_eq!(cpu.get_memory(42), 127);
         assert_eq!(cpu.get_memory(12345), -1);
         assert_eq!(cpu.get_memory(12346), 27);
-        assert_eq!(cpu.get_program_counter(), 71);
+        assert_eq!(cpu.get_program_counter(), 74);
     }
 
     #[test]
@@ -2050,6 +2057,20 @@ mod tests {
 
         cpu.set_flag(Flag::C, true);
         cpu.execute_jc(1234);
+        assert_eq!(cpu.get_program_counter(), 1234);
+    }
+
+    #[test]
+    fn test_execute_jnc() {
+        let mut cpu = initialize_cpu();
+
+        cpu.set_program_counter(10);
+        cpu.set_flag(Flag::C, true);
+        cpu.execute_jnc(1234);
+        assert_eq!(cpu.get_program_counter(), 10);
+
+        cpu.set_flag(Flag::C, false);
+        cpu.execute_jnc(1234);
         assert_eq!(cpu.get_program_counter(), 1234);
     }
 

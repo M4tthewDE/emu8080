@@ -70,7 +70,7 @@ Programming Manual](http://dunfield.classiccmp.org/r/8080asm.pdf)
 - [x] PCHL
 - [x] JMP
 - [x] JC
-- [ ] JNC
+- [x] JNC
 - [ ] JZ
 - [ ] JNZ
 - [ ] JM

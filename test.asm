@@ -46,6 +46,7 @@ LABEL:  STC
         LHLD 0000111110100000
         JMP TEST1
         JC TEST1
+        JNC TEST1
         ADD B
 
 TEST1:  ADD A
