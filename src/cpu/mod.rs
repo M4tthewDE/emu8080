@@ -296,6 +296,7 @@ impl Cpu {
             InstructionCommand::Jc => self.execute_jc(address),
             InstructionCommand::Jnc => self.execute_jnc(address),
             InstructionCommand::Jz => self.execute_jz(address),
+            InstructionCommand::Jnz => self.execute_jnz(address),
             _ => panic!("invalid instruction"),
         }
     }
@@ -1196,7 +1197,7 @@ mod tests {
         assert_eq!(cpu.get_memory(42), 127);
         assert_eq!(cpu.get_memory(12345), -1);
         assert_eq!(cpu.get_memory(12346), 27);
-        assert_eq!(cpu.get_program_counter(), 77);
+        assert_eq!(cpu.get_program_counter(), 80);
     }
 
     #[test]
