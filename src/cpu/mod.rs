@@ -1139,6 +1139,12 @@ impl Cpu {
         }
     }
 
+    fn execute_jpo(&mut self, address: u16) {
+        if !self.get_flag(Flag::P) {
+            self.set_program_counter(address);
+        }
+    }
+
     fn print_status(&self) {
         for i in 0..7 {
             println!(
@@ -2176,6 +2182,20 @@ mod tests {
 
         cpu.set_flag(Flag::P, true);
         cpu.execute_jpe(1234);
+        assert_eq!(cpu.get_program_counter(), 1234);
+    }
+
+    #[test]
+    fn test_execute_jpo() {
+        let mut cpu = initialize_cpu();
+
+        cpu.set_program_counter(10);
+        cpu.set_flag(Flag::P, true);
+        cpu.execute_jpo(1234);
+        assert_eq!(cpu.get_program_counter(), 10);
+
+        cpu.set_flag(Flag::P, false);
+        cpu.execute_jpo(1234);
         assert_eq!(cpu.get_program_counter(), 1234);
     }
 
