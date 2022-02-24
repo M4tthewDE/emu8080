@@ -1105,6 +1105,12 @@ impl Cpu {
         }
     }
 
+    fn execute_jz(&mut self, address: u16) {
+        if self.get_flag(Flag::Z) {
+            self.set_program_counter(address);
+        }
+    }
+
     fn print_status(&self) {
         for i in 0..7 {
             println!(
@@ -2072,6 +2078,21 @@ mod tests {
         cpu.set_flag(Flag::C, false);
         cpu.execute_jnc(1234);
         assert_eq!(cpu.get_program_counter(), 1234);
+    }
+
+    #[test]
+    fn test_execute_jz() {
+        let mut cpu = initialize_cpu();
+
+        cpu.set_program_counter(10);
+        cpu.set_flag(Flag::Z, false);
+        cpu.execute_jz(1234);
+        assert_eq!(cpu.get_program_counter(), 10);
+
+        cpu.set_flag(Flag::Z, true);
+        cpu.execute_jz(1234);
+        assert_eq!(cpu.get_program_counter(), 1234);
+
     }
 
     #[test]
