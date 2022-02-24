@@ -246,6 +246,14 @@ impl Assembler {
                     (parser::binary_to_int(&raw_instructions[index + 2].to_vec()) as u16) & 255;
                 instruction = Instruction::Label(InstructionCommand::Jnc, address0 + address1)
 
+            // JZ
+            } else if raw_instructions[index] == vec![1, 1, 0, 0, 1, 0, 1, 0] {
+                let address0 =
+                    (parser::binary_to_int(&raw_instructions[index + 1].to_vec()) as u16) << 8;
+                let address1 =
+                    (parser::binary_to_int(&raw_instructions[index + 2].to_vec()) as u16) & 255;
+                instruction = Instruction::Label(InstructionCommand::Jz, address0 + address1)
+
             // instructions with 1 argument in the end
             // ADD
             } else if raw_instructions[index][0..5] == [1, 0, 0, 0, 0] {
@@ -441,7 +449,7 @@ mod tests {
         std::fs::remove_file("test_assemble_binary").unwrap();
 
         assert_eq!(binary_data.len() % 8, 0);
-        assert_eq!(binary_data.len(), 592);
+        assert_eq!(binary_data.len(), 616);
 
         let mut bytes = binary_data.chunks(8);
 
@@ -574,19 +582,25 @@ mod tests {
         // JMP address one
         assert_eq!(bytes.next().unwrap(), [0, 0, 0, 0, 0, 0, 0, 0]);
         // JMP address two
-        assert_eq!(bytes.next().unwrap(), [0, 1, 0, 0, 1, 0, 0, 0]);
+        assert_eq!(bytes.next().unwrap(), [0, 1, 0, 0, 1, 0, 1, 1]);
         // JC
         assert_eq!(bytes.next().unwrap(), [1, 1, 0, 1, 1, 0, 1, 0]);
         // JC address one
         assert_eq!(bytes.next().unwrap(), [0, 0, 0, 0, 0, 0, 0, 0]);
         // JC address two
-        assert_eq!(bytes.next().unwrap(), [0, 1, 0, 0, 1, 0, 0, 0]);
+        assert_eq!(bytes.next().unwrap(), [0, 1, 0, 0, 1, 0, 1, 1]);
         // JNC
         assert_eq!(bytes.next().unwrap(), [1, 1, 0, 1, 0, 0, 1, 0]);
         // JNC address one
         assert_eq!(bytes.next().unwrap(), [0, 0, 0, 0, 0, 0, 0, 0]);
         // JNC address two
-        assert_eq!(bytes.next().unwrap(), [0, 1, 0, 0, 1, 0, 0, 0]);
+        assert_eq!(bytes.next().unwrap(), [0, 1, 0, 0, 1, 0, 1, 1]);
+        // JZ
+        assert_eq!(bytes.next().unwrap(), [1, 1, 0, 0, 1, 0, 1, 0]);
+        // JZ address one
+        assert_eq!(bytes.next().unwrap(), [0, 0, 0, 0, 0, 0, 0, 0]);
+        // JZ address two
+        assert_eq!(bytes.next().unwrap(), [0, 1, 0, 0, 1, 0, 1, 1]);
         // ADD
         assert_eq!(bytes.next().unwrap(), [1, 0, 0, 0, 0, 0, 0, 0]);
         // ADD
@@ -601,7 +615,7 @@ mod tests {
         assembler.assemble();
 
         let instructions = assembler.disassemble("test_disassemble_binary".to_owned());
-        assert_eq!(instructions.len(), 49);
+        assert_eq!(instructions.len(), 50);
 
         let mut instruction = instructions.get(&0).unwrap();
         assert_eq!(
@@ -871,28 +885,31 @@ mod tests {
         instruction = instructions.get(&62).unwrap();
         assert_eq!(
             *instruction,
-            Instruction::Label(InstructionCommand::Jmp, 72)
+            Instruction::Label(InstructionCommand::Jmp, 75)
         );
 
         instruction = instructions.get(&65).unwrap();
-        assert_eq!(*instruction, Instruction::Label(InstructionCommand::Jc, 72));
+        assert_eq!(*instruction, Instruction::Label(InstructionCommand::Jc, 75));
 
         instruction = instructions.get(&68).unwrap();
-        assert_eq!(*instruction, Instruction::Label(InstructionCommand::Jnc, 72));
+        assert_eq!(*instruction, Instruction::Label(InstructionCommand::Jnc, 75));
 
         instruction = instructions.get(&71).unwrap();
+        assert_eq!(*instruction, Instruction::Label(InstructionCommand::Jz, 75));
+
+        instruction = instructions.get(&74).unwrap();
         assert_eq!(
             *instruction,
             Instruction::SingleRegister(InstructionCommand::Add, InstructionRegister::B)
         );
 
-        instruction = instructions.get(&72).unwrap();
+        instruction = instructions.get(&75).unwrap();
         assert_eq!(
             *instruction,
             Instruction::SingleRegister(InstructionCommand::Add, InstructionRegister::A)
         );
 
-        instruction = instructions.get(&73).unwrap();
+        instruction = instructions.get(&76).unwrap();
         assert_eq!(
             *instruction,
             Instruction::NoRegister(InstructionCommand::Hlt)
