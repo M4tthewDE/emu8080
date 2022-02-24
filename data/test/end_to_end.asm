@@ -52,6 +52,7 @@ LABEL:  STC
         JM TEST1
         JP TEST1
         JPE TEST1
+        JPO TEST1
         ADD B
 
 TEST1:  ADD A
