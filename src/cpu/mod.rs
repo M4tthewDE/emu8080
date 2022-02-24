@@ -1126,6 +1126,12 @@ impl Cpu {
         }
     }
 
+    fn execute_jp(&mut self, address: u16) {
+        if !self.get_flag(Flag::S) {
+            self.set_program_counter(address);
+        }
+    }
+
     fn print_status(&self) {
         for i in 0..7 {
             println!(
@@ -2135,6 +2141,20 @@ mod tests {
 
         cpu.set_flag(Flag::S, true);
         cpu.execute_jm(1234);
+        assert_eq!(cpu.get_program_counter(), 1234);
+    }
+
+    #[test]
+    fn test_execute_jp() {
+        let mut cpu = initialize_cpu();
+
+        cpu.set_program_counter(10);
+        cpu.set_flag(Flag::S, true);
+        cpu.execute_jp(1234);
+        assert_eq!(cpu.get_program_counter(), 10);
+
+        cpu.set_flag(Flag::S, false);
+        cpu.execute_jp(1234);
         assert_eq!(cpu.get_program_counter(), 1234);
     }
 
