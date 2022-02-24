@@ -299,6 +299,8 @@ impl Cpu {
             InstructionCommand::Jnz => self.execute_jnz(address),
             InstructionCommand::Jm => self.execute_jm(address),
             InstructionCommand::Jp => self.execute_jp(address),
+            InstructionCommand::Jpe => self.execute_jpe(address),
+            InstructionCommand::Jpo => self.execute_jpo(address),
             _ => panic!("invalid instruction"),
         }
     }
@@ -1133,6 +1135,18 @@ impl Cpu {
         }
     }
 
+    fn execute_jpe(&mut self, address: u16) {
+        if self.get_flag(Flag::P) {
+            self.set_program_counter(address);
+        }
+    }
+
+    fn execute_jpo(&mut self, address: u16) {
+        if !self.get_flag(Flag::P) {
+            self.set_program_counter(address);
+        }
+    }
+
     fn print_status(&self) {
         for i in 0..7 {
             println!(
@@ -1212,7 +1226,7 @@ mod tests {
         assert_eq!(cpu.get_memory(42), 127);
         assert_eq!(cpu.get_memory(12345), -1);
         assert_eq!(cpu.get_memory(12346), 27);
-        assert_eq!(cpu.get_program_counter(), 86);
+        assert_eq!(cpu.get_program_counter(), 92);
     }
 
     #[test]
@@ -2156,6 +2170,34 @@ mod tests {
 
         cpu.set_flag(Flag::S, false);
         cpu.execute_jp(1234);
+        assert_eq!(cpu.get_program_counter(), 1234);
+    }
+
+    #[test]
+    fn test_execute_jpe() {
+        let mut cpu = initialize_cpu();
+
+        cpu.set_program_counter(10);
+        cpu.set_flag(Flag::P, false);
+        cpu.execute_jpe(1234);
+        assert_eq!(cpu.get_program_counter(), 10);
+
+        cpu.set_flag(Flag::P, true);
+        cpu.execute_jpe(1234);
+        assert_eq!(cpu.get_program_counter(), 1234);
+    }
+
+    #[test]
+    fn test_execute_jpo() {
+        let mut cpu = initialize_cpu();
+
+        cpu.set_program_counter(10);
+        cpu.set_flag(Flag::P, true);
+        cpu.execute_jpo(1234);
+        assert_eq!(cpu.get_program_counter(), 10);
+
+        cpu.set_flag(Flag::P, false);
+        cpu.execute_jpo(1234);
         assert_eq!(cpu.get_program_counter(), 1234);
     }
 

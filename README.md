@@ -75,8 +75,8 @@ Programming Manual](http://dunfield.classiccmp.org/r/8080asm.pdf)
 - [x] JNZ
 - [x] JM
 - [x] JP
-- [ ] JPE
-- [ ] JPO
+- [x] JPE
+- [x] JPO
 
 ## Halt Instruction
 - [x] HLT

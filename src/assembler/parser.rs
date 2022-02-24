@@ -379,6 +379,10 @@ pub enum InstructionCommand {
     Jm,
     #[strum(serialize = "JP")]
     Jp,
+    #[strum(serialize = "JPE")]
+    Jpe,
+    #[strum(serialize = "JPO")]
+    Jpo,
     #[strum(serialize = "HLT")]
     Hlt,
 }
@@ -798,6 +802,18 @@ impl Instruction {
                     }
                     InstructionCommand::Jp => {
                         base_result.append(&mut vec![1, 1, 1, 1, 0, 0, 1, 0]);
+                        base_result.append(&mut int_to_binary(*address as i16, 16));
+
+                        base_result
+                    }
+                    InstructionCommand::Jpe => {
+                        base_result.append(&mut vec![1, 1, 1, 0, 1, 0, 1, 0]);
+                        base_result.append(&mut int_to_binary(*address as i16, 16));
+
+                        base_result
+                    }
+                    InstructionCommand::Jpo => {
+                        base_result.append(&mut vec![1, 1, 1, 0, 0, 0, 1, 0]);
                         base_result.append(&mut int_to_binary(*address as i16, 16));
 
                         base_result
