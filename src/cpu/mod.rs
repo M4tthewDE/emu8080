@@ -2100,7 +2100,6 @@ mod tests {
         cpu.set_flag(Flag::Z, true);
         cpu.execute_jz(1234);
         assert_eq!(cpu.get_program_counter(), 1234);
-
     }
 
     #[test]
