@@ -297,6 +297,7 @@ impl Cpu {
             InstructionCommand::Jnc => self.execute_jnc(address),
             InstructionCommand::Jz => self.execute_jz(address),
             InstructionCommand::Jnz => self.execute_jnz(address),
+            InstructionCommand::Jm => self.execute_jm(address),
             _ => panic!("invalid instruction"),
         }
     }
@@ -1175,7 +1176,8 @@ mod tests {
     fn test_execute_end_to_end() {
         let mut cpu = initialize_cpu();
 
-        let assembler = assembler::Assembler::new("data/test/end_to_end.asm".to_owned(), "output".to_owned());
+        let assembler =
+            assembler::Assembler::new("data/test/end_to_end.asm".to_owned(), "output".to_owned());
 
         assembler.assemble();
         let instructions = assembler.disassemble("output".to_owned());
@@ -1203,7 +1205,7 @@ mod tests {
         assert_eq!(cpu.get_memory(42), 127);
         assert_eq!(cpu.get_memory(12345), -1);
         assert_eq!(cpu.get_memory(12346), 27);
-        assert_eq!(cpu.get_program_counter(), 80);
+        assert_eq!(cpu.get_program_counter(), 83);
     }
 
     #[test]
