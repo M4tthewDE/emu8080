@@ -297,6 +297,8 @@ impl Cpu {
             InstructionCommand::Jnc => self.execute_jnc(address),
             InstructionCommand::Jz => self.execute_jz(address),
             InstructionCommand::Jnz => self.execute_jnz(address),
+            InstructionCommand::Jm => self.execute_jm(address),
+            InstructionCommand::Jp => self.execute_jp(address),
             _ => panic!("invalid instruction"),
         }
     }
@@ -1119,6 +1121,18 @@ impl Cpu {
         }
     }
 
+    fn execute_jm(&mut self, address: u16) {
+        if self.get_flag(Flag::S) {
+            self.set_program_counter(address);
+        }
+    }
+
+    fn execute_jp(&mut self, address: u16) {
+        if !self.get_flag(Flag::S) {
+            self.set_program_counter(address);
+        }
+    }
+
     fn print_status(&self) {
         for i in 0..7 {
             println!(
@@ -1169,7 +1183,8 @@ mod tests {
     fn test_execute_end_to_end() {
         let mut cpu = initialize_cpu();
 
-        let assembler = assembler::Assembler::new("data/test/end_to_end.asm".to_owned(), "output".to_owned());
+        let assembler =
+            assembler::Assembler::new("data/test/end_to_end.asm".to_owned(), "output".to_owned());
 
         assembler.assemble();
         let instructions = assembler.disassemble("output".to_owned());
@@ -1197,7 +1212,7 @@ mod tests {
         assert_eq!(cpu.get_memory(42), 127);
         assert_eq!(cpu.get_memory(12345), -1);
         assert_eq!(cpu.get_memory(12346), 27);
-        assert_eq!(cpu.get_program_counter(), 80);
+        assert_eq!(cpu.get_program_counter(), 86);
     }
 
     #[test]
@@ -2113,6 +2128,34 @@ mod tests {
 
         cpu.set_flag(Flag::Z, false);
         cpu.execute_jnz(1234);
+        assert_eq!(cpu.get_program_counter(), 1234);
+    }
+
+    #[test]
+    fn test_execute_jm() {
+        let mut cpu = initialize_cpu();
+
+        cpu.set_program_counter(10);
+        cpu.set_flag(Flag::S, false);
+        cpu.execute_jm(1234);
+        assert_eq!(cpu.get_program_counter(), 10);
+
+        cpu.set_flag(Flag::S, true);
+        cpu.execute_jm(1234);
+        assert_eq!(cpu.get_program_counter(), 1234);
+    }
+
+    #[test]
+    fn test_execute_jp() {
+        let mut cpu = initialize_cpu();
+
+        cpu.set_program_counter(10);
+        cpu.set_flag(Flag::S, true);
+        cpu.execute_jp(1234);
+        assert_eq!(cpu.get_program_counter(), 10);
+
+        cpu.set_flag(Flag::S, false);
+        cpu.execute_jp(1234);
         assert_eq!(cpu.get_program_counter(), 1234);
     }
 

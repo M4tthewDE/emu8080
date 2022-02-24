@@ -49,6 +49,8 @@ LABEL:  STC
         JNC TEST1
         JZ TEST1
         JNZ TEST1
+        JM TEST1
+        JP TEST1
         ADD B
 
 TEST1:  ADD A
