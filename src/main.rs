@@ -8,7 +8,7 @@ mod cpu;
 fn main() {
     let mut cpu = cpu::initialize_cpu();
 
-    let assembler = assembler::Assembler::new("test.asm".to_owned(), "output".to_owned());
+    let assembler = assembler::Assembler::new("data/test/end_to_end.asm".to_owned(), "output".to_owned());
 
     assembler.assemble();
     let instructions = assembler.disassemble("output".to_owned());
